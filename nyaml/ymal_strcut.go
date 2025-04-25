@@ -3,8 +3,8 @@ package nyaml
 type YamlConfLog struct {
 	LogNamePrefix string `yaml:"logNamePrefix" hc:"日志文件的前缀"`
 	LogLevel      string `yaml:"logLevel" hc:" debug|info|warn|error "`
-	StdOut        bool   `yaml:"stdOut" hc:"是否输出到控制台:true|false"`
-	PrintMethod   int    `yaml:"printMethod" hc:"打印日志发生的详情: 0-不打印,1-详情,2-仅方法名称"`
+	OutMode       int    `yaml:"stdOut" hc:" 日志输出方式: 0-不打印,1-控制台,2-文件,3-都打印 "`
+	PrintMethod   int    `yaml:"printMethod" hc:" 打印日志发生的详情: 0-不打印,1-详情,2-仅方法名称"`
 }
 
 type YamlConfRedis struct {

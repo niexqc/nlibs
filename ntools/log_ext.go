@@ -20,7 +20,7 @@ import (
 type nwLogHandler struct {
 	Level      slog.Leveler
 	PrintMehod int // 0-不打印 ，1-详情,2-仅方法名称
-	OutMode    int // 0-不打印，1-控制台,2-文件,3-都打印
+	OutMode    int // 0-不打印,1-控制台,2-文件,3-都打印
 	out        io.Writer
 }
 
@@ -42,8 +42,8 @@ func SlogGetTraceId() string {
 	return threadLocal.Get()
 }
 
-// printMethod int // 0-不打印 ，1-详情,2-仅方法名称
-// outMode 输出模式 // 0-不打印，1-控制台,2-文件,3-都打印
+// printMethod int 方法打印 0-不打印 ，1-详情,2-仅方法名称
+// outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
 func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slogLevel := SlogLevelStr2Level(confLevel)
 	logWriter := &nwDayLogWriter{FileNamePrefix: logFilePrefix}
