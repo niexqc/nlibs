@@ -21,7 +21,8 @@ import (
 )
 
 // GinLogger 接收gin框架默认的日志
-func NiexqGinLogger() gin.HandlerFunc {
+func LoggerHandlerFunc() gin.HandlerFunc {
+	slog.Debug("Add Middleware LoggerHandlerFunc")
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
@@ -34,8 +35,9 @@ func NiexqGinLogger() gin.HandlerFunc {
 	}
 }
 
-// GinRecovery recover掉项目可能出现的panic
-func NiexqGinRecovery() gin.HandlerFunc {
+// Recovery recover掉项目可能出现的panic
+func RecoveryHandlerFunc() gin.HandlerFunc {
+	slog.Debug("Add Middleware RecoveryHandlerFunc")
 	return func(c *gin.Context) {
 		defer recoveryErrorWork(c)
 		c.Next()
@@ -43,7 +45,8 @@ func NiexqGinRecovery() gin.HandlerFunc {
 }
 
 // 日志跟踪ID生成
-func NiexqGinTraceIdGen(traceIdPrefix string, redisService *nredis.RedisService) gin.HandlerFunc {
+func TraceIdGenHandlerFunc(traceIdPrefix string, redisService *nredis.RedisService) gin.HandlerFunc {
+	slog.Debug("Add Middleware TraceIdGenHandlerFunc")
 	return func(c *gin.Context) {
 		timeStr := time.Now().Format("20060102T150405")
 		redisKeyStr := traceIdPrefix + timeStr
@@ -58,7 +61,8 @@ func NiexqGinTraceIdGen(traceIdPrefix string, redisService *nredis.RedisService)
 }
 
 // Header读取并设置
-func NiexqGinHeaderSet() gin.HandlerFunc {
+func HeaderSetHandlerFunc() gin.HandlerFunc {
+	slog.Debug("Add Middleware HeaderSetHandlerFunc")
 	return func(c *gin.Context) {
 		ginHeaders := c.Request.Header
 		heaerVo := NiexqGinHeaderVo{}
