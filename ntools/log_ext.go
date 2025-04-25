@@ -1,0 +1,176 @@
+package ntools
+
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"io"
+	"log/slog"
+
+	"os"
+	"runtime"
+	"strings"
+	"sync"
+
+	"time"
+
+	"github.com/timandy/routine"
+)
+
+type nwLogHandler struct {
+	Level      slog.Leveler
+	PrintMehod int // 0-不打印 ，1-详情,2-仅方法名称
+	Stdout     bool
+	out        io.Writer
+}
+
+type nwDayLogWriter struct {
+	FileNamePrefix string
+	fileWriter     *bufio.Writer
+	curFile        *os.File
+	curDateStr     string
+}
+
+var syncLock sync.Mutex
+var threadLocal = routine.NewInheritableThreadLocal[string]()
+
+func SlogSetTraceId(traceId string) {
+	threadLocal.Set(traceId)
+}
+
+func SlogGetTraceId() string {
+	return threadLocal.Get()
+}
+
+// printMethod int // 0-不打印 ，1-详情,2-仅方法名称
+func SlogConf(logFilePrefix, confLevel string, stdout bool, printMethod int) {
+	slogLevel := SlogLevelStr2Level(confLevel)
+	logWriter := &nwDayLogWriter{FileNamePrefix: logFilePrefix}
+	slogger := slog.New(SlogHandlerNew(logWriter, slogLevel, stdout, printMethod))
+	slog.SetDefault(slogger)
+	slog.Info(fmt.Sprintf("SLog Level:%v", confLevel))
+}
+
+func SlogLevelStr2Level(confLevel string) slog.Level {
+	confLevel = strings.ToLower(confLevel)
+	var slogLevel slog.Level
+	if confLevel == "debug" {
+		slogLevel = slog.LevelDebug
+	} else if confLevel == "info" {
+		slogLevel = slog.LevelInfo
+	} else if confLevel == "warn" {
+		slogLevel = slog.LevelWarn
+	} else {
+		slogLevel = slog.LevelError
+	}
+	return slogLevel
+}
+
+func SlogHandlerNew(out io.Writer, level slog.Leveler, stdout bool, printMethod int) *nwLogHandler {
+	h := &nwLogHandler{Level: level, out: out, Stdout: stdout, PrintMehod: printMethod}
+	return h
+}
+
+func (h *nwDayLogWriter) Write(p []byte) (n int, err error) {
+	curDateStr := TimeTo20060102(time.Now())
+	if h.curDateStr != curDateStr {
+		//重新初始化fileWriter
+		h.syncLockReInitFile(curDateStr)
+	}
+	n, err = h.fileWriter.Write(p)
+	h.fileWriter.Flush()
+	return n, err
+}
+
+func (h *nwDayLogWriter) syncLockReInitFile(curDateStr string) {
+	syncLock.Lock()
+	defer syncLock.Unlock()
+	if h.curDateStr != curDateStr {
+		//处理同步问题
+		h.curDateStr = curDateStr
+		if h.curFile != nil {
+			h.curFile.Close()
+		}
+		os.Mkdir("logs", 0755)
+
+		flag := os.O_RDWR | os.O_CREATE | os.O_APPEND
+		curFile, err := os.OpenFile(fmt.Sprintf("logs/%s%s.log", h.FileNamePrefix, h.curDateStr), flag, 0755)
+		if err != nil {
+			panic(err)
+		}
+		h.curFile = curFile
+		h.fileWriter = bufio.NewWriter(h.curFile)
+	}
+}
+
+func (h *nwLogHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return level >= h.Level.Level()
+}
+
+func (h *nwLogHandler) WithGroup(name string) slog.Handler {
+	panic("未实现 WithGroup")
+}
+
+func (h *nwLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	panic("未实现 WithAttrs")
+}
+
+func (h *nwLogHandler) Handle(ctx context.Context, r slog.Record) error {
+	sb := strings.Builder{}
+	if !r.Time.IsZero() {
+		sb.WriteString(fmt.Sprintf("%-23s ", Time2StrMilli(r.Time)))
+	}
+	sb.WriteString(fmt.Sprintf("%-5s ", r.Level.String()))
+	traceId := SlogGetTraceId()
+	sb.WriteString(fmt.Sprintf("%s ", If3(len(traceId) > 0, traceId, "traceIdUnSet")))
+
+	callerStr, funcStr := h.caller(r)
+	sb.WriteString(fmt.Sprintf("%s ", callerStr))
+
+	if h.PrintMehod > 0 {
+		sb.WriteString(fmt.Sprintf("%s ", funcStr))
+	}
+
+	sb.WriteString(r.Message + " ")
+
+	r.Attrs(func(a slog.Attr) bool {
+		sb.WriteString(a.String())
+		return true
+	})
+
+	sb.WriteString("\n")
+
+	printData := []byte(sb.String())
+	_, err := h.out.Write(printData)
+	if h.Stdout {
+		os.Stdout.Write(printData)
+	}
+	return err
+}
+
+func (h *nwLogHandler) caller(r slog.Record) (caller, funcStr string) {
+	if r.PC != 0 {
+		fs := runtime.CallersFrames([]uintptr{r.PC})
+		ec, _ := fs.Next()
+		idx := strings.LastIndexByte(ec.File, '/')
+		pathStr := ec.File
+		if idx != -1 {
+			idx = strings.LastIndexByte(ec.File[:idx], '/')
+			if idx != -1 {
+				pathStr = ec.File[idx+1:]
+			}
+		}
+		funcName := ""
+		if h.PrintMehod > 0 {
+			if h.PrintMehod == 1 {
+				funcName = ec.Func.Name()
+			} else {
+				funcName = ec.Func.Name()
+				funcName = funcName[strings.LastIndex(funcName, ".")+1:]
+			}
+		}
+		return fmt.Sprintf("%s:%d", pathStr, int64(ec.Line)), funcName
+	} else {
+		return "unknown:0", "unknown"
+	}
+}
