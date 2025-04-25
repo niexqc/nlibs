@@ -20,7 +20,7 @@ import (
 type nwLogHandler struct {
 	Level      slog.Leveler
 	PrintMehod int // 0-不打印 ，1-详情,2-仅方法名称
-	Stdout     bool
+	OutMode    int // 0-不打印，1-控制台,2-文件,3-都打印
 	out        io.Writer
 }
 
@@ -43,10 +43,11 @@ func SlogGetTraceId() string {
 }
 
 // printMethod int // 0-不打印 ，1-详情,2-仅方法名称
-func SlogConf(logFilePrefix, confLevel string, stdout bool, printMethod int) {
+// outMode 输出模式 // 0-不打印，1-控制台,2-文件,3-都打印
+func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slogLevel := SlogLevelStr2Level(confLevel)
 	logWriter := &nwDayLogWriter{FileNamePrefix: logFilePrefix}
-	slogger := slog.New(SlogHandlerNew(logWriter, slogLevel, stdout, printMethod))
+	slogger := slog.New(SlogHandlerNew(logWriter, slogLevel, outMode, printMethod))
 	slog.SetDefault(slogger)
 	slog.Info(fmt.Sprintf("SLog Level:%v", confLevel))
 }
@@ -66,8 +67,8 @@ func SlogLevelStr2Level(confLevel string) slog.Level {
 	return slogLevel
 }
 
-func SlogHandlerNew(out io.Writer, level slog.Leveler, stdout bool, printMethod int) *nwLogHandler {
-	h := &nwLogHandler{Level: level, out: out, Stdout: stdout, PrintMehod: printMethod}
+func SlogHandlerNew(out io.Writer, level slog.Leveler, outMode int, printMethod int) *nwLogHandler {
+	h := &nwLogHandler{Level: level, out: out, OutMode: outMode, PrintMehod: printMethod}
 	return h
 }
 
@@ -115,7 +116,10 @@ func (h *nwLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	panic("未实现 WithAttrs")
 }
 
-func (h *nwLogHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h *nwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
+	if h.OutMode == 0 {
+		return nil
+	}
 	sb := strings.Builder{}
 	if !r.Time.IsZero() {
 		sb.WriteString(fmt.Sprintf("%-23s ", Time2StrMilli(r.Time)))
@@ -139,11 +143,15 @@ func (h *nwLogHandler) Handle(ctx context.Context, r slog.Record) error {
 	})
 
 	sb.WriteString("\n")
-
 	printData := []byte(sb.String())
-	_, err := h.out.Write(printData)
-	if h.Stdout {
+
+	if h.OutMode == 1 {
 		os.Stdout.Write(printData)
+	} else if h.OutMode == 2 {
+		_, err = h.out.Write(printData)
+	} else {
+		os.Stdout.Write(printData)
+		_, err = h.out.Write(printData)
 	}
 	return err
 }
