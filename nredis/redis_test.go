@@ -51,7 +51,7 @@ func init() {
 
 func TestMutex(t *testing.T) {
 
-	mutex := nredis.NewMutex("lock1", redisService)
+	mutex := nredis.NewMutex("lock111", redisService)
 	if mutex.Lock() {
 		defer mutex.ReleseLock()
 		//执行逻辑
