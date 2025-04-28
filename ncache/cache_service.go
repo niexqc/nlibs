@@ -2,6 +2,7 @@ package ncache
 
 import (
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/niexqc/nlibs/nerror"
@@ -12,6 +13,7 @@ import (
 // NcahceService ...
 type NcahceService struct {
 	Cache *cache.Cache
+	nmu   sync.RWMutex
 }
 
 // 默认永不过期，5分钟淘汰一次的缓存
@@ -24,7 +26,20 @@ func NewNcahceService(cleanupInterval time.Duration) *NcahceService {
 
 // Int64Incr implements INcache.
 func (service *NcahceService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
-	panic("unimplemented")
+	service.nmu.Lock()
+	defer service.nmu.Unlock()
+	val, fund := service.Cache.Get(key)
+	if !fund {
+		err = service.Cache.Add(key, int64(1), time.Duration(expireMillisecond)*time.Second)
+		return int64(1), err
+	} else {
+		if v, cok := val.(int64); cok {
+			newv := v + 1
+			err = service.Cache.Replace(key, newv, time.Duration(expireMillisecond)*time.Second)
+			return newv, err
+		}
+		panic(nerror.NewRunTimeError("自增的值不是int64"))
+	}
 }
 
 // PutStr ...
@@ -53,6 +68,8 @@ func (service *NcahceService) ExistWithoutErr(key string) bool {
 }
 
 func (service *NcahceService) ExpireKey(key string, sencond int) error {
+	service.nmu.Lock()
+	defer service.nmu.Unlock()
 	v, found := service.Cache.Get(key)
 	if !found {
 		return nerror.NewRunTimeError("key not found")
@@ -76,6 +93,8 @@ func (service *NcahceService) ClearByKeyPrefix(keyPrefix string) (int, error) {
 // 设置键值对并指定过期时间（​​原子性操作​​）
 // 无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
 func (service *NcahceService) PutExStr(key string, val string, sencond int) error {
+	service.nmu.Lock()
+	defer service.nmu.Unlock()
 	service.ClearKey(key)
 	return service.Cache.Add(key, val, time.Duration(sencond)*time.Millisecond)
 }
