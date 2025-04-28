@@ -86,6 +86,7 @@ func GetHeaderVoFromCtx(c *gin.Context) *NiexqGinHeaderVo {
 			return ne
 		}
 	}
+
 	return &NiexqGinHeaderVo{}
 }
 
