@@ -11,7 +11,7 @@ type nwNode struct {
 }
 
 func (s *nwNode) GetString(key string) string {
-	val, err := s.Get(key).String()
+	val, err := s.Node.Get(key).String()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetString", err))
 	}
