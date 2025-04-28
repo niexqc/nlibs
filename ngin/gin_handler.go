@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/niexqc/nlibs/ncache"
 	"github.com/niexqc/nlibs/nerror"
-	"github.com/niexqc/nlibs/nredis"
 	"github.com/niexqc/nlibs/ntools"
 
 	"github.com/gin-gonic/gin"
@@ -45,7 +45,7 @@ func RecoveryHandlerFunc() gin.HandlerFunc {
 }
 
 // 日志跟踪ID生成
-func TraceIdGenHandlerFunc(traceIdPrefix string, redisService *nredis.RedisService) gin.HandlerFunc {
+func TraceIdGenHandlerFunc(traceIdPrefix string, redisService *ncache.RedisService) gin.HandlerFunc {
 	slog.Debug("Add Middleware TraceIdGenHandlerFunc")
 	return func(c *gin.Context) {
 		timeStr := time.Now().Format("20060102T150405")

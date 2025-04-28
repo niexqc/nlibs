@@ -1,4 +1,4 @@
-package nredis
+package ncache
 
 import (
 	"errors"
@@ -156,6 +156,6 @@ func scanKeysWithConn(conn redis.Conn, cur int, keyPattner string, lastKeys []st
 func (service *RedisService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
-	resp, err := redis.Int64(ScriptIntIncr.Do(conn, key, expireMillisecond))
+	resp, err := redis.Int64(RdisScriptIntIncr.Do(conn, key, expireMillisecond))
 	return resp, err
 }

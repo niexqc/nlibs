@@ -1,4 +1,4 @@
-package nredis
+package ncache
 
 import "github.com/gomodule/redigo/redis"
 
@@ -18,5 +18,5 @@ end;
 return current
 `
 
-var ScriptDelKv = redis.NewScript(1, s_delkey_value)
-var ScriptIntIncr = redis.NewScript(1, s_int_incr)
+var RdisScriptDelKv = redis.NewScript(1, s_delkey_value)
+var RdisScriptIntIncr = redis.NewScript(1, s_int_incr)

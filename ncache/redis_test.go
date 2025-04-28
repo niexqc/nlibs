@@ -1,4 +1,4 @@
-package nredis_test
+package ncache_test
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/niexqc/nlibs/nredis"
+	"github.com/niexqc/nlibs/ncache"
 )
 
 // RedisPool Redis连接池
 var redisPool *redis.Pool
-var redisService *nredis.RedisService
+var redisService *ncache.RedisService
 
 func init() {
 	redisHost := "8.137.54.220"
@@ -46,12 +46,12 @@ func init() {
 			return conn, nil
 		},
 	}
-	redisService = &nredis.RedisService{RedisPool: redisPool}
+	redisService = &ncache.RedisService{RedisPool: redisPool}
 }
 
 func TestMutex(t *testing.T) {
 
-	mutex := nredis.NewMutex("lock1", redisService)
+	mutex := ncache.RedisNewMutex("lock1", redisService)
 	if mutex.Lock() {
 		defer mutex.ReleseLock()
 		//执行逻辑

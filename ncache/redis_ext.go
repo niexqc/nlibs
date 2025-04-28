@@ -1,4 +1,4 @@
-package nredis
+package ncache
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/niexqc/nlibs/nyaml"
 )
 
-func InitRedisPool(conf *nyaml.YamlConfRedis) *redis.Pool {
+func RedisInitPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 
 	redisIdleTimeout := 100
 	redisMaxidle := 10
@@ -44,6 +44,6 @@ func InitRedisPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 	return redisPool
 }
 
-func GetRedisService(redisPool *redis.Pool) *RedisService {
+func NewRedisService(redisPool *redis.Pool) *RedisService {
 	return &RedisService{RedisPool: redisPool}
 }
