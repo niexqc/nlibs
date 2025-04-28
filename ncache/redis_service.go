@@ -14,7 +14,7 @@ type RedisService struct {
 }
 
 // PutStr ...
-func (service *RedisService) PutStr(key string, val string) error {
+func (service RedisService) PutStr(key string, val string) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	resp, err := redis.String(conn.Do("SET", key, val))
@@ -28,7 +28,7 @@ func (service *RedisService) PutStr(key string, val string) error {
 }
 
 // GetStr ...
-func (service *RedisService) GetStr(key string) (string, error) {
+func (service RedisService) GetStr(key string) (string, error) {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	val, err := redis.String(conn.Do("GET", key))
@@ -39,7 +39,7 @@ func (service *RedisService) GetStr(key string) (string, error) {
 }
 
 // EXISTS ...
-func (service *RedisService) Exist(key string) (bool, error) {
+func (service RedisService) Exist(key string) (bool, error) {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	val, err := redis.Int(conn.Do("EXISTS", key))
@@ -50,14 +50,14 @@ func (service *RedisService) Exist(key string) (bool, error) {
 }
 
 // ExistNoErr ...
-func (service *RedisService) ExistWithoutErr(key string) bool {
+func (service RedisService) ExistWithoutErr(key string) bool {
 	vexist, _ := service.Exist(key)
 	return vexist
 }
 
 // 设置键值对并指定过期时间（​​原子性操作​​）
 // 无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
-func (service *RedisService) PutExStr(key string, val string, sencond int) error {
+func (service RedisService) PutExStr(key string, val string, sencond int) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	resp, err := redis.String(conn.Do("SETEX", key, sencond, val))
@@ -71,7 +71,7 @@ func (service *RedisService) PutExStr(key string, val string, sencond int) error
 }
 
 // 仅在键​​不存在​​时设置键值对（​​原子性操作​​）
-func (service *RedisService) PutNxExStr(key string, val string, sencond int) error {
+func (service RedisService) PutNxExStr(key string, val string, sencond int) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	resp, err := redis.String(conn.Do("SET", key, val, "EX", sencond, "NX"))
@@ -85,7 +85,7 @@ func (service *RedisService) PutNxExStr(key string, val string, sencond int) err
 }
 
 // ExpireKey ...
-func (service *RedisService) ExpireKey(key string, sencond int) error {
+func (service RedisService) ExpireKey(key string, sencond int) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	resp, err := redis.Int64(conn.Do("EXPIRE", key, sencond))
@@ -101,7 +101,7 @@ func (service *RedisService) ExpireKey(key string, sencond int) error {
 }
 
 // ClearKey 清理KEY
-func (service *RedisService) ClearKey(key string) error {
+func (service RedisService) ClearKey(key string) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	_, err := redis.Int(conn.Do("DEL", key))
@@ -109,7 +109,7 @@ func (service *RedisService) ClearKey(key string) error {
 }
 
 // ClearByKeyPrefix 清理指定前缀的KEY
-func (service *RedisService) ClearByKeyPrefix(keyPrefix string) (int, error) {
+func (service RedisService) ClearByKeyPrefix(keyPrefix string) (int, error) {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	keyPattner := fmt.Sprintf("%s*", keyPrefix)
@@ -153,7 +153,7 @@ func scanKeysWithConn(conn redis.Conn, cur int, keyPattner string, lastKeys []st
 }
 
 // 自增
-func (service *RedisService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
+func (service RedisService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	resp, err := redis.Int64(RdisScriptIntIncr.Do(conn, key, expireMillisecond))

@@ -22,7 +22,7 @@ func GetHttpClientExt() *httpClientExt {
 
 var localProxy func(_ *http.Request) (*url.URL, error)
 
-func (e *httpClientExt) SetProxy(httpUrl string) {
+func (e httpClientExt) SetProxy(httpUrl string) {
 	localProxy = func(_ *http.Request) (*url.URL, error) {
 		return url.Parse(httpUrl)
 	}
@@ -30,7 +30,7 @@ func (e *httpClientExt) SetProxy(httpUrl string) {
 
 // GetText 发送GetText请求
 // url：         请求地址
-func (e *httpClientExt) GetText(url string, timeOut time.Duration) (string, error) {
+func (e httpClientExt) GetText(url string, timeOut time.Duration) (string, error) {
 	b, err := e.Get(url, timeOut)
 	if err != nil {
 		return "", err
@@ -40,7 +40,7 @@ func (e *httpClientExt) GetText(url string, timeOut time.Duration) (string, erro
 
 // Get 发送GET请求
 // url：         请求地址
-func (e *httpClientExt) Get(url string, timeOut time.Duration) ([]byte, error) {
+func (e httpClientExt) Get(url string, timeOut time.Duration) ([]byte, error) {
 
 	client := &http.Client{Timeout: timeOut, Transport: &http.Transport{DisableKeepAlives: true, Proxy: localProxy}}
 	resp, err := client.Get(url)
@@ -62,7 +62,7 @@ func (e *httpClientExt) Get(url string, timeOut time.Duration) ([]byte, error) {
 // url：         请求地址
 // data：        POST请求提交的数据
 // contentType： 请求体格式，如：application/json
-func (e *httpClientExt) PostJSON(url string, data interface{}, timeOut time.Duration) (string, error) {
+func (e httpClientExt) PostJSON(url string, data interface{}, timeOut time.Duration) (string, error) {
 	return e.Post(url, data, "application/json", timeOut)
 }
 
@@ -71,7 +71,7 @@ func (e *httpClientExt) PostJSON(url string, data interface{}, timeOut time.Dura
 // data：        POST请求提交的数据
 // contentType： 请求体格式，如：application/json
 // content：     请求放回的内容
-func (e *httpClientExt) Post(url string, data interface{}, contentType string, timeOut time.Duration) (string, error) {
+func (e httpClientExt) Post(url string, data interface{}, contentType string, timeOut time.Duration) (string, error) {
 	// 超时时间：5秒
 	client := &http.Client{Timeout: timeOut, Transport: &http.Transport{DisableKeepAlives: true, Proxy: localProxy}}
 	jsonStr, _ := njson.ToJSONBytes(data)
@@ -91,7 +91,7 @@ func (e *httpClientExt) Post(url string, data interface{}, contentType string, t
 // url：         请求地址
 // data：        POST请求提交的数据
 // content：     请求放回的内容
-func (e *httpClientExt) PostForm(reqUrl string, data url.Values, timeOut time.Duration) (string, error) {
+func (e httpClientExt) PostForm(reqUrl string, data url.Values, timeOut time.Duration) (string, error) {
 	// 超时时间：5秒
 	client := &http.Client{Timeout: timeOut, Transport: &http.Transport{DisableKeepAlives: true, Proxy: localProxy}}
 	resp, err := client.PostForm(reqUrl, data)
@@ -107,7 +107,7 @@ func (e *httpClientExt) PostForm(reqUrl string, data url.Values, timeOut time.Du
 }
 
 // PostFile 发送PostFile，文件请求
-func (e *httpClientExt) PostFile(reqUrl string, fileBytes *[]byte, fileNameParamName, fileName string, extData url.Values, timeOut time.Duration) (string, error) {
+func (e httpClientExt) PostFile(reqUrl string, fileBytes *[]byte, fileNameParamName, fileName string, extData url.Values, timeOut time.Duration) (string, error) {
 	// 超时时间：5秒
 	client := &http.Client{Timeout: timeOut, Transport: &http.Transport{DisableKeepAlives: true}}
 

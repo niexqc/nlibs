@@ -22,12 +22,12 @@ type NDbWrapper struct {
 	conf   *nyaml.YamlConfDb
 }
 
-func (db *NDbWrapper) SelectList(dest any, sqlStr string, args ...any) error {
+func (db NDbWrapper) SelectList(dest any, sqlStr string, args ...any) error {
 	defer db.PrintSql(time.Now(), sqlStr, args...)
 	return db.sqlxDb.Select(dest, sqlStr, args...)
 }
 
-func (db *NDbWrapper) PrintSql(start time.Time, sqlStr string, args ...any) {
+func (db NDbWrapper) PrintSql(start time.Time, sqlStr string, args ...any) {
 	if !db.conf.DbSqlLogPrint {
 		return
 	}

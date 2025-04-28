@@ -28,7 +28,7 @@ type RedisMutex struct {
 }
 
 // Lock ...
-func (m *RedisMutex) Lock() bool {
+func (m RedisMutex) Lock() bool {
 	err := m.redisService.PutNxExStr(m.name, m.value, int(m.expiry.Seconds()))
 	if nil != err {
 		if netError := err.(net.Error); netError != nil {
@@ -47,7 +47,7 @@ func (m *RedisMutex) Lock() bool {
 }
 
 // ReleseLock ...
-func (m *RedisMutex) ReleseLock() bool {
+func (m RedisMutex) ReleseLock() bool {
 	conn := m.redisService.RedisPool.Get()
 	defer conn.Close()
 	_, err := redis.Int(RdisScriptDelKv.Do(conn, m.name, m.value))

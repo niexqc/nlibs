@@ -20,35 +20,35 @@ func GetFileDirExt() *fileDirExt {
 }
 
 // JoinPath 拼接路径
-func (fde *fileDirExt) JoinPath(items ...string) string {
+func (fde fileDirExt) JoinPath(items ...string) string {
 	return path.Join(items...)
 }
 
 // PathDir 获取文件的目录
-func (fde *fileDirExt) PathDir(filePath string) string {
+func (fde fileDirExt) PathDir(filePath string) string {
 	return strings.TrimSuffix(filePath, path.Base(filePath))
 }
 
 // PathFileSuffix 获取文件后缀名
-func (fde *fileDirExt) PathFileSuffix(filePath string) string {
+func (fde fileDirExt) PathFileSuffix(filePath string) string {
 	return path.Ext(filePath)
 }
 
 // PathFileName 获取文件名字不包含后缀
-func (fde *fileDirExt) PathFileName(filePath string) string {
+func (fde fileDirExt) PathFileName(filePath string) string {
 	return strings.TrimSuffix(fde.PathFileNameWithSuffix(filePath),
 		fde.PathFileSuffix(filePath))
 }
 
 // PathFileNameWithSuffix 获取文件名字包含后缀
-func (fde *fileDirExt) PathFileNameWithSuffix(filePath string) string {
+func (fde fileDirExt) PathFileNameWithSuffix(filePath string) string {
 	return path.Base(filePath)
 }
 
 // CheckFileIsExist 判断文件是否存在
 //
 //	Return  存在返回 true 不存在返回false
-func (fde *fileDirExt) CheckFileIsExist(filename string) bool {
+func (fde fileDirExt) CheckFileIsExist(filename string) bool {
 	var exist = true
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		exist = false
@@ -59,7 +59,7 @@ func (fde *fileDirExt) CheckFileIsExist(filename string) bool {
 // WriteFileContent 写入文件内容，目录|文件不存在则创建目录|文件
 //
 //	Return  存在返回 true 不存在返回false
-func (fde *fileDirExt) WriteFileContent(filename string, content string, append bool) (bool, error) {
+func (fde fileDirExt) WriteFileContent(filename string, content string, append bool) (bool, error) {
 	return fde.WriteFileByWriterFun(filename, func(outputWriter *bufio.Writer) {
 		outputWriter.WriteString(content)
 	}, append)
@@ -68,7 +68,7 @@ func (fde *fileDirExt) WriteFileContent(filename string, content string, append 
 // WriteFile 写入文件内容，目录|文件不存在则创建目录|文件
 //
 //	Return  存在返回 true 不存在返回false
-func (fde *fileDirExt) WriteFile(filename string, content *[]byte, append bool) (bool, error) {
+func (fde fileDirExt) WriteFile(filename string, content *[]byte, append bool) (bool, error) {
 	return fde.WriteFileByWriterFun(filename, func(outputWriter *bufio.Writer) {
 		outputWriter.Write(*content)
 	}, append)
@@ -77,7 +77,7 @@ func (fde *fileDirExt) WriteFile(filename string, content *[]byte, append bool) 
 // WriteFileByWriterFun 写入文件内容，目录|文件不存在则创建目录|文件
 //
 //	Return  存在返回 true 不存在返回false
-func (fde *fileDirExt) WriteFileByWriterFun(filename string, writeFun func(*bufio.Writer), append bool) (bool, error) {
+func (fde fileDirExt) WriteFileByWriterFun(filename string, writeFun func(*bufio.Writer), append bool) (bool, error) {
 	dir := filepath.Dir(filename)
 	if !fde.CheckFileIsExist(dir) {
 		os.MkdirAll(dir, os.ModePerm)
@@ -105,7 +105,7 @@ func (fde *fileDirExt) WriteFileByWriterFun(filename string, writeFun func(*bufi
 }
 
 // ReadFileByte 读取文本文件内容
-func (fde *fileDirExt) ReadFileByte(filename string) ([]byte, error) {
+func (fde fileDirExt) ReadFileByte(filename string) ([]byte, error) {
 	if !fde.CheckFileIsExist(filename) {
 		return nil, errors.New("文件不存在")
 	}
@@ -118,7 +118,7 @@ func (fde *fileDirExt) ReadFileByte(filename string) ([]byte, error) {
 }
 
 // ReadFileContent 读取文本文件内容
-func (fde *fileDirExt) ReadFileContent(filename string) (string, error) {
+func (fde fileDirExt) ReadFileContent(filename string) (string, error) {
 	data, err := fde.ReadFileByte(filename)
 	if nil != err {
 		return "", err
@@ -129,7 +129,7 @@ func (fde *fileDirExt) ReadFileContent(filename string) (string, error) {
 // TraverseDir 递归文件夹获取到所有文件名称
 //
 //	dirPth 目录
-func (fde *fileDirExt) TraverseDir(dirPth string, fileList *list.List) error {
+func (fde fileDirExt) TraverseDir(dirPth string, fileList *list.List) error {
 	dir, err := os.ReadDir(dirPth)
 	if err != nil {
 		return err
@@ -148,7 +148,7 @@ func (fde *fileDirExt) TraverseDir(dirPth string, fileList *list.List) error {
 // TraverseDirBySlice 递归文件夹获取到所有文件名称
 //
 //	dirPth 目录
-func (fde *fileDirExt) TraverseDirBySlice(dirPth string) ([]string, error) {
+func (fde fileDirExt) TraverseDirBySlice(dirPth string) ([]string, error) {
 	dir, err := os.ReadDir(dirPth)
 	if err != nil {
 		return nil, err
