@@ -96,7 +96,8 @@ func (service *NcahceService) PutExStr(key string, val string, sencond int) erro
 	service.nmu.Lock()
 	defer service.nmu.Unlock()
 	service.ClearKey(key)
-	return service.Cache.Add(key, val, time.Duration(sencond)*time.Millisecond)
+	err := service.Cache.Add(key, val, time.Duration(sencond)*time.Millisecond)
+	return err
 }
 
 // ClearKey 清理KEY
