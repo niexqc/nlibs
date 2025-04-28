@@ -39,3 +39,9 @@ func (service *NcahceService) GetStr(key string) (string, error) {
 	}
 	return "", nerror.NewRunTimeError("缓存不存在")
 }
+
+// ExistWithoutErr ...
+func (service *NcahceService) ExistWithoutErr(key string) bool {
+	_, ok := service.Cache.Get(key)
+	return ok
+}
