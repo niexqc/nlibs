@@ -20,7 +20,7 @@ func (ns NullString) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ns.String)
 }
 
-func (ns NullString) UnmarshalJSON(data []byte) error {
+func (ns *NullString) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		ns.Valid = false
 		return nil
@@ -40,7 +40,7 @@ func (nt NullTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(ntools.Time2Str(nt.Time))
 }
 
-func (nt NullTime) UnmarshalJSON(data []byte) error {
+func (nt *NullTime) UnmarshalJSON(data []byte) error {
 	if string(data) == "null" {
 		nt.Valid = false
 		return nil

@@ -22,14 +22,19 @@ func NewNcahceService(cleanupInterval time.Duration) *NcahceService {
 	}
 }
 
+// Int64Incr implements INcache.
+func (service *NcahceService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
+	panic("unimplemented")
+}
+
 // PutStr ...
-func (service NcahceService) PutStr(key string, val string) error {
+func (service *NcahceService) PutStr(key string, val string) error {
 	service.Cache.SetDefault(key, val)
 	return nil
 }
 
 // GetStr ...
-func (service NcahceService) GetStr(key string) (string, error) {
+func (service *NcahceService) GetStr(key string) (string, error) {
 	val, ok := service.Cache.Get(key)
 	if ok {
 		if str, cok := val.(string); cok {
@@ -42,12 +47,12 @@ func (service NcahceService) GetStr(key string) (string, error) {
 }
 
 // ExistWithoutErr ...
-func (service NcahceService) ExistWithoutErr(key string) bool {
+func (service *NcahceService) ExistWithoutErr(key string) bool {
 	_, ok := service.Cache.Get(key)
 	return ok
 }
 
-func (service NcahceService) ExpireKey(key string, sencond int) error {
+func (service *NcahceService) ExpireKey(key string, sencond int) error {
 	v, found := service.Cache.Get(key)
 	if !found {
 		return nerror.NewRunTimeError("key not found")
@@ -56,7 +61,7 @@ func (service NcahceService) ExpireKey(key string, sencond int) error {
 }
 
 // ClearByKeyPrefix 清理指定前缀的KEY
-func (service NcahceService) ClearByKeyPrefix(keyPrefix string) (int, error) {
+func (service *NcahceService) ClearByKeyPrefix(keyPrefix string) (int, error) {
 	maps := service.Cache.Items()
 	count := 0
 	for k, _ := range maps {
@@ -70,13 +75,13 @@ func (service NcahceService) ClearByKeyPrefix(keyPrefix string) (int, error) {
 
 // 设置键值对并指定过期时间（​​原子性操作​​）
 // 无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
-func (service NcahceService) PutExStr(key string, val string, sencond int) error {
+func (service *NcahceService) PutExStr(key string, val string, sencond int) error {
 	service.ClearKey(key)
 	return service.Cache.Add(key, val, time.Duration(sencond)*time.Millisecond)
 }
 
 // ClearKey 清理KEY
-func (service NcahceService) ClearKey(key string) error {
+func (service *NcahceService) ClearKey(key string) error {
 	service.Cache.Delete(key)
 	return nil
 }

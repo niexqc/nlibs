@@ -19,7 +19,7 @@ type NiexqValidErr struct {
 }
 
 // Error 实现Error接口
-func (e NiexqValidErr) Error() string {
+func (e *NiexqValidErr) Error() string {
 	errTxt := ""
 	if len(e.ErrDescList) > 0 {
 		for i, v := range e.ErrDescList {

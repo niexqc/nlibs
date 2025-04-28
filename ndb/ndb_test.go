@@ -1,10 +1,12 @@
 package ndb_test
 
 import (
+	"log/slog"
 	"testing"
 	"time"
 
 	"github.com/niexqc/nlibs/ndb"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -26,6 +28,28 @@ func init() {
 	}
 	IDbWrapper = ndb.InitMysqlConnPool(dbconf)
 
+}
+
+type UserDto struct {
+	UserId     int64          `json:"userId" db:"user_id"`
+	UserAcc    ndb.NullString `json:"userAcc" db:"user_acc"`
+	UserPwd    ndb.NullString `json:"userPwd" db:"user_pwd"`
+	UserName   ndb.NullString `json:"userName" db:"user_name"`
+	UserRemark ndb.NullString `json:"userRemark" db:"user_remark"`
+	CreateTime ndb.NullTime   `json:"createTime" db:"create_time"`
+}
+
+func TestDbSelect(t *testing.T) {
+	sqlStr := `
+	SELECT user_id,user_acc,user_pwd,user_name,user_remark,create_time 
+	 FROM jsc_user 	 WHERE user_acc=?
+	`
+	var users []UserDto
+	err := IDbWrapper.SelectList(&users, sqlStr, "niexq")
+	if err != nil {
+		panic(err)
+	}
+	slog.Info(njson.SonicObj2Str(users))
 }
 
 func TestUserService(t *testing.T) {
