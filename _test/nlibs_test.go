@@ -10,4 +10,5 @@ import (
 func TestErrorExt(t *testing.T) {
 	err := nerror.NewRunTimeError("this is run time error")
 	slog.Info(nerror.GenErrDetail(err))
+
 }
