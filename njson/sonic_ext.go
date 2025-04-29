@@ -94,15 +94,15 @@ func SonicStr2Obj(str *string, t any) {
 	}
 }
 
-func SonicStr2nwNode(str string) nwNode {
+func SonicStr2nwNode(str string) *nwNode {
 	root, err := sonic.GetFromString(str)
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("SonicStr2nwNode失败", err))
 	}
-	return nwNode{&root}
+	return &nwNode{&root}
 }
 
-func SonicMap2nwNode(data map[string]any) nwNode {
+func SonicMap2nwNode(data map[string]any) *nwNode {
 	return SonicStr2nwNode(SonicObj2Str(data))
 }
 
