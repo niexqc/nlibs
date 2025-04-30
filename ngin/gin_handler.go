@@ -1,7 +1,9 @@
 package ngin
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -25,14 +27,31 @@ func LoggerHandlerFunc() gin.HandlerFunc {
 	slog.Debug("Add Middleware LoggerHandlerFunc")
 	return func(c *gin.Context) {
 		start := time.Now()
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
+		costTime := int64(-1)
+		defer nGinPrintReqLog(c, &costTime)
 		c.Next()
-		cost := time.Since(start).Milliseconds()
-		agentStr := (&ntools.NString{S: c.Request.UserAgent()}).CutString(32)
-		logStr := fmt.Sprintf("%s\t%s\t%d\t%s\t%dms\t%s\t%s", path, c.Request.Method, c.Writer.Status(), c.ClientIP(), cost, query, agentStr)
-		slog.Info(logStr)
+		costTime = time.Since(start).Milliseconds()
 	}
+}
+
+func nGinPrintReqLog(c *gin.Context, costTime *int64) {
+	headerVo := GetHeaderVoFromCtx(c)
+	visitTar := headerVo.VisitTar
+	agentStr := (&ntools.NString{S: c.Request.UserAgent()}).CutString(32)
+	contentType := headerVo.ContentType
+
+	visitSrc := ntools.If3(headerVo.VisitSrc == "", "No_VisitSrc", headerVo.VisitSrc)
+	logStr := fmt.Sprintf("%s\t%s\t%s\t%d\t%s\t%dms\t%s", visitTar, c.Request.Method, visitSrc, c.Writer.Status(), c.ClientIP(), *costTime, ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
+	slog.Info(logStr)
+	// 打印原始请求参数
+	reqBodyStr := ""
+	if strings.ContainsAny(contentType, "json") || strings.ContainsAny(contentType, "text") || strings.ContainsAny(contentType, "xml") {
+		reqBodyStr = string(*headerVo.ReqBody)
+	} else {
+		reqBodyStr = "Nil_ParseBody"
+	}
+	rawQuery := ntools.If3(c.Request.URL.RawQuery == "", "Nil_NoRawQuery", c.Request.URL.RawQuery)
+	slog.Info(fmt.Sprintf("%s\t%s\t%s", contentType, rawQuery, reqBodyStr))
 }
 
 // Recovery recover掉项目可能出现的panic
@@ -63,18 +82,37 @@ func TraceIdGenHandlerFunc(traceIdPrefix string, incahce ncache.INcache) gin.Han
 // Header读取并设置
 func HeaderSetHandlerFunc() gin.HandlerFunc {
 	slog.Debug("Add Middleware HeaderSetHandlerFunc")
+
+	readAndResetBody := func(c *gin.Context) *[]byte {
+		// 1. 读取原始 Body 内容
+		body, err := c.GetRawData()
+		if err != nil {
+			c.AbortWithError(http.StatusBadRequest, err)
+			return &body
+		}
+		// 2. 重写 GetBody 方法（关键！）
+		c.Request.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewBuffer(body)), nil
+		}
+		// 3. 重置 Body 供后续使用
+		c.Request.Body, _ = c.Request.GetBody()
+		return &body
+	}
+
 	return func(c *gin.Context) {
+		readAndResetBody(c)
 		ginHeaders := c.Request.Header
 		heaerVo := NiexqGinHeaderVo{}
+		heaerVo.ReqBody = readAndResetBody(c)
 		heaerVo.UserAgent = ginHeaders.Get("user-agent")
 		heaerVo.ContentType = ginHeaders.Get("content-type")
 		heaerVo.UserToken = ginHeaders.Get("user-token")
 		heaerVo.AppType = ginHeaders.Get("app-type")
 		heaerVo.AppVer = ginHeaders.Get("app-ver")
 		heaerVo.ClientTime = ginHeaders.Get("client-time")
-		heaerVo.VistSrc = ginHeaders.Get("vist-src")
+		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
 		heaerVo.UserIp = c.ClientIP()
-		heaerVo.VistTar = c.Request.RequestURI
+		heaerVo.VisitTar = c.Request.RequestURI
 		c.Set(reflect.TypeOf(heaerVo).Name(), &heaerVo)
 		c.Next()
 	}

@@ -64,10 +64,11 @@ type NiexqGinHeaderVo struct {
 	AppVer  string `json:"clientVer" zhdesc:"客户端版本" `
 
 	ClientTime string `json:"clientTime" zhdesc:"客户端时间" `
-	VistSrc    string `json:"vistSrc" zhdesc:"请求发起的源" `
+	VisitSrc   string `json:"visitSrc" zhdesc:"请求发起的源" `
 
-	VistTar string `json:"vistTar" zhdesc:"请求访问的目标" `
-	UserIp  string `json:"clientIp" zhdesc:"客户端Ip" `
+	VisitTar string  `json:"VisitTar" zhdesc:"请求访问的目标" `
+	UserIp   string  `json:"clientIp" zhdesc:"客户端Ip" `
+	ReqBody  *[]byte `json:"reqBody" zhdesc:"请求原始的Body" `
 }
 
 func emptyObj() *BaseResp {
