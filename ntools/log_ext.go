@@ -17,7 +17,7 @@ import (
 	"github.com/timandy/routine"
 )
 
-type nwLogHandler struct {
+type NwLogHandler struct {
 	Level      slog.Leveler
 	PrintMehod int // 0-不打印 ，1-详情,2-仅方法名称
 	OutMode    int // 0-不打印,1-控制台,2-文件,3-都打印
@@ -47,7 +47,8 @@ func SlogGetTraceId() string {
 func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slogLevel := SlogLevelStr2Level(confLevel)
 	logWriter := &nwDayLogWriter{FileNamePrefix: logFilePrefix}
-	slogger := slog.New(SlogHandlerNew(logWriter, slogLevel, outMode, printMethod))
+	nwLogHandler := NewNwLogHandlerForSlog(logWriter, slogLevel, outMode, printMethod)
+	slogger := slog.New(nwLogHandler)
 	slog.SetDefault(slogger)
 	slog.Info(fmt.Sprintf("SLog Level:%v", confLevel))
 }
@@ -67,8 +68,8 @@ func SlogLevelStr2Level(confLevel string) slog.Level {
 	return slogLevel
 }
 
-func SlogHandlerNew(out io.Writer, level slog.Leveler, outMode int, printMethod int) *nwLogHandler {
-	h := &nwLogHandler{Level: level, out: out, OutMode: outMode, PrintMehod: printMethod}
+func NewNwLogHandlerForSlog(out io.Writer, level slog.Leveler, outMode int, printMethod int) *NwLogHandler {
+	h := &NwLogHandler{Level: level, out: out, OutMode: outMode, PrintMehod: printMethod}
 	return h
 }
 
@@ -104,19 +105,19 @@ func (h *nwDayLogWriter) syncLockReInitFile(curDateStr string) {
 	}
 }
 
-func (h *nwLogHandler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *NwLogHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return level >= h.Level.Level()
 }
 
-func (h *nwLogHandler) WithGroup(name string) slog.Handler {
+func (h *NwLogHandler) WithGroup(name string) slog.Handler {
 	panic("未实现 WithGroup")
 }
 
-func (h *nwLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+func (h *NwLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	panic("未实现 WithAttrs")
 }
 
-func (h *nwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
+func (h *NwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 	if h.OutMode == 0 {
 		return nil
 	}
@@ -156,7 +157,7 @@ func (h *nwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 	return err
 }
 
-func (h *nwLogHandler) caller(r slog.Record) (caller, funcStr string) {
+func (h *NwLogHandler) caller(r slog.Record) (caller, funcStr string) {
 	if r.PC != 0 {
 		fs := runtime.CallersFrames([]uintptr{r.PC})
 		ec, _ := fs.Next()
