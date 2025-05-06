@@ -41,7 +41,7 @@ func nGinPrintReqLog(c *gin.Context, costTime *int64) {
 	contentType := headerVo.ContentType
 
 	visitSrc := ntools.If3(headerVo.VisitSrc == "", "No_VisitSrc", headerVo.VisitSrc)
-	logStr := fmt.Sprintf("%s\t%s\t%s\t%d\t%s\t%dms\t%s", visitTar, c.Request.Method, visitSrc, c.Writer.Status(), c.ClientIP(), *costTime, ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
+	logStr := fmt.Sprintf("%s\t%s\t%s\t%s\t%d\t%dms\t%s", visitTar, c.Request.Method, visitSrc, c.ClientIP(), c.Writer.Status(), *costTime, ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
 	slog.Info(logStr)
 	// 打印原始请求参数
 	reqBodyStr := ""
