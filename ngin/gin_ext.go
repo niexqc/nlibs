@@ -15,7 +15,6 @@ type NGin struct {
 }
 
 func NewNGin() *NGin {
-	slog.Debug("CreateGinEngine...")
 	gin.SetMode(gin.ReleaseMode)
 	return &NGin{GinEngine: gin.New()}
 }
