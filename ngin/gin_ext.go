@@ -20,6 +20,27 @@ func NewNGin() *NGin {
 	return &NGin{GinEngine: gin.New()}
 }
 
+func (nGin *NGin) Use(middleware ...gin.HandlerFunc) gin.IRoutes {
+	return nGin.GinEngine.Use(middleware...)
+}
+
+func (nGin *NGin) Static(relativePath, root string) gin.IRoutes {
+	return nGin.GinEngine.StaticFS(relativePath, gin.Dir(root, false))
+}
+
+func (nGin *NGin) GET(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return nGin.GinEngine.GET(relativePath, handlers...)
+}
+
+func (nGin *NGin) POST(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return nGin.GinEngine.POST(relativePath, handlers...)
+}
+
+func (nGin *NGin) Run(addr string) (err error) {
+	slog.Info(addr)
+	return nGin.GinEngine.Run(addr)
+}
+
 func (nGin *NGin) RouterRedirect(redirectPath string, ctx *gin.Context) {
 	ctx.Request.URL.Path = redirectPath
 	nGin.GinEngine.HandleContext(ctx)
