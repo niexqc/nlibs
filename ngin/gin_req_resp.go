@@ -102,3 +102,12 @@ func NewNoBaseResp(code int, msg string) *BaseResp {
 	instance.Msg = msg
 	return instance
 }
+
+// NewNoBaseResp ...
+func VoIfErr(vo any, err error) *BaseResp {
+	if nil != err {
+		return NewErrBaseResp(err.Error())
+	} else {
+		return NewOkBaseResp(vo)
+	}
+}

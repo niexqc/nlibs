@@ -10,16 +10,19 @@ import (
 	"github.com/niexqc/nlibs/nerror"
 )
 
-func CreateGinEngine() *gin.Engine {
-	slog.Debug("CreateGinEngine...")
-	gin.SetMode(gin.ReleaseMode)
-	ginEngine := gin.New()
-	return ginEngine
+type NGin struct {
+	GinEngine *gin.Engine
 }
 
-func RouterRedirect(redirectPath string, en *gin.Engine, ctx *gin.Context) {
+func NewNGin() *NGin {
+	slog.Debug("CreateGinEngine...")
+	gin.SetMode(gin.ReleaseMode)
+	return &NGin{GinEngine: gin.New()}
+}
+
+func (nGin *NGin) RouterRedirect(redirectPath string, ctx *gin.Context) {
 	ctx.Request.URL.Path = redirectPath
-	en.HandleContext(ctx)
+	nGin.GinEngine.HandleContext(ctx)
 }
 
 func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context) *T {
@@ -61,8 +64,8 @@ func ReadHeader(ctx *gin.Context) *NiexqGinHeaderVo {
 	return obj
 }
 
-func LogPrintAllRouterInfo(e *gin.Engine) {
-	routers := e.Routes()
+func (nGin *NGin) LogPrintAllRouterInfo() {
+	routers := nGin.GinEngine.Routes()
 	routersInfo := ""
 	for _, v := range routers {
 		routersInfo += "\n" + fmt.Sprintf("%s %s %s", v.Method, v.Path, v.Handler)
