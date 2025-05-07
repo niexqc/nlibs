@@ -40,6 +40,21 @@ func (service *MemCacheService) PutStr(key string, val string) error {
 	return nil
 }
 
+// 设置键值对并指定过期时间（​​原子性操作​​）
+// 无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
+func (service *MemCacheService) PutExStr(key string, val string, sencond int) error {
+	service.nmu.Lock()
+	defer service.nmu.Unlock()
+	service.ClearKey(key)
+	err := service.Cache.Add(key, val, time.Duration(sencond)*time.Second)
+	return err
+}
+
+// 仅在【key​不存在】​​时成功（​​原子性操作​​）
+func (service *MemCacheService) PutNxExStr(key string, val string, sencond int) error {
+	panic("未实现PutNxExStr")
+}
+
 // GetStr ...
 func (service *MemCacheService) GetStr(key string) (string, error) {
 	val, ok := service.Cache.Get(key)
@@ -57,6 +72,12 @@ func (service *MemCacheService) GetStr(key string) (string, error) {
 func (service *MemCacheService) ExistWithoutErr(key string) bool {
 	_, ok := service.Cache.Get(key)
 	return ok
+}
+
+// 是否存在某个key
+func (service *MemCacheService) Exist(key string) (bool, error) {
+	_, ok := service.Cache.Get(key)
+	return ok, nil
 }
 
 func (service *MemCacheService) KeySetExpire(key string, sencond int) error {
@@ -82,18 +103,12 @@ func (service *MemCacheService) ClearByKeyPrefix(keyPrefix string) (int, error) 
 	return count, nil
 }
 
-// 设置键值对并指定过期时间（​​原子性操作​​）
-// 无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
-func (service *MemCacheService) PutExStr(key string, val string, sencond int) error {
-	service.nmu.Lock()
-	defer service.nmu.Unlock()
-	service.ClearKey(key)
-	err := service.Cache.Add(key, val, time.Duration(sencond)*time.Second)
-	return err
-}
-
 // ClearKey 清理KEY
 func (service *MemCacheService) ClearKey(key string) error {
 	service.Cache.Delete(key)
 	return nil
+}
+
+func (service *MemCacheService) LockRun(key, value string, expiry int, tries, delay int, lockFun func() any) (result any, err error) {
+	panic("未实现 LockRun")
 }
