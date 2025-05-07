@@ -1,4 +1,4 @@
-package ncache
+package rediscache
 
 import (
 	"errors"
@@ -13,6 +13,25 @@ type RedisService struct {
 	RedisPool *redis.Pool
 }
 
+// Int64自增
+func (service *RedisService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
+	conn := service.RedisPool.Get()
+	defer conn.Close()
+	resp, err := redis.Int64(RdisScriptIntIncr.Do(conn, key, expireMillisecond))
+	return resp, err
+}
+
+// GetStr ...
+func (service *RedisService) GetStr(key string) (string, error) {
+	conn := service.RedisPool.Get()
+	defer conn.Close()
+	val, err := redis.String(conn.Do("GET", key))
+	if err != nil {
+		return "", err
+	}
+	return val, nil
+}
+
 // PutStr ...
 func (service *RedisService) PutStr(key string, val string) error {
 	conn := service.RedisPool.Get()
@@ -25,17 +44,6 @@ func (service *RedisService) PutStr(key string, val string) error {
 		return errors.New("未返回OK")
 	}
 	return nil
-}
-
-// GetStr ...
-func (service *RedisService) GetStr(key string) (string, error) {
-	conn := service.RedisPool.Get()
-	defer conn.Close()
-	val, err := redis.String(conn.Do("GET", key))
-	if err != nil {
-		return "", err
-	}
-	return val, nil
 }
 
 // EXISTS ...
@@ -55,8 +63,7 @@ func (service *RedisService) ExistWithoutErr(key string) bool {
 	return vexist
 }
 
-// 设置键值对并指定过期时间（​​原子性操作​​）
-// 无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
+// 设置键值对并指定过期时间（​​原子性操作​​）,无论键是否存在，都会​​覆盖旧值​​并设置新的过期时间
 func (service *RedisService) PutExStr(key string, val string, sencond int) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
@@ -84,8 +91,8 @@ func (service *RedisService) PutNxExStr(key string, val string, sencond int) err
 	return nil
 }
 
-// ExpireKey ...
-func (service *RedisService) ExpireKey(key string, sencond int) error {
+// KeySetExpire ...
+func (service *RedisService) KeySetExpire(key string, sencond int) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	resp, err := redis.Int64(conn.Do("EXPIRE", key, sencond))
@@ -129,6 +136,7 @@ func (service *RedisService) ClearByKeyPrefix(keyPrefix string) (int, error) {
 	return 0, nil
 }
 
+// ...
 func scanKeysWithConn(conn redis.Conn, cur int, keyPattner string, lastKeys []string, maxLen int) ([]string, error) {
 	reply, err := conn.Do("SCAN", cur, "MATCH", keyPattner, "COUNT", maxLen)
 	if nil == err {
@@ -150,12 +158,4 @@ func scanKeysWithConn(conn redis.Conn, cur int, keyPattner string, lastKeys []st
 		return keys, nil
 	}
 	return nil, err
-}
-
-// 自增
-func (service *RedisService) Int64Incr(key string, expireMillisecond int64) (num int64, err error) {
-	conn := service.RedisPool.Get()
-	defer conn.Close()
-	resp, err := redis.Int64(RdisScriptIntIncr.Do(conn, key, expireMillisecond))
-	return resp, err
 }

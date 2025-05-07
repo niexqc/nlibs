@@ -1,4 +1,4 @@
-package ncache
+package rediscache
 
 import "github.com/gomodule/redigo/redis"
 

@@ -6,10 +6,19 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	memcache "github.com/niexqc/nlibs/ncache/mem_cache"
+	rediscache "github.com/niexqc/nlibs/ncache/redis_cache"
 	"github.com/niexqc/nlibs/nyaml"
+	"github.com/patrickmn/go-cache"
 )
 
-func RedisInitPool(conf *nyaml.YamlConfRedis) *redis.Pool {
+// 创建RedisService
+func NewRedisService(redisPool *redis.Pool) *rediscache.RedisService {
+	return &rediscache.RedisService{RedisPool: redisPool}
+}
+
+// 创建Redis连接池
+func NewRedisPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 
 	redisIdleTimeout := 100
 	redisMaxidle := 10
@@ -44,6 +53,11 @@ func RedisInitPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 	return redisPool
 }
 
-func NewRedisService(redisPool *redis.Pool) *RedisService {
-	return &RedisService{RedisPool: redisPool}
+// 创建MemCacheService
+// 默认永不过期，5分钟淘汰一次的缓存
+// cleanupInterval  5*time.Minute
+func NewNcahceService(cleanupInterval time.Duration) *memcache.MemCacheService {
+	return &memcache.MemCacheService{
+		Cache: cache.New(0, cleanupInterval),
+	}
 }

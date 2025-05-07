@@ -1,4 +1,4 @@
-package ncache_test
+package rediscache_test
 
 import (
 	"fmt"
@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/niexqc/nlibs/ncache"
+	rediscache "github.com/niexqc/nlibs/ncache/redis_cache"
 )
 
 // RedisPool Redis连接池
 var redisPool *redis.Pool
-var redisService *ncache.RedisService
+var redisService *rediscache.RedisService
 
 func init() {
 	redisHost := "8.137.54.220"
@@ -46,12 +46,12 @@ func init() {
 			return conn, nil
 		},
 	}
-	redisService = &ncache.RedisService{RedisPool: redisPool}
+	redisService = &rediscache.RedisService{RedisPool: redisPool}
 }
 
 func TestMutex(t *testing.T) {
 
-	mutex := ncache.RedisNewMutex("lock1", redisService)
+	mutex := rediscache.RedisNewMutex("lock1", redisService)
 	if mutex.Lock() {
 		defer mutex.ReleseLock()
 		//执行逻辑
@@ -105,7 +105,7 @@ func TestExist(t *testing.T) {
 }
 
 func TestExpireKey(t *testing.T) {
-	err := redisService.ExpireKey("s1", 1000)
+	err := redisService.KeySetExpire("s1", 1000)
 	if nil != err {
 		fmt.Println(err.Error())
 	} else {

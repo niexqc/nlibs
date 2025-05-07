@@ -1,4 +1,4 @@
-package ncache
+package rediscache
 
 import (
 	"fmt"
