@@ -81,6 +81,17 @@ func TestIDbWrapper(t *testing.T) {
 	d, _ := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01 WHERE id=1")
 	println(njson.SonicObj2Str(d))
 	// IDbWrapper.GenDoByTable("niexq01", "nba_user")
+	if _, err := IDbWrapper.SelectNwNode("SELECT * FROM test01"); nil != err {
+		println(err.Error())
+	}
+	nwnode, _ := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=1")
+	println(nwnode.ToString())
+
+	if _, err := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=0"); nil != err {
+		println(err.Error())
+	}
+	nodeList, _ := IDbWrapper.SelectNwNodeList("SELECT * FROM test01")
+	println(njson.SonicObj2Str(nodeList))
 }
 
 // 表名 `niexq01`.test01

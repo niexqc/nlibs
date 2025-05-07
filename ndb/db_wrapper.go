@@ -11,6 +11,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/niexqc/nlibs/nerror"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -37,6 +38,49 @@ func SelectOne[T any](ndbw *NDbWrapper, sqlStr string, args ...any) (t *T, err e
 		return nil, nerror.NewRunTimeError("查询结果包含多个值")
 	}
 	return &(*dest)[0], nil
+}
+
+func (ndbw *NDbWrapper) SelectNwNode(sqlStr string, args ...any) (nwNode *njson.NwNode, err error) {
+	defer ndbw.PrintSql(time.Now(), sqlStr, args...)
+	rows, err := ndbw.sqlxDb.Queryx(sqlStr, args...)
+	if nil != err {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		row := map[string]any{}
+		err := rows.MapScan(row)
+		if nil != err {
+			return nil, err
+		}
+		nwNode = njson.SonicMap2NwNode(row)
+		if rows.Next() {
+			return nil, nerror.NewRunTimeError("查询结果中包含多个值")
+		}
+		return nwNode, err
+	} else {
+		return nil, nerror.NewRunTimeError("未查询到结果")
+	}
+}
+
+func (ndbw *NDbWrapper) SelectNwNodeList(sqlStr string, args ...any) (nodeList []*njson.NwNode, err error) {
+	defer ndbw.PrintSql(time.Now(), sqlStr, args...)
+	rows, err := ndbw.sqlxDb.Queryx(sqlStr, args...)
+	if nil != err {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		row := map[string]any{}
+		err := rows.MapScan(row)
+		if nil != err {
+			return nil, err
+		}
+		nodeList = append(nodeList, njson.SonicMap2NwNode(row))
+	}
+	return nodeList, nil
 }
 
 func (ndbw *NDbWrapper) SelectList(dest any, sqlStr string, args ...any) error {

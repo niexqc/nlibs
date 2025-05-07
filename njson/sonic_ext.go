@@ -6,11 +6,11 @@ import (
 	"github.com/niexqc/nlibs/nerror"
 )
 
-type nwNode struct {
+type NwNode struct {
 	*ast.Node
 }
 
-func (s *nwNode) GetString(key string) string {
+func (s *NwNode) GetString(key string) string {
 	val, err := s.Node.Get(key).String()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetString", err))
@@ -18,7 +18,7 @@ func (s *nwNode) GetString(key string) string {
 	return val
 }
 
-func (s *nwNode) GetStringByPath(paths []string) string {
+func (s *NwNode) GetStringByPath(paths []string) string {
 	val, err := s.GetByPath(paths).String()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetStringByPath", err))
@@ -26,7 +26,7 @@ func (s *nwNode) GetStringByPath(paths []string) string {
 	return val
 }
 
-func (s *nwNode) GetInt64(key string) int64 {
+func (s *NwNode) GetInt64(key string) int64 {
 	val, err := s.Get(key).Int64()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetInt64", err))
@@ -34,7 +34,7 @@ func (s *nwNode) GetInt64(key string) int64 {
 	return val
 }
 
-func (s *nwNode) GetInt64ByPath(paths []string) int64 {
+func (s *NwNode) GetInt64ByPath(paths []string) int64 {
 	val, err := s.GetByPath(paths).Int64()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetInt64ByPath", err))
@@ -42,7 +42,7 @@ func (s *nwNode) GetInt64ByPath(paths []string) int64 {
 	return val
 }
 
-func (s *nwNode) GetFloat64(key string) float64 {
+func (s *NwNode) GetFloat64(key string) float64 {
 	val, err := s.Get(key).Float64()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetFloat64", err))
@@ -50,7 +50,7 @@ func (s *nwNode) GetFloat64(key string) float64 {
 	return val
 }
 
-func (s *nwNode) GetFloat64ByPath(paths []string) float64 {
+func (s *NwNode) GetFloat64ByPath(paths []string) float64 {
 	val, err := s.GetByPath(paths).Float64()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetFloat64ByPath", err))
@@ -58,7 +58,7 @@ func (s *nwNode) GetFloat64ByPath(paths []string) float64 {
 	return val
 }
 
-func (s *nwNode) GetBool(key string) bool {
+func (s *NwNode) GetBool(key string) bool {
 	val, err := s.Get(key).Bool()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetBool", err))
@@ -66,12 +66,16 @@ func (s *nwNode) GetBool(key string) bool {
 	return val
 }
 
-func (s *nwNode) GetBoolByPath(paths []string) bool {
+func (s *NwNode) GetBoolByPath(paths []string) bool {
 	val, err := s.GetByPath(paths).Bool()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetBoolByPath", err))
 	}
 	return val
+}
+
+func (s *NwNode) ToString() string {
+	return SonicObj2Str(s)
 }
 
 func SonicObj2Str(obj any) string {
@@ -94,16 +98,16 @@ func SonicStr2Obj(str *string, t any) {
 	}
 }
 
-func SonicStr2nwNode(str string) *nwNode {
+func SonicStr2NwNode(str string) *NwNode {
 	root, err := sonic.GetFromString(str)
 	if err != nil {
-		panic(nerror.NewRunTimeErrorWithError("SonicStr2nwNode失败", err))
+		panic(nerror.NewRunTimeErrorWithError("SonicStr2NwNode失败", err))
 	}
-	return &nwNode{&root}
+	return &NwNode{&root}
 }
 
-func SonicMap2nwNode(data map[string]any) *nwNode {
-	return SonicStr2nwNode(SonicObj2Str(data))
+func SonicMap2NwNode(data map[string]any) *NwNode {
+	return SonicStr2NwNode(SonicObj2Str(data))
 }
 
 func SonicMap2Obj(data map[string]any, t any) {
