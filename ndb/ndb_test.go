@@ -55,15 +55,15 @@ var dbconf = &nyaml.YamlConfDb{
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 	ndbWrapper = ndb.NewNMysqlWrapper(dbconf)
-}
-
-func Test001(t *testing.T) {
 	ndbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
 	ndbWrapper.Exec(ctTableSql)
 
 	ndbWrapper.Insert("INSERT into test01(id) VALUES(1)")
 	ndbWrapper.Exec("INSERT into test01(t01_bigint) VALUES(1),(2)")
 	ndbWrapper.Insert("INSERT into test01(t09_datetime) VALUES(?)", time.Now())
+}
+
+func Test001(t *testing.T) {
 
 	if vo, err := ndb.SelectOne[Test01Do](ndbWrapper, "SELECT * FROM test01 WHERE id=4"); nil == err {
 		slog.Info(njson.SonicObj2Str(vo))

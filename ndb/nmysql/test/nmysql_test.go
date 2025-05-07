@@ -56,6 +56,9 @@ type Test01Do struct {
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 	IDbWrapper = ndb.NewNMysqlWrapper(dbconf)
+	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
+	IDbWrapper.Exec(ctTableSql)
+	IDbWrapper.PrintStructDoByTable("niexq01", "test01")
 }
 
 func Test002(t *testing.T) {
@@ -79,9 +82,6 @@ func TestNNull(t *testing.T) {
 }
 
 func TestIDbWrapper(t *testing.T) {
-	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
-	IDbWrapper.Exec(ctTableSql)
-	IDbWrapper.PrintStructDoByTable("niexq01", "test01")
 
 	IDbWrapper.Insert("INSERT into test01(id) VALUES(1)")
 	IDbWrapper.Exec("INSERT into test01(t01_bigint) VALUES(1),(2)")

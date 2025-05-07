@@ -22,9 +22,11 @@ const (
 
 var fileDirExt = ntools.GetFileDirExt()
 
-func LoadYamlConf(t any, confName string) {
+func LoadYamlConf[T any](confName string) *T {
+	t := new(T)
 	ReadYaml(t, confName)
 	WriteYaml(t, confName)
+	return t
 }
 
 func ReadYaml(t any, confFileName string) {

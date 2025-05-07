@@ -43,17 +43,17 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) string {
 	mysqlType = strings.ToUpper(mysqlType)
 	switch mysqlType {
 	case "VARCHAR", "TEXT", "LONGTEXT":
-		return ntools.If3(isNull, "ndb.NullString", "string")
+		return ntools.If3(isNull, "sqlext.NullString", "string")
 	case "BIT":
-		return ntools.If3(isNull, "ndb.NullBool", "bool")
+		return ntools.If3(isNull, "sqlext.NullBool", "bool")
 	case "INT":
-		return ntools.If3(isNull, "ndb.NullInt", "int")
+		return ntools.If3(isNull, "sqlext.NullInt", "int")
 	case "BIGINT":
-		return ntools.If3(isNull, "ndb.NullInt64", "int64")
+		return ntools.If3(isNull, "sqlext.NullInt64", "int64")
 	case "DATETIME":
-		return ntools.If3(isNull, "ndb.NullTime", "time.Time")
+		return ntools.If3(isNull, "sqlext.NullTime", "time.Time")
 	case "DOUBLE", "FLOAT", "DECIMAL":
-		return ntools.If3(isNull, "ndb.NullFloat64", "float64")
+		return ntools.If3(isNull, "sqlext.NullFloat64", "float64")
 	default:
 		return "interface{}"
 	}
