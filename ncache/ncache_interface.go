@@ -22,4 +22,10 @@ type ICacheService interface {
 	ClearByKeyPrefix(keyPrefix string) (int, error)
 	//  ClearKey
 	ClearKey(key string) error
+
+	//  分布式锁运行方法
+	//  expiry 锁过期时间-秒
+	//  tries 重试次数
+	//  delay 间隔时间-秒
+	LockRun(key, value string, expiry int, tries, delay int, lockFun func() any) (result any, err error)
 }

@@ -3,6 +3,7 @@ package rediscache
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/niexqc/nlibs/nerror"
@@ -158,4 +159,16 @@ func scanKeysWithConn(conn redis.Conn, cur int, keyPattner string, lastKeys []st
 		return keys, nil
 	}
 	return nil, err
+}
+
+func (service *RedisService) LockRun(key, value string, expiry int, tries, delay int, runFun func() any) (result any, err error) {
+	op1 := RedisMutexSetExpiry(time.Duration(expiry) * time.Second)
+	op2 := RedisMutexSetDelay(time.Duration(delay) * time.Second)
+	op3 := RedisMutexSetTries(tries)
+	mutex := RedisNewMutex(key, value, service, op1, op2, op3)
+	if mutex.RedisLock() {
+		defer mutex.RedisReleseLock()
+		return runFun(), err
+	}
+	return nil, nerror.NewRunTimeError(fmt.Sprintf("[%v]-[%v]未获取到锁", key, value))
 }

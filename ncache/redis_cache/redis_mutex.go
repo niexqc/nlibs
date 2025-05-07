@@ -31,15 +31,15 @@ func (m *RedisMutex) RedisLock() bool {
 	err := m.redisService.PutNxExStr(m.lockkey, m.lockvalue, int(m.expiry.Seconds()))
 	if nil != err {
 		if netError, ok := err.(net.Error); ok {
-			slog.Error(fmt.Sprintf("获取Redis锁失败,%s", netError.Error()))
+			slog.Error(fmt.Sprintf("[%v-%v]获取Redis锁失败,%s", m.lockkey, m.lockvalue, netError.Error()))
 			return false
 		}
 		if m.curTries > m.tries {
-			slog.Error(fmt.Sprintf("获取Redis锁失败,当前第%d次获取,总次数%d\n", m.curTries, m.tries))
+			slog.Error(fmt.Sprintf("[%v-%v]获取Redis锁失败,当前第%d次获取,总次数%d", m.lockkey, m.lockvalue, m.curTries, m.tries))
 			return false
 		}
+		slog.Debug(fmt.Sprintf("[%v-%v]第%d次获取锁失败,等待%dms后重试", m.lockkey, m.lockvalue, m.curTries, time.Duration(m.delay).Milliseconds()))
 		m.curTries++
-		slog.Debug(fmt.Sprintf("第% 3d次获取锁失败,等待%dms后重试", m.curTries, time.Duration(m.delay).Milliseconds()))
 		time.Sleep(m.delay)
 		return m.RedisLock()
 	}
@@ -100,8 +100,8 @@ func RedisMutexSetTries(tries int) RedisMutexOption {
 }
 
 // SetDelay 设置获取锁失败后等待多少时间后重试
-func RedisMutexSetDelay(expiry time.Duration) RedisMutexOption {
+func RedisMutexSetDelay(delay time.Duration) RedisMutexOption {
 	return OptionFunc(func(m *RedisMutex) {
-		m.expiry = expiry
+		m.delay = delay
 	})
 }
