@@ -1,4 +1,4 @@
-package ndb
+package sqlext
 
 import (
 	"database/sql"

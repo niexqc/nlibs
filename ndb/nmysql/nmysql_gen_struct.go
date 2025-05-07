@@ -1,34 +1,14 @@
-package ndb
+package nmysql
 
 import (
 	"fmt"
 	"log/slog"
 	"strings"
 
-	"time"
-
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
 	"github.com/niexqc/nlibs/ntools"
-	"github.com/niexqc/nlibs/nyaml"
 )
 
-func InitMysqlConnPool(conf *nyaml.YamlConfDb) *NDbWrapper {
-	//开始连接数据库
-	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
-	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
-	slog.Debug(mysqlUrl)
-	db, err := sqlx.Open("mysql", mysqlUrl)
-	if err != nil {
-		panic(err)
-	}
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(100)
-	db.SetMaxIdleConns(10)
-	return &NDbWrapper{sqlxDb: db, conf: conf}
-}
-
-type ColumnSchemaDo struct {
+type columnSchemaDo struct {
 	TableName     string `db:"TABLE_NAME"`
 	ColumnName    string `db:"COLUMN_NAME"`
 	DataType      string `db:"DATA_TYPE"`
@@ -36,13 +16,13 @@ type ColumnSchemaDo struct {
 	IsNullable    string `db:"IS_NULLABLE"`
 }
 
-func (dbw *NDbWrapper) PrintStructDoByTable(tableSchema, tableName string) {
+func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	sqlStr := `
 	SELECT TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
 		FROM INFORMATION_SCHEMA.COLUMNS 
 		WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
 	`
-	dos := []ColumnSchemaDo{}
+	dos := []columnSchemaDo{}
 	dbw.SelectList(&dos, sqlStr, tableSchema, tableName)
 
 	NsStr := &ntools.NString{S: tableName}
@@ -59,7 +39,6 @@ func (dbw *NDbWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	slog.Info("\n" + resultStr)
 }
 
-// 示例：将 VARCHAR 转为 string
 func mysqlTypeToGoType(mysqlType string, isNull bool) string {
 	mysqlType = strings.ToUpper(mysqlType)
 	switch mysqlType {
