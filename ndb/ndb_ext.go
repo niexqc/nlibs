@@ -1,7 +1,6 @@
 package ndb
 
 import (
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/nyaml"
 )
