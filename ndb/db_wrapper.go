@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -22,18 +23,54 @@ type NDbWrapper struct {
 	conf   *nyaml.YamlConfDb
 }
 
-func (db *NDbWrapper) SelectList(dest any, sqlStr string, args ...any) error {
-	defer db.PrintSql(time.Now(), sqlStr, args...)
-	return db.sqlxDb.Select(dest, sqlStr, args...)
+func SelectOne[T any](ndbw *NDbWrapper, sqlStr string, args ...any) (t *T, err error) {
+	defer ndbw.PrintSql(time.Now(), sqlStr, args...)
+	dest := new([]T)
+	err = ndbw.SelectList(dest, sqlStr, args...)
+	if nil != err {
+		return nil, err
+	}
+	if len(*dest) == 0 {
+		return nil, nil
+	}
+	if len(*dest) != 1 {
+		return nil, nerror.NewRunTimeError("查询结果包含多个值")
+	}
+	return &(*dest)[0], nil
 }
 
-func (db *NDbWrapper) PrintSql(start time.Time, sqlStr string, args ...any) {
-	if !db.conf.DbSqlLogPrint {
+func (ndbw *NDbWrapper) SelectList(dest any, sqlStr string, args ...any) error {
+	defer ndbw.PrintSql(time.Now(), sqlStr, args...)
+	return ndbw.sqlxDb.Select(dest, sqlStr, args...)
+}
+
+func (ndbw *NDbWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
+	defer ndbw.PrintSql(time.Now(), sqlStr, args...)
+	r, err := ndbw.sqlxDb.Exec(sqlStr, args...)
+	if nil != err {
+		return rowsAffected, err
+	}
+	rowsAffected, _ = r.RowsAffected()
+	return rowsAffected, err
+}
+
+func (ndbw *NDbWrapper) Insert(sqlStr string, args ...any) (lastInsertId int64, err error) {
+	defer ndbw.PrintSql(time.Now(), sqlStr, args...)
+	r, err := ndbw.sqlxDb.Exec(sqlStr, args...)
+	if nil != err {
+		return lastInsertId, err
+	}
+	lastInsertId, _ = r.LastInsertId()
+	return lastInsertId, err
+}
+
+func (ndbw *NDbWrapper) PrintSql(start time.Time, sqlStr string, args ...any) {
+	if !ndbw.conf.DbSqlLogPrint {
 		return
 	}
 	costTime := time.Now().UnixMilli() - start.UnixMilli()
 	//去除换行符
-	if db.conf.DbSqlLogCompress {
+	if ndbw.conf.DbSqlLogCompress {
 		sqlStr = string(blankRegexp.ReplaceAllString(sqlStr, " "))
 	}
 	if len(args) > 0 {
@@ -50,7 +87,7 @@ func (db *NDbWrapper) PrintSql(start time.Time, sqlStr string, args ...any) {
 		}
 	}
 	//打印日志
-	slog.Log(context.Background(), ntools.SlogLevelStr2Level(db.conf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+	slog.Log(context.Background(), ntools.SlogLevelStr2Level(ndbw.conf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
 }
 
 func sqlAnyArg(arg any) string {

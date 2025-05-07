@@ -9,9 +9,12 @@ import (
 	"github.com/niexqc/nlibs/ntools"
 )
 
-type NullString struct {
-	sql.NullString
-}
+type NullString struct{ sql.NullString }
+type NullTime struct{ sql.NullTime }
+type NullInt struct{ sql.NullInt32 }
+type NullInt64 struct{ sql.NullInt64 }
+type NullFloat64 struct{ sql.NullFloat64 }
+type NullBool struct{ sql.NullBool }
 
 func (ns NullString) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
@@ -27,10 +30,6 @@ func (ns *NullString) UnmarshalJSON(data []byte) error {
 	}
 	ns.Valid = true
 	return json.Unmarshal(data, &ns.String)
-}
-
-type NullTime struct {
-	sql.NullTime
 }
 
 func (nt NullTime) MarshalJSON() ([]byte, error) {
@@ -52,10 +51,6 @@ func (nt *NullTime) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-type NullInt struct {
-	sql.NullInt32
-}
-
 func (ns NullInt) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
@@ -70,10 +65,6 @@ func (ns *NullInt) UnmarshalJSON(data []byte) error {
 	}
 	ns.Valid = true
 	return json.Unmarshal(data, &ns.Int32)
-}
-
-type NullInt64 struct {
-	sql.NullInt64
 }
 
 func (ns NullInt64) MarshalJSON() ([]byte, error) {
@@ -92,10 +83,6 @@ func (ns *NullInt64) UnmarshalJSON(data []byte) error {
 	return json.Unmarshal(data, &ns.Int64)
 }
 
-type NullFloat64 struct {
-	sql.NullFloat64
-}
-
 func (ns NullFloat64) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
@@ -110,10 +97,6 @@ func (ns *NullFloat64) UnmarshalJSON(data []byte) error {
 	}
 	ns.Valid = true
 	return json.Unmarshal(data, &ns.Float64)
-}
-
-type NullBool struct {
-	sql.NullBool
 }
 
 func (ns NullBool) MarshalJSON() ([]byte, error) {

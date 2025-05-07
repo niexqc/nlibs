@@ -36,7 +36,7 @@ type ColumnSchemaDo struct {
 	IsNullable    string `db:"IS_NULLABLE"`
 }
 
-func (dbw *NDbWrapper) GenDoByTable(tableSchema, tableName string) {
+func (dbw *NDbWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	sqlStr := `
 	SELECT TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
 		FROM INFORMATION_SCHEMA.COLUMNS 
