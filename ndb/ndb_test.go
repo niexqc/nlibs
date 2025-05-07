@@ -1,6 +1,7 @@
 package ndb_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -63,6 +64,16 @@ func Test002(t *testing.T) {
 	IDbWrapper.PrintSql(time.Now(), " WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), time.Now())
 	IDbWrapper.PrintSql(time.Now(), " WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), time.Now(), true, false)
 }
+func TestNNull(t *testing.T) {
+	type TimeA struct {
+		T09Datetime ndb.NullTime `json:"T09Datetime"`
+	}
+	jsonStr := `{"T09Datetime":"2025-05-07 13:09:43"}`
+	timeA := &TimeA{}
+	njson.SonicStr2Obj(&jsonStr, timeA)
+	str := njson.SonicObj2Str(timeA)
+	fmt.Println(str)
+}
 
 func TestIDbWrapper(t *testing.T) {
 	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
@@ -71,6 +82,7 @@ func TestIDbWrapper(t *testing.T) {
 
 	IDbWrapper.Insert("INSERT into test01(id) VALUES(1)")
 	IDbWrapper.Exec("INSERT into test01(t01_bigint) VALUES(1),(2)")
+	IDbWrapper.Insert("INSERT into test01(t09_datetime) VALUES(?)", time.Now())
 
 	if _, err := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01"); nil != err {
 		println(err.Error())
@@ -78,13 +90,13 @@ func TestIDbWrapper(t *testing.T) {
 	if d, _ := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01 WHERE id=0"); nil != d {
 		println("没有数据")
 	}
-	d, _ := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01 WHERE id=1")
+	d, _ := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01 WHERE id=4")
 	println(njson.SonicObj2Str(d))
 	// IDbWrapper.GenDoByTable("niexq01", "nba_user")
 	if _, err := IDbWrapper.SelectNwNode("SELECT * FROM test01"); nil != err {
 		println(err.Error())
 	}
-	nwnode, _ := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=1")
+	nwnode, _ := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=2")
 	println(nwnode.ToString())
 
 	if _, err := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=0"); nil != err {
