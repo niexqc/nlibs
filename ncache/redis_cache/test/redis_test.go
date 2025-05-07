@@ -7,6 +7,7 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	rediscache "github.com/niexqc/nlibs/ncache/redis_cache"
+	"github.com/niexqc/nlibs/ntools"
 )
 
 // RedisPool Redis连接池
@@ -14,6 +15,8 @@ var redisPool *redis.Pool
 var redisService *rediscache.RedisService
 
 func init() {
+	ntools.SlogConf("test", "debug", 1, 2)
+
 	redisHost := "8.137.54.220"
 	redisPort := 6379
 	redisPwd := "Nxq@198943"
@@ -47,16 +50,6 @@ func init() {
 		},
 	}
 	redisService = &rediscache.RedisService{RedisPool: redisPool}
-}
-
-func TestMutex(t *testing.T) {
-
-	mutex := rediscache.RedisNewMutex("lock1", redisService)
-	if mutex.Lock() {
-		defer mutex.ReleseLock()
-		//执行逻辑
-		fmt.Println("第1个获取到了")
-	}
 }
 
 func TestScanByCur(t *testing.T) {

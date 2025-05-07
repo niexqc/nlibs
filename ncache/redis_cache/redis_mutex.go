@@ -7,31 +7,30 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
-	"github.com/niexqc/nlibs/ntools"
 )
 
 // Mutex 分布式锁
 type RedisMutex struct {
 	redisService *RedisService
 	//命名一个名字
-	name string
+	lockkey string
+	//锁的值
+	lockvalue string
 	//最多可以获取锁的时间，超过自动解锁
 	expiry time.Duration
 	//失败最多获取锁的次数
 	tries int
 	//获取锁失败后等待多少时间后重试
 	delay time.Duration
-	//锁的值
-	value string
 	//当前尝试了多少次
 	curTries int
 }
 
 // Lock ...
-func (m *RedisMutex) Lock() bool {
-	err := m.redisService.PutNxExStr(m.name, m.value, int(m.expiry.Seconds()))
+func (m *RedisMutex) RedisLock() bool {
+	err := m.redisService.PutNxExStr(m.lockkey, m.lockvalue, int(m.expiry.Seconds()))
 	if nil != err {
-		if netError := err.(net.Error); netError != nil {
+		if netError, ok := err.(net.Error); ok {
 			slog.Error(fmt.Sprintf("获取Redis锁失败,%s", netError.Error()))
 			return false
 		}
@@ -40,28 +39,30 @@ func (m *RedisMutex) Lock() bool {
 			return false
 		}
 		m.curTries++
+		slog.Debug(fmt.Sprintf("第% 3d次获取锁失败,等待%dms后重试", m.curTries, time.Duration(m.delay).Milliseconds()))
 		time.Sleep(m.delay)
-		return m.Lock()
+		return m.RedisLock()
 	}
 	return true
 }
 
 // ReleseLock ...
-func (m *RedisMutex) ReleseLock() bool {
+func (m *RedisMutex) RedisReleseLock() bool {
 	conn := m.redisService.RedisPool.Get()
 	defer conn.Close()
-	_, err := redis.Int(RdisScriptDelKv.Do(conn, m.name, m.value))
+	_, err := redis.Int(RdisScriptDelKv.Do(conn, m.lockkey, m.lockvalue))
 	return err == nil
 }
 
 // NewMutex ...
-func RedisNewMutex(name string, redisService *RedisService, options ...RedisMutexOption) *RedisMutex {
+// 默认8秒过期，重试次数16次，失败500毫秒获取一次
+func RedisNewMutex(lockkey, lockvalue string, redisService *RedisService, options ...RedisMutexOption) *RedisMutex {
 	mutex := &RedisMutex{
-		name:         name,
+		lockkey:      lockkey,
+		lockvalue:    lockvalue,
 		expiry:       8 * time.Second,
 		tries:        16,
 		delay:        500 * time.Millisecond,
-		value:        ntools.UUIDStr(true),
 		curTries:     1,
 		redisService: redisService,
 	}
@@ -102,12 +103,5 @@ func RedisMutexSetTries(tries int) RedisMutexOption {
 func RedisMutexSetDelay(expiry time.Duration) RedisMutexOption {
 	return OptionFunc(func(m *RedisMutex) {
 		m.expiry = expiry
-	})
-}
-
-// SetValue 设置锁的值
-func RedisMutexSetValue(tries int) RedisMutexOption {
-	return OptionFunc(func(m *RedisMutex) {
-		m.tries = tries
 	})
 }
