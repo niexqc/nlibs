@@ -1,8 +1,7 @@
 package ncache
 
-// 谨慎使用memcache
-//
-type INcache interface {
+// 谨慎使用memcache,优先使用Redis
+type ICacheService interface {
 	// Int64自增
 	Int64Incr(key string, expireMillisecond int64) (num int64, err error)
 	// PutStr

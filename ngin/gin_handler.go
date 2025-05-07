@@ -64,7 +64,7 @@ func RecoveryHandlerFunc() gin.HandlerFunc {
 }
 
 // 日志跟踪ID生成
-func TraceIdGenHandlerFunc(traceIdPrefix string, incahce ncache.INcache) gin.HandlerFunc {
+func TraceIdGenHandlerFunc(traceIdPrefix string, incahce ncache.ICacheService) gin.HandlerFunc {
 	slog.Debug("Add Middleware TraceIdGenHandlerFunc")
 	return func(c *gin.Context) {
 		timeStr := time.Now().Format("20060102T150405")
