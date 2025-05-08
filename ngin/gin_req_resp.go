@@ -64,6 +64,7 @@ type NiexqGinHeaderVo struct {
 	AppVer  string `json:"clientVer" zhdesc:"客户端版本" `
 
 	ClientTime string `json:"clientTime" zhdesc:"客户端时间" `
+	OneceStr   string `json:"oneceStr" zhdesc:"随机字符串" `
 	VisitSrc   string `json:"visitSrc" zhdesc:"请求发起的源" `
 
 	VisitTar string  `json:"VisitTar" zhdesc:"请求访问的目标" `

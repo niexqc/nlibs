@@ -110,6 +110,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo.AppType = ginHeaders.Get("app-type")
 		heaerVo.AppVer = ginHeaders.Get("app-ver")
 		heaerVo.ClientTime = ginHeaders.Get("client-time")
+		heaerVo.OneceStr = ginHeaders.Get("onece-str")
 		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
 		heaerVo.UserIp = c.ClientIP()
 		heaerVo.VisitTar = c.Request.RequestURI
