@@ -1,7 +1,10 @@
 package ndb
 
 import (
+	"reflect"
+
 	"github.com/niexqc/nlibs/ndb/nmysql"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/nyaml"
 )
 
@@ -10,19 +13,31 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *nmysql.NMysqlWrapper {
 }
 
 func SelectOne[T any](ndbw INdbWrapper, sqlStr string, args ...any) (t *T, err error) {
-	dest := new(T)
-	err = ndbw.SelectOne(dest, sqlStr, args...)
-	if nil != err {
-		return nil, err
+	if mysqlNdb, ok := ndbw.(*nmysql.NMysqlWrapper); ok {
+		obj := new(T)
+		err = mysqlNdb.SelectOne(obj, sqlStr, args...)
+		return obj, err
+	} else {
+		panic(nerror.NewRunTimeError(reflect.TypeOf(ndbw).Name() + "未实现 SelectOne"))
 	}
-	return dest, nil
 }
 
-func SelectList[T any](ndbw INdbWrapper, sqlStr string, args ...any) (t []*T, err error) {
-	dest := new([]*T)
-	err = ndbw.SelectList(dest, sqlStr, args...)
-	if nil != err {
-		return nil, err
+func SelectObj[T any](ndbw INdbWrapper, sqlStr string, args ...any) (t *T, err error) {
+	if mysqlNdb, ok := ndbw.(*nmysql.NMysqlWrapper); ok {
+		obj := new(T)
+		err = mysqlNdb.SelectObj(obj, sqlStr, args...)
+		return obj, err
+	} else {
+		panic(nerror.NewRunTimeError(reflect.TypeOf(ndbw).Name() + "未实现 SelectObj"))
 	}
-	return *dest, nil
+}
+
+func SelectList[T any](ndbw INdbWrapper, sqlStr string, args ...any) (tlist []*T, err error) {
+	if mysqlNdb, ok := ndbw.(*nmysql.NMysqlWrapper); ok {
+		objs := new([]*T)
+		err = mysqlNdb.SelectList(objs, sqlStr, args...)
+		return *objs, err
+	} else {
+		panic(nerror.NewRunTimeError(reflect.TypeOf(ndbw).Name() + "未实现 SelectList"))
+	}
 }

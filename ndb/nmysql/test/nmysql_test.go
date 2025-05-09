@@ -61,7 +61,91 @@ func init() {
 	IDbWrapper.PrintStructDoByTable("niexq01", "test01")
 }
 
-func Test002(t *testing.T) {
+func TestSelectOne(t *testing.T) {
+	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+
+	if res, err := ndb.SelectOne[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 WHERE id=1"); nil != err {
+		t.Error(err)
+	} else {
+		if res.NullString.String != "aaa1" {
+			t.Error("返回值不匹配")
+		}
+	}
+
+	if res, err := ndb.SelectOne[int64](IDbWrapper, "SELECT id FROM test01 WHERE id=1"); nil != err {
+		t.Error(err)
+	} else {
+		if *res != 2 {
+			t.Error("返回值不匹配")
+		}
+	}
+}
+
+func TestSelectObj(t *testing.T) {
+	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+
+	if obj, err := ndb.SelectObj[Test01Do](IDbWrapper, "SELECT * FROM test01 where id=1"); nil != err {
+		println(err.Error())
+	} else {
+		if obj.Id != 1 || obj.T03Varchar.String != "aaa1" {
+			t.Error("返回值不匹配")
+		}
+	}
+}
+
+func TestSelectList(t *testing.T) {
+	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+
+	if list, err := ndb.SelectList[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 ORDER BY id"); nil != err {
+		println(err.Error())
+	} else {
+		if len(list) != 2 || list[0].String != "aaa1" || list[1].String != "aaa2" {
+			t.Error("返回值不匹配")
+		}
+	}
+
+	if list, err := ndb.SelectList[Test01Do](IDbWrapper, "SELECT * FROM test01 ORDER BY id"); nil != err {
+		println(err.Error())
+	} else {
+		if len(list) != 2 || list[0].Id != 1 || list[1].Id != 2 {
+			t.Error("返回值不匹配")
+		}
+	}
+}
+
+func TestSelectDyObj(t *testing.T) {
+	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+
+	if dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1"); nil != err {
+		println(err.Error())
+	} else {
+		val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, "T03Varchar")
+		if nil != err {
+			panic(err)
+		}
+		fmt.Println(val.String)
+	}
+
+	if dyObjList, err := IDbWrapper.SelectDyObjList("SELECT * FROM test01 "); nil != err {
+		println(err.Error())
+	} else {
+		val, err := sqlext.GetFiledVal[sqlext.NullString](dyObjList[1], "T03Varchar")
+		if nil != err {
+			panic(err)
+		}
+		fmt.Println(val.String)
+	}
+}
+
+func TestPrintSql(t *testing.T) {
 	sqlext.PrintSql(dbconf, time.Now(), " WHERE name='nixq'")
 	sqlext.PrintSql(dbconf, time.Now(), "? WHERE name=? ORDER BY id desc", "aaa", "niexq2")
 	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=?", "niexq", 1)
@@ -80,33 +164,3 @@ func TestNNull(t *testing.T) {
 	str := njson.SonicObj2Str(timeA)
 	fmt.Println(str)
 }
-
-func TestIDbWrapper(t *testing.T) {
-
-	IDbWrapper.Insert("INSERT into test01(id) VALUES(1)")
-	IDbWrapper.Exec("INSERT into test01(t01_bigint) VALUES(1),(2)")
-	IDbWrapper.Insert("INSERT into test01(t09_datetime) VALUES(?)", time.Now())
-
-	if _, err := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01"); nil != err {
-		println(err.Error())
-	}
-	if d, _ := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01 WHERE id=0"); nil != d {
-		println("没有数据")
-	}
-	d, _ := ndb.SelectOne[Test01Do](IDbWrapper, "SELECT * FROM test01 WHERE id=4")
-	println(njson.SonicObj2Str(d))
-	// IDbWrapper.GenDoByTable("niexq01", "nba_user")
-	if _, err := IDbWrapper.SelectNwNode("SELECT * FROM test01"); nil != err {
-		println(err.Error())
-	}
-	nwnode, _ := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=2")
-	println(nwnode.ToString())
-
-	if _, err := IDbWrapper.SelectNwNode("SELECT * FROM test01  WHERE id=0"); nil != err {
-		println(err.Error())
-	}
-	nodeList, _ := IDbWrapper.SelectNwNodeList("SELECT * FROM test01")
-	println(njson.SonicObj2Str(nodeList))
-}
-
-// 表名 `niexq01`.test01

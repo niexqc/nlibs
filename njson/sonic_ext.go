@@ -11,7 +11,8 @@ type NwNode struct {
 }
 
 func (s *NwNode) GetString(key string) string {
-	val, err := s.Node.Get(key).String()
+	node := s.Node.Get(key)
+	val, err := node.String()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetString", err))
 	}
@@ -59,7 +60,8 @@ func (s *NwNode) GetFloat64ByPath(paths []string) float64 {
 }
 
 func (s *NwNode) GetBool(key string) bool {
-	val, err := s.Get(key).Bool()
+	nd := s.Get(key)
+	val, err := nd.Bool()
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("GetBool", err))
 	}

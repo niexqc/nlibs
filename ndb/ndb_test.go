@@ -65,7 +65,7 @@ func init() {
 
 func Test001(t *testing.T) {
 
-	if vo, err := ndb.SelectOne[Test01Do](ndbWrapper, "SELECT * FROM test01 WHERE id=4"); nil == err {
+	if vo, err := ndb.SelectObj[Test01Do](ndbWrapper, "SELECT * FROM test01 WHERE id=4"); nil == err {
 		slog.Info(njson.SonicObj2Str(vo))
 	} else {
 		t.Error(err)
