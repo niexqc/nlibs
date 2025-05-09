@@ -2,7 +2,6 @@ package nmysql
 
 import (
 	"fmt"
-	"log/slog"
 	"strings"
 
 	"github.com/niexqc/nlibs/ntools"
@@ -27,16 +26,21 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 
 	NsStr := &ntools.NString{S: tableName}
 	resultStr := fmt.Sprintf("// 表名 `%s`.%s", tableSchema, tableName)
-	resultStr += fmt.Sprintf("\ntype %sDo struct {", NsStr.UnderscoreToCamelcase(true))
+	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.UnderscoreToCamelcase(true))
+
+	clmSql := ""
 	for _, v := range dos {
 		isNull := v.IsNullable == "YES"
 		NsCStr := &ntools.NString{S: v.ColumnName}
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.UnderscoreToCamelcase(true), mysqlTypeToGoType(v.DataType, isNull))
 		resultStr += fmt.Sprintf(" `db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.ColumnName, NsCStr.UnderscoreToCamelcase(false), v.ColumnComment)
+		clmSql += (ntools.If3(len(clmSql) > 0, ",", "") + v.ColumnName)
 	}
-	resultStr += "\n}"
+	resultStr += "\n}\n"
+	resultStr += fmt.Sprintf("var %sDoClmStr=\"%s\"", NsStr.UnderscoreToCamelcase(true), clmSql)
 
-	slog.Info("\n" + resultStr)
+	println(resultStr)
+
 }
 
 func mysqlTypeToGoType(mysqlType string, isNull bool) string {
