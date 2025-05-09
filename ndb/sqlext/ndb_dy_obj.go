@@ -8,14 +8,14 @@ import (
 )
 
 func GetFiledVal[T any](obj any, fileName string) (rt *T, err error) {
-	val := reflect.ValueOf(obj)
-	if val.Kind() == reflect.Pointer {
-		val = val.Elem()
+	objType := reflect.ValueOf(obj)
+	if objType.Kind() == reflect.Pointer {
+		objType = objType.Elem()
 	}
-	if val.Kind() != reflect.Struct {
+	if objType.Kind() != reflect.Struct {
 		return nil, nerror.NewRunTimeError("不能获取非结构的值")
 	}
-	fieldVal := val.FieldByName(fileName)
+	fieldVal := objType.FieldByName(fileName)
 	if !fieldVal.IsValid() {
 		return nil, nil
 	}
