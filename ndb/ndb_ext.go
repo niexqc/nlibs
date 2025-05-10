@@ -42,3 +42,9 @@ func SelectList[T any](ndbw INdbWrapper, sqlStr string, args ...any) (tlist []*T
 		panic(nerror.NewRunTimeError(reflect.TypeOf(ndbw).Name() + "未实现 SelectList"))
 	}
 }
+
+// Sql参数格式化.只支持?格式
+// 暂时只简单转换后续再处理或过滤其他字符
+func SqlFmt(str string, arg ...any) string {
+	return sqlext.SqlFmt(str, arg...)
+}

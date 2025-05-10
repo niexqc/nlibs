@@ -25,6 +25,13 @@ func PrintSql(dbConf *nyaml.YamlConfDb, start time.Time, sqlStr string, args ...
 	if dbConf.DbSqlLogCompress {
 		sqlStr = string(blankRegexp.ReplaceAllString(sqlStr, " "))
 	}
+	sqlStr = SqlFmt(sqlStr, args...)
+	//打印日志
+	slog.Log(context.Background(), ntools.SlogLevelStr2Level(dbConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+}
+
+// Sql参数格式化.只支持?格式
+func SqlFmt(sqlStr string, args ...any) string {
 	if len(args) > 0 {
 		splTexts := []string{}
 		argsRange := argsRegexp.FindAllStringIndex(sqlStr, -1)
@@ -38,8 +45,7 @@ func PrintSql(dbConf *nyaml.YamlConfDb, start time.Time, sqlStr string, args ...
 			sqlStr += sqlAnyArg(v) + splTexts[idx+1]
 		}
 	}
-	//打印日志
-	slog.Log(context.Background(), ntools.SlogLevelStr2Level(dbConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+	return sqlStr
 }
 
 func sqlAnyArg(arg any) string {
