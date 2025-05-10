@@ -33,6 +33,9 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
 	return &NMysqlWrapper{sqlxDb: db, conf: conf}
 }
 
+//	 查询并生成动态对象返回
+//		 dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1")
+//		 val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
 func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *sqlext.NdbDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
 	rows, err := ndbw.sqlxDb.Queryx(sqlStr, args...)
