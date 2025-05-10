@@ -3,12 +3,10 @@ package nmsql_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
-	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -58,7 +56,6 @@ func init() {
 	IDbWrapper = ndb.NewNMysqlWrapper(dbconf)
 	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
 	IDbWrapper.Exec(ctTableSql)
-	IDbWrapper.PrintStructDoByTable("niexq01", "test01")
 }
 
 func TestSelectOne(t *testing.T) {
@@ -143,24 +140,4 @@ func TestSelectDyObj(t *testing.T) {
 		}
 		fmt.Println(val.String)
 	}
-}
-
-func TestPrintSql(t *testing.T) {
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name='nixq'")
-	sqlext.PrintSql(dbconf, time.Now(), "? WHERE name=? ORDER BY id desc", "aaa", "niexq2")
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=?", "niexq", 1)
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=? AND no=?", "niexq", 1, int64(2))
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), time.Now())
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), time.Now(), true, false)
-}
-
-func TestNNull(t *testing.T) {
-	type TimeA struct {
-		T09Datetime sqlext.NullTime `json:"T09Datetime"`
-	}
-	jsonStr := `{"T09Datetime":"2025-05-07 13:09:43"}`
-	timeA := &TimeA{}
-	njson.SonicStr2Obj(&jsonStr, timeA)
-	str := njson.SonicObj2Str(timeA)
-	fmt.Println(str)
 }

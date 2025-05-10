@@ -7,7 +7,7 @@ import (
 	"github.com/niexqc/nlibs/ndnen"
 )
 
-func TestGen(t *testing.T) {
+func TestGenSm2Key(t *testing.T) {
 	pri, pub := ndnen.Sm2GenKeyPair()
 
 	priStr, pubStr := ndnen.Sm2Key2Hex(pri, pub)

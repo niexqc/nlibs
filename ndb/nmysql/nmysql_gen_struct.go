@@ -55,11 +55,11 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	}
 	resultStr += "\n}"
 
-	infoTmp := `var %sTbInfo = &nmysql.NMysqlTableInfo{
-		TableName: "` + "`%s`" + `.%s",
-		ColsStr:   "%s",
-	}`
-	resultStr += fmt.Sprintf("\n"+infoTmp, NsStr.Under2Camel(true), tableSchema, tableName, clmSql)
+	infoTmp := "\nvar %sTbInfo = &nmysql.NMysqlTableInfo{"
+	infoTmp += "\n  TableName: \"`%s`.%s\","
+	infoTmp += "\n  ColsStr:   \"%s\","
+	infoTmp += "\n}"
+	resultStr += fmt.Sprintf(infoTmp, NsStr.Under2Camel(true), tableSchema, tableName, clmSql)
 	println(resultStr)
 
 }

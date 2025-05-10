@@ -161,9 +161,12 @@ func scanKeysWithConn(conn redis.Conn, cur int, keyPattner string, lastKeys []st
 	return nil, err
 }
 
+// expiry 过期时间-秒
+// tries 重试次数
+// delay 重试间隔时间
 func (service *RedisService) LockRun(key, value string, expiry int, tries, delay int, runFun func() any) (result any, err error) {
 	op1 := RedisMutexSetExpiry(time.Duration(expiry) * time.Second)
-	op2 := RedisMutexSetDelay(time.Duration(delay) * time.Second)
+	op2 := RedisMutexSetDelay(time.Duration(delay) * time.Millisecond)
 	op3 := RedisMutexSetTries(tries)
 	mutex := RedisNewMutex(key, value, service, op1, op2, op3)
 	if mutex.RedisLock() {

@@ -17,18 +17,18 @@ func init() {
 func TestErrorExt(t *testing.T) {
 	err := nerror.NewRunTimeError("this is run time error")
 	slog.Info(nerror.GenErrDetail(err))
-
 }
+
 func TestReadXlsx(t *testing.T) {
 	contents, _ := ntools.XlsxRead("test.xlsx", "user", 1)
 	fmt.Println(contents)
 }
 
-func TestCron(t *testing.T) {
+func TestCronTask(t *testing.T) {
 	cron := nlibs.NewCronWithSeconds()
 	cron.AddFunc("* * * * * *", func() {
-		slog.Info("111")
+		slog.Info("定时任务执行")
 	})
 	cron.Start()
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 3)
 }
