@@ -26,12 +26,12 @@ func (ns *NString) CutString(length int) string {
 }
 
 // for example: transfer browse_by_set to BrowseBySet
-func (ns *NString) UnderscoreToCamelcase(title bool) string {
+func (ns *NString) Under2Camel(title bool) string {
 	return lowerToCamelcase(ns.S, "_", title)
 }
 
 // for example: transfer BrowseBySet to browse_by_set
-func (ns *NString) CamelcaseToUnderscore() string {
+func (ns *NString) Camel2Under() string {
 	return camelcaseToLower(ns.S, "_")
 }
 

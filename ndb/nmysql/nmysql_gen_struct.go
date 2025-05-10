@@ -12,6 +12,11 @@ import (
 	"github.com/niexqc/nlibs/ntools"
 )
 
+type NMysqlTableInfo struct {
+	ColsStr   string
+	TableName string
+}
+
 type columnSchemaDo struct {
 	TableName     string `db:"TABLE_NAME"`
 	ColumnName    string `db:"COLUMN_NAME"`
@@ -35,7 +40,7 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 
 	NsStr := &ntools.NString{S: tableName}
 	resultStr := fmt.Sprintf("// %s `%s`.%s\n", tableComment, tableSchema, tableName)
-	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.UnderscoreToCamelcase(true))
+	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.Under2Camel(true))
 
 	clmSql := ""
 	for _, v := range dos {
@@ -44,14 +49,17 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 		// String() 返回 sqlext.NullString
 		// Name() 返回 NullString
 		goType := mysqlTypeToGoType(v.DataType, isNull).String()
-		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.UnderscoreToCamelcase(true), goType)
-		resultStr += fmt.Sprintf(" `db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.ColumnName, NsCStr.UnderscoreToCamelcase(false), v.ColumnComment)
+		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
+		resultStr += fmt.Sprintf(" `db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment)
 		clmSql += (ntools.If3(len(clmSql) > 0, ",", "") + v.ColumnName)
 	}
 	resultStr += "\n}"
 
-	resultStr += fmt.Sprintf("\nvar %sDoClmStr=\"%s\"", NsStr.UnderscoreToCamelcase(true), clmSql)
-
+	infoTmp := `var %sTbInfo = &nmysql.NMysqlTableInfo{
+		TableName: "` + "`%s`" + `.%s",
+		ColsStr:   "%s",
+	}`
+	resultStr += fmt.Sprintf("\n"+infoTmp, NsStr.Under2Camel(true), tableSchema, tableName, clmSql)
 	println(resultStr)
 
 }
@@ -93,8 +101,8 @@ func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 	for _, v := range cols {
 		DbNameNstr := &ntools.NString{S: v.Name()}
 		dbFname := DbNameNstr.S
-		structFname := DbNameNstr.UnderscoreToCamelcase(true)
-		jsonFname := DbNameNstr.UnderscoreToCamelcase(false)
+		structFname := DbNameNstr.Under2Camel(true)
+		jsonFname := DbNameNstr.Under2Camel(false)
 		goType := mysqlType2GoType(v)
 		tag := reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, dbFname, jsonFname))
 
