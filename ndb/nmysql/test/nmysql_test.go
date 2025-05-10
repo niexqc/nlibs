@@ -26,7 +26,7 @@ var ctTableSql = `CREATE TABLE IF NOT EXISTS test01  (
   t08_double double NULL DEFAULT NULL,
   t09_datetime datetime NULL DEFAULT NULL,
   t10_bool bit(1) NULL DEFAULT NULL,
-  PRIMARY KEY (id) USING BTREE)`
+  PRIMARY KEY (id) USING BTREE)  COMMENT='Test'`
 
 var dbconf = &nyaml.YamlConfDb{
 	DbHost:           "8.137.54.220",
@@ -77,7 +77,7 @@ func TestSelectOne(t *testing.T) {
 	if res, err := ndb.SelectOne[int64](IDbWrapper, "SELECT id FROM test01 WHERE id=1"); nil != err {
 		t.Error(err)
 	} else {
-		if *res != 2 {
+		if *res != 1 {
 			t.Error("返回值不匹配")
 		}
 	}
@@ -127,7 +127,7 @@ func TestSelectDyObj(t *testing.T) {
 	if dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1"); nil != err {
 		println(err.Error())
 	} else {
-		val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, "T03Varchar")
+		val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
 		if nil != err {
 			panic(err)
 		}

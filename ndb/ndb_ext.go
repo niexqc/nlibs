@@ -4,6 +4,7 @@ import (
 	"reflect"
 
 	"github.com/niexqc/nlibs/ndb/nmysql"
+	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -12,7 +13,7 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *nmysql.NMysqlWrapper {
 	return nmysql.NewNMysqlWrapper(conf)
 }
 
-func SelectOne[T any](ndbw INdbWrapper, sqlStr string, args ...any) (t *T, err error) {
+func SelectOne[T sqlext.NdbBasicType](ndbw INdbWrapper, sqlStr string, args ...any) (t *T, err error) {
 	if mysqlNdb, ok := ndbw.(*nmysql.NMysqlWrapper); ok {
 		obj := new(T)
 		err = mysqlNdb.SelectOne(obj, sqlStr, args...)

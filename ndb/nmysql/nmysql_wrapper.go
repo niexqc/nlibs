@@ -33,7 +33,7 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
 	return &NMysqlWrapper{sqlxDb: db, conf: conf}
 }
 
-func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj any, err error) {
+func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *sqlext.NdbDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
 	rows, err := ndbw.sqlxDb.Queryx(sqlStr, args...)
 	if nil != err {
@@ -45,7 +45,7 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj any, e
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType := createDyStruct(cols)
+	dyStructType, fieldsInfo := createDyStruct(cols)
 	if rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -57,14 +57,14 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj any, e
 		if rows.Next() {
 			return nil, nerror.NewRunTimeError("查询结果中包含多个值")
 		}
-		return instance, err
+		return &sqlext.NdbDyObj{Data: instance, FiledsInfo: fieldsInfo}, err
 		// return instance, err
 	} else {
 		return nil, nerror.NewRunTimeError("未查询到结果")
 	}
 }
 
-func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValList []any, err error) {
+func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValList []*sqlext.NdbDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
 	rows, err := ndbw.sqlxDb.Queryx(sqlStr, args...)
 	if nil != err {
@@ -76,9 +76,8 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType := createDyStruct(cols)
-
-	results := []any{}
+	dyStructType, fieldsInfo := createDyStruct(cols)
+	objValList = make([]*sqlext.NdbDyObj, 0)
 	for rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -87,9 +86,9 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		if nil != err {
 			return nil, err
 		}
-		results = append(results, instance)
+		objValList = append(objValList, &sqlext.NdbDyObj{Data: instance, FiledsInfo: fieldsInfo})
 	}
-	return results, err
+	return objValList, err
 }
 
 func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) error {

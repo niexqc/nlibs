@@ -1,8 +1,10 @@
 package ndb
 
+import "github.com/niexqc/nlibs/ndb/sqlext"
+
 type INdbWrapper interface {
-	SelectDyObj(sqlStr string, args ...any) (objVal any, err error)
-	SelectDyObjList(sqlStr string, args ...any) (objValList []any, err error)
+	SelectDyObj(sqlStr string, args ...any) (objVal *sqlext.NdbDyObj, err error)
+	SelectDyObjList(sqlStr string, args ...any) (objValList []*sqlext.NdbDyObj, err error)
 
 	SelectOne(dest any, sqlStr string, args ...any) error
 	SelectObj(dest any, sqlStr string, args ...any) error

@@ -21,10 +21,10 @@ type columnSchemaDo struct {
 }
 
 func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
-	// tcSql := "SELECT TABLE_COMMENT FROM INFORMATION_SCHEMA.`TABLES` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
-
-	// tableComment, _ := SelectOne[string](dbw, tcSql, tableSchema, tableName)
+	tcSql := "SELECT TABLE_COMMENT FROM INFORMATION_SCHEMA.`TABLES` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
 	tableComment := ""
+	dbw.SelectOne(&tableComment, tcSql, tableSchema, tableName)
+
 	sqlStr := `
 	SELECT TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
 		FROM INFORMATION_SCHEMA.COLUMNS 
@@ -34,7 +34,7 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	dbw.SelectList(&dos, sqlStr, tableSchema, tableName)
 
 	NsStr := &ntools.NString{S: tableName}
-	resultStr := fmt.Sprintf("//%s `%s`.%s\n", tableComment, tableSchema, tableName)
+	resultStr := fmt.Sprintf("// %s `%s`.%s\n", tableComment, tableSchema, tableName)
 	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.UnderscoreToCamelcase(true))
 
 	clmSql := ""
@@ -50,33 +50,37 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	}
 	resultStr += "\n}"
 
-	resultStr += fmt.Sprintf("var %sDoClmStr=\"%s\"", NsStr.UnderscoreToCamelcase(true), clmSql)
+	resultStr += fmt.Sprintf("\nvar %sDoClmStr=\"%s\"", NsStr.UnderscoreToCamelcase(true), clmSql)
 
 	println(resultStr)
 
 }
 
 func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
-	mysqlType = strings.ToUpper(mysqlType)
-	switch mysqlType {
-	case "VARCHAR", "TEXT", "LONGTEXT":
-		return ntools.If3(isNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf(""))
-	case "BIT":
-		return ntools.If3(isNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true))
-	case "INT":
-		return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1)))
-	case "BIGINT":
-		return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
-	case "DATETIME":
-		return ntools.If3(isNull, reflect.TypeOf(sqlext.NullTime{}), reflect.TypeOf(time.Now()))
-	case "DOUBLE", "FLOAT", "DECIMAL":
-		return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
-	default:
-		panic(nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mysqlType)))
-	}
+	goType := func(mtype string) reflect.Type {
+		switch mtype {
+		case "VARCHAR", "TEXT", "LONGTEXT":
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf(""))
+		case "BIT":
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true))
+		case "INT":
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1)))
+		case "BIGINT":
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
+		case "DATETIME":
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullTime{}), reflect.TypeOf(time.Now()))
+		case "DOUBLE", "FLOAT", "DECIMAL":
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
+		default:
+			panic(nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mtype)))
+		}
+	}(strings.ToUpper(mysqlType))
+
+	return goType
+
 }
 
-func createDyStruct(cols []*sql.ColumnType) reflect.Type {
+func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*sqlext.NdbDyObjFieldInfo) {
 	fields := []reflect.StructField{}
 	mysqlType2GoType := func(col *sql.ColumnType) reflect.Type {
 		nullable, ok := col.Nullable()
@@ -85,15 +89,29 @@ func createDyStruct(cols []*sql.ColumnType) reflect.Type {
 		}
 		return mysqlTypeToGoType(col.DatabaseTypeName(), nullable)
 	}
+	filedInfos = make(map[string]*sqlext.NdbDyObjFieldInfo)
 	for _, v := range cols {
-		fName := v.Name()
-		field := reflect.StructField{
-			Name: (&ntools.NString{S: fName}).UnderscoreToCamelcase(true),
-			Type: mysqlType2GoType(v),
-			Tag:  reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, fName, fName)),
+		DbNameNstr := &ntools.NString{S: v.Name()}
+		dbFname := DbNameNstr.S
+		structFname := DbNameNstr.UnderscoreToCamelcase(true)
+		jsonFname := DbNameNstr.UnderscoreToCamelcase(false)
+		goType := mysqlType2GoType(v)
+		tag := reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, dbFname, jsonFname))
+
+		fields = append(fields, reflect.StructField{Name: structFname, Type: goType, Tag: tag})
+
+		nullable, ok := v.Nullable()
+		if !ok {
+			nullable = false
 		}
-		fields = append(fields, field)
+		filedInfos[dbFname] = &sqlext.NdbDyObjFieldInfo{
+			StructFieldName: structFname,
+			DbColName:       dbFname,
+			GoColType:       goType.String(),
+			DbColType:       v.DatabaseTypeName(),
+			DbColIsNull:     nullable,
+		}
 	}
 	// 创建动态结构体类型
-	return reflect.StructOf(fields)
+	return reflect.StructOf(fields), filedInfos
 }
