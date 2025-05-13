@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 // 执行命令，命令执行完成后,函数内部主动关闭（cmdOut）
@@ -44,9 +45,11 @@ func CmdRunWithStdOut(windows bool, command, workDir string, cmdOut chan string,
 			break
 		}
 		if OsIsWindows() {
-			cmdOut <- StrFromGbkBytes(lineBytes).ReplaceAllBlank("")
+			linestr, _ := strings.CutSuffix(StrFromGbkBytes(lineBytes).S, "\r\n")
+			cmdOut <- linestr
 		} else {
-			cmdOut <- (&NString{S: string(lineBytes)}).ReplaceAllBlank("")
+			linestr, _ := strings.CutSuffix(string(lineBytes), "\n")
+			cmdOut <- linestr
 		}
 	}
 	return cmd.Wait()
