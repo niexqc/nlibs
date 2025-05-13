@@ -56,7 +56,7 @@ func NewRedisPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 // 创建MemCacheService
 // 默认永不过期，5分钟淘汰一次的缓存
 // cleanupInterval  5*time.Minute
-func NewNcahceService(cleanupInterval time.Duration) *memcache.MemCacheService {
+func NewMemCacheService(cleanupInterval time.Duration) *memcache.MemCacheService {
 	return &memcache.MemCacheService{
 		Cache: cache.New(0, cleanupInterval),
 	}

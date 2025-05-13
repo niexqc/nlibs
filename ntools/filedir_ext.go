@@ -56,6 +56,15 @@ func (fde *fileDirExt) CheckFileIsExist(filename string) bool {
 	return exist
 }
 
+// MkDirIfNotExist 如果目录不存在则创建目录
+func (fde *fileDirExt) MkAllDirIfNotExist(dir string) error {
+	exist := fde.CheckFileIsExist(dir)
+	if !exist {
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
+}
+
 // WriteFileContent 写入文件内容，目录|文件不存在则创建目录|文件
 //
 //	Return  存在返回 true 不存在返回false
