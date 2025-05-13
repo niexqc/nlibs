@@ -32,3 +32,13 @@ func TestCronTask(t *testing.T) {
 	cron.Start()
 	time.Sleep(time.Second * 3)
 }
+
+func TestRunCmd(t *testing.T) {
+
+	err := ntools.CmdRunAndPrintLog(ntools.OsIsWindows(), "ping", "", "192.168.0.251")
+	if err != nil {
+		t.Errorf("TestStartRunCmd:%v", err)
+		return
+	}
+
+}

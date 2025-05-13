@@ -1,16 +1,31 @@
 package ntools
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 )
 
 type NString struct {
 	S string
 }
 
+func StrFromGbkBytes(bytes []byte) *NString {
+	utf8Data, _, _ := transform.Bytes(simplifiedchinese.GBK.NewDecoder(), bytes)
+	return &NString{S: string(utf8Data)}
+}
+
 func (ns *NString) CutStr(start, end int) string {
 	return ns.S[start:end]
+}
+
+var blankRegexp = regexp.MustCompile(`\s+`)
+
+func (ns *NString) ReplaceAllBlank(toStr string) string {
+	return blankRegexp.ReplaceAllString(ns.S, toStr)
 }
 
 // CutString ...
