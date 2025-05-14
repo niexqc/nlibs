@@ -53,6 +53,10 @@ func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slog.Info(fmt.Sprintf("SLog Level:%v", confLevel))
 }
 
+func SlogConf4Test() {
+	SlogConf("test", "debug", 1, 2)
+}
+
 func SlogLevelStr2Level(confLevel string) slog.Level {
 	confLevel = strings.ToLower(confLevel)
 	var slogLevel slog.Level

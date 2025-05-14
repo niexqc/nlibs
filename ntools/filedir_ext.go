@@ -176,3 +176,19 @@ func (fde *fileDirExt) TraverseDirBySlice(dirPth string) ([]string, error) {
 
 	return curFile, nil
 }
+
+// 获取直接子目录
+func (fde *fileDirExt) GetDirectSubDirs(dirPath string) ([]string, error) {
+	entries, err := os.ReadDir(dirPath) // 读取目录条目
+	if err != nil {
+		return nil, err
+	}
+
+	var subDirs []string
+	for _, entry := range entries {
+		if entry.IsDir() { // 判断是否为目录
+			subDirs = append(subDirs, filepath.Join(dirPath, entry.Name()))
+		}
+	}
+	return subDirs, nil
+}
