@@ -107,6 +107,9 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 	if err != nil {
 		return err
 	}
+	if fileInfo.Size() <= chunkSize {
+		return svc.UploadFile(objKey, localFile)
+	}
 	count := (fileInfo.Size() / chunkSize)
 	if (fileInfo.Size() % chunkSize) > 0 {
 		count = count + 1
