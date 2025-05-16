@@ -86,7 +86,21 @@ func (svc *NAliOssClient) UploadFile(objKey, localFile string) error {
 	return nil
 }
 
-// UploadFile
+// GetObj
+func (svc *NAliOssClient) GetObj(objKey string) error {
+	request := &oss.GetObjectRequest{
+		Bucket: oss.Ptr(svc.Cnf.BucketName), // 存储空间名称
+		Key:    oss.Ptr(objKey),             // 对象名称
+	}
+	_, err := svc.OssClient.GetObject(context.TODO(), request)
+	if err != nil {
+		slog.Error("获取文件失败:" + nerror.GenErrDetail(err))
+		return err
+	}
+	return nil
+}
+
+// DeleteObj
 func (svc *NAliOssClient) DeleteObj(objKey string) error {
 	request := &oss.DeleteObjectRequest{
 		Bucket: oss.Ptr(svc.Cnf.BucketName), // 存储空间名称
