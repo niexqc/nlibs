@@ -55,3 +55,9 @@ func SelectList[T any](ndbw INdbWrapper, sqlStr string, args ...any) (tlist []*T
 func SqlFmt(str string, arg ...any) string {
 	return sqlext.SqlFmt(str, arg...)
 }
+
+// SqlLimitStr
+// pageNo 页码从1开始
+func SqlLimitStr(pageNo, pageSize int) string {
+	return SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
+}

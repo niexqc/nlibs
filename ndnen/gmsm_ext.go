@@ -204,16 +204,24 @@ func Sm2VerifyByPubKey(pubKey *sm2.PublicKey, srcStr, b64DerSign string) bool {
 func Sm4CbcEnData(key, iv, plaintext string) []byte {
 	// Pkcs7Pad 明文填充
 	pkcs7PadData := Pkcs7Pad([]byte(plaintext), sm4.BlockSize)
+	return innerSm4CbcEnData(key, iv, pkcs7PadData)
+}
 
+func Sm4CbcEnDataWithPkcs5(key, iv, plaintext string) []byte {
+	// PKCS5Padding 明文填充
+	PKCS5PaddingPadData := PKCS5Padding([]byte(plaintext))
+	return innerSm4CbcEnData(key, iv, PKCS5PaddingPadData)
+}
+
+func innerSm4CbcEnData(key, iv string, padData []byte) []byte {
 	block, err := sm4.NewCipher([]byte(key))
 	if err != nil {
 		panic(err)
 	}
 	mode := cipher.NewCBCEncrypter(block, []byte(iv))
 
-	resultData := make([]byte, len(pkcs7PadData))
-	mode.CryptBlocks(resultData, pkcs7PadData)
-
+	resultData := make([]byte, len(padData))
+	mode.CryptBlocks(resultData, padData)
 	return resultData
 }
 
@@ -223,6 +231,12 @@ func Sm4CbcEnDataToBase64(key, iv, plaintext string) string {
 }
 
 func Sm4CbcDnData(key, iv, entryedData string) []byte {
+	resultData := innerSm4CbcDnData(key, iv, entryedData)
+	unpadded := Pkcs7Unpad(resultData)
+	return unpadded
+}
+
+func innerSm4CbcDnData(key, iv, entryedData string) []byte {
 	if len(entryedData)%sm4.BlockSize != 0 {
 		panic(nerror.NewRunTimeError("密文长度无效"))
 	}
@@ -235,8 +249,12 @@ func Sm4CbcDnData(key, iv, entryedData string) []byte {
 
 	resultData := make([]byte, len(entryedData))
 	mode.CryptBlocks(resultData, []byte(entryedData))
+	return resultData
+}
 
-	unpadded := Pkcs7Unpad(resultData)
+func Sm4CbcDnDataWithPkcs5(key, iv, entryedData string) []byte {
+	resultData := innerSm4CbcDnData(key, iv, entryedData)
+	unpadded := PKCS5UnPadding(resultData)
 	return unpadded
 }
 

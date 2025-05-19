@@ -71,11 +71,11 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf(""))
 		case "BIT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true))
-		case "INT":
+		case "INT", "SMALLINT", "TINYINT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1)))
 		case "BIGINT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
-		case "DATETIME":
+		case "DATETIME", "DATE":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullTime{}), reflect.TypeOf(time.Now()))
 		case "DOUBLE", "FLOAT", "DECIMAL":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
