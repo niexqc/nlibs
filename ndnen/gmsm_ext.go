@@ -12,6 +12,7 @@ import (
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/tjfoc/gmsm/sm2"
+	"github.com/tjfoc/gmsm/sm3"
 	"github.com/tjfoc/gmsm/sm4"
 	"github.com/tjfoc/gmsm/x509"
 )
@@ -201,9 +202,24 @@ func Sm2VerifyByPubKey(pubKey *sm2.PublicKey, srcStr, b64DerSign string) bool {
 	return sm2.Sm2Verify(pubKey, []byte(srcStr), signUserId, sm2Sign.R, sm2Sign.S)
 }
 
+// SM2 公钥验签,原文为b64Str (签名方式 :sm3hash userId=1234567812345678 asn.1 der)
+func Sm2VerifyB64SrcByPubKey(pubKey *sm2.PublicKey, b64SrcStr, b64DerSign string) bool {
+	var sm2Sign sm2Signature
+	derBytes, _ := base64.StdEncoding.DecodeString(b64DerSign)
+	asn1.Unmarshal(derBytes, &sm2Sign)
+	strBytes, _ := base64.StdEncoding.DecodeString(b64SrcStr)
+	return sm2.Sm2Verify(pubKey, strBytes, signUserId, sm2Sign.R, sm2Sign.S)
+}
+
 func Sm4CbcEnData(key, iv, plaintext string) []byte {
 	// Pkcs7Pad 明文填充
 	pkcs7PadData := Pkcs7Pad([]byte(plaintext), sm4.BlockSize)
+	return innerSm4CbcEnData(key, iv, pkcs7PadData)
+}
+
+func Sm4CbcEnBytes(key, iv string, data []byte) []byte {
+	// Pkcs7Pad 明文填充
+	pkcs7PadData := PKCS5Padding(data)
 	return innerSm4CbcEnData(key, iv, pkcs7PadData)
 }
 
@@ -265,4 +281,16 @@ func Sm4CbcDnBase64Data(key, iv, encryptBase64Data string) string {
 	}
 	result := Sm4CbcDnData(key, iv, string(encryedData))
 	return string(result)
+}
+
+func GetSm2PubKeyHexFromPriKey(privateKey *sm2.PrivateKey) string {
+	pubKey := privateKey.PublicKey
+	data := append([]byte{0x04}, append(pubKey.X.Bytes(), pubKey.Y.Bytes()...)...)
+	return hex.EncodeToString(data)
+}
+
+func Sm3hash(data []byte) []byte {
+	h := sm3.New()
+	h.Write(data)
+	return h.Sum(nil)
 }
