@@ -294,3 +294,42 @@ func Sm3hash(data []byte) []byte {
 	h.Write(data)
 	return h.Sum(nil)
 }
+
+func Sm4EcbPkcs5EnData2HexStr(hexKey, plaintext string) string {
+	hexKeyData, _ := hex.DecodeString(hexKey)
+	// 检查密钥长度
+	if len(hexKeyData) != 16 {
+		panic(nerror.NewRunTimeError("SM4加密,key必须为16位"))
+	}
+	padData := PKCS5Padding([]byte(plaintext))
+	//
+	block, err := sm4.NewCipher(hexKeyData)
+	if err != nil {
+		panic(err)
+	}
+	// ECB 模式分块加密（无 IV）
+	enData := make([]byte, len(padData))
+	for start := 0; start < len(padData); start += 16 { // 16 字节分组
+		block.Encrypt(enData[start:], padData[start:start+16])
+	}
+	return hex.EncodeToString(enData)
+}
+
+func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) string {
+	hexKeyData, _ := hex.DecodeString(hexKey)
+	// 检查密钥长度
+	if len(hexKeyData) != 16 {
+		panic(nerror.NewRunTimeError("SM4加密,key必须为16位"))
+	}
+	block, err := sm4.NewCipher(hexKeyData)
+	if err != nil {
+		panic(err)
+	}
+	data, _ := hex.DecodeString(enedStr)
+	plaintext := make([]byte, len(data))
+	for start := 0; start < len(plaintext); start += 16 {
+		block.Decrypt(plaintext[start:], data[start:start+16])
+	}
+	unPadData := PKCS5UnPadding([]byte(plaintext))
+	return string(unPadData)
+}

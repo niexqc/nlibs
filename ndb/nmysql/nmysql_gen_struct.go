@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
@@ -76,7 +75,7 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
 		case "BIGINT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
 		case "DATETIME", "DATE":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullTime{}), reflect.TypeOf(time.Now()))
+			return reflect.TypeOf(sqlext.NullTime{})
 		case "DOUBLE", "FLOAT", "DECIMAL":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
 		default:

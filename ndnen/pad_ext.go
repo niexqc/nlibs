@@ -39,5 +39,5 @@ func PKCS5UnPadding(origData []byte) []byte {
 
 // PKCS5Padding 对数据填充至8字节倍数
 func PKCS5Padding(ciphertext []byte) []byte {
-	return Pkcs7Pad(ciphertext, 8) // 调用PKCS7并指定块大小8
+	return Pkcs7Pad(ciphertext, 16) // 调用PKCS7并指定块大小8
 }

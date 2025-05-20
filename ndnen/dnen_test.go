@@ -84,3 +84,18 @@ func TestSm4EnDn(t *testing.T) {
 	dndStr := ndnen.Sm4CbcDnBase64Data(sm4Key, sm4KeyIv, endStr)
 	fmt.Printf("密文:%s   秘钥:%s   向量:%s   解密后:%s\n", endStr, sm4Key, sm4KeyIv, dndStr)
 }
+
+func TestSm4EcbEnDn(t *testing.T) {
+	sourceStr := "123"
+	sm4Key := "3e448cb55fc737f50a0851d5e34c6473"
+
+	fmt.Printf("-----------------SM4加密解密--------------------\n")
+	enedStr := ndnen.Sm4EcbPkcs5EnData2HexStr(sm4Key, sourceStr)
+	fmt.Printf("原文:%s   秘钥:%s   加密后:%s\n", sourceStr, sm4Key, enedStr)
+
+	dnStr := ndnen.Sm4EcbPkcs5DnHexStr(sm4Key, "f49734fccc350dedcd45b1886adb239c")
+	fmt.Printf("原文:%s   秘钥:%s   解密后:%s\n", sourceStr, sm4Key, dnStr)
+
+	// dndStr := ndnen.Sm4CbcDnBase64Data(sm4Key, sm4KeyIv, endStr)
+	// fmt.Printf("密文:%s   秘钥:%s   向量:%s   解密后:%s\n", endStr, sm4Key, sm4KeyIv, dndStr)
+}
