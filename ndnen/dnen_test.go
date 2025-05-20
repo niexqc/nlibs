@@ -50,6 +50,22 @@ func TestSm2EnDn(t *testing.T) {
 
 }
 
+func TestSm2EnDn2(t *testing.T) {
+	pubDer := "MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEQszcg+sXDe4G4bWEpy1AEA520bnjMNSqvugbCuhw3yAMDjpNsuUgwaNApc1BGuN2Ggd35qpXL+IuLNi8n/jOvA=="
+	priDer := "MIGTAgEAMBMGByqGSM49AgEGCCqBHM9VAYItBHkwdwIBAQQglubXvo2TJIu3lJ+wNA/q/IryTemzNoXlDLN7r4dUbeygCgYIKoEcz1UBgi2hRANCAARCzNyD6xcN7gbhtYSnLUAQDnbRueMw1Kq+6BsK6HDfIAwOOk2y5SDBo0ClzUEa43YaB3fmqlcv4i4s2Lyf+M68"
+	pri := ndnen.Sm2LoadPriKeyFromDerB64(priDer)
+	pub := ndnen.Sm2LoadPubKeyFromDerB64(pubDer)
+
+	sourceStr := "123"
+
+	fmt.Printf("-----------------SM2加密解密--------------------\n")
+	sm2EnedStr := ndnen.Sm2EncryptToBase64(pub, sourceStr)
+	fmt.Printf("原文:%s,Sm2公钥加密后:%s\n", sourceStr, sm2EnedStr)
+	_, sm2DnedStr := ndnen.Sm2DecryptBase64(pri, "BOaUU3yx34ZmIs2FBSEgKheoy2xsS0+RKBlJ04LONntuws7yvrwNedEdfP6xgyfodjKReO+h6Y3TuT39E4IPb4Qt0+XlpBu3uiiKn5rHbXI+QvS0pQ2gIflvy0qI6pbYRiHnSA==")
+	fmt.Printf("密文:%s,Sm2私钥解密后:%s\n", sm2EnedStr, sm2DnedStr)
+
+}
+
 func TestSm2Verify(t *testing.T) {
 	pubHexStr := "04bdedf93932233a806a424efeb13b868bb50c3ba45860334b75342602743e39ee0d5d9f9a189ded81b2772fe229d7e992b1bb19f4fbcb541ff9d150a5e1da7806"
 	priHexStr := "626d2ea7d29769e3c89a1944c53b4fa35cff8db32300718a5885f0fa426d56f2"
