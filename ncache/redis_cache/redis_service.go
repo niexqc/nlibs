@@ -3,6 +3,8 @@ package rediscache
 import (
 	"errors"
 	"fmt"
+	"log"
+	"log/slog"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -174,4 +176,31 @@ func (service *RedisService) LockRun(key, value string, expiry int, tries, delay
 		return runFun(), err
 	}
 	return nil, nerror.NewRunTimeError(fmt.Sprintf("[%v]-[%v]未获取到锁", key, value))
+}
+
+// 队列消息写入
+func (service *RedisService) Producer(queueKey string, message string) error {
+	conn := service.RedisPool.Get()
+	defer conn.Close()
+	replay, err := conn.Do("RPUSH", queueKey, message) // 或 "RPUSH"
+	slog.Info(fmt.Sprintf("队列[%s]中目前有[%v]条数据", queueKey, replay))
+	return err
+}
+
+// 队列消息读取
+func (service *RedisService) Consumer(queueKey string, msgch chan string) {
+	conn := service.RedisPool.Get()
+	defer conn.Close()
+	for {
+		// BLPOP 返回格式: [队列名, 元素值]
+		reply, err := redis.Strings(conn.Do("BLPOP", queueKey, 0)) // 0 表示无限阻塞
+		if err != nil {
+			log.Printf("消费失败: %v, 重试中...", err)
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		message := reply[1]
+		msgch <- message
+	}
+
 }

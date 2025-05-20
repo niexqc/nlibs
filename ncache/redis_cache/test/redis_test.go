@@ -149,3 +149,17 @@ func TestMutex3(t *testing.T) {
 	}
 	time.Sleep(5 * time.Second)
 }
+
+func TestProducerConsumer(t *testing.T) {
+	key := "aaaa"
+	for i := 1; i < 51; i++ {
+		redisService.Producer(key, fmt.Sprintf("%d", i))
+	}
+	reciveChan := make(chan string, 10)
+	go func() {
+		for v := range reciveChan {
+			fmt.Println(v)
+		}
+	}()
+	redisService.Consumer(key, reciveChan)
+}

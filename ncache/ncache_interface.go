@@ -28,4 +28,7 @@ type ICacheService interface {
 	//  tries 重试次数
 	//  delay 间隔时间-秒
 	LockRun(key, value string, expiry int, tries, delay int, lockFun func() any) (result any, err error)
+
+	//队列消息写入
+	Producer(queueKey string, message string) error
 }
