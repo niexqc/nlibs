@@ -76,7 +76,7 @@ func TestInserSqlVals(t *testing.T) {
 
 	ColsStr := "task_id,rmq_msg_id,sys_code,area_code,send_time,biz_code,biz_data,biz_type,task_status,task_msg,ct_time,md_time"
 
-	vals, err := sqlext.InserSqlVals(ColsStr, aaa)
+	zwf, vals, err := sqlext.InserSqlVals(ColsStr, aaa)
 
-	fmt.Println(vals, err)
+	fmt.Println(zwf, vals, err)
 }

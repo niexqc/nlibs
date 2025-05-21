@@ -60,26 +60,31 @@ func GetFiledVal[T NdbBasicType](dyObj *NdbDyObj, structFieldName string) (rt *T
 }
 
 // insertField 需要用逗号分隔如【aaa,bbb,ccc】
-func InserSqlVals(insertField string, dostrcut any) ([]any, error) {
+func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err error) {
 	objVal := reflect.ValueOf(dostrcut)
 	if objVal.Kind() == reflect.Pointer {
 		objVal = objVal.Elem() //解引用
 	}
 	if objVal.Kind() != reflect.Struct {
-		return nil, nerror.NewRunTimeError("不能获取非结构的值")
+		return "", nil, nerror.NewRunTimeError("不能获取非结构的值")
 	}
 	objType := objVal.Type()
 
 	mapVals := map[string]any{}
+	sb := strings.Builder{}
 	for i := range objType.NumField() {
 		field := objType.Field(i)
 		tagDb := field.Tag.Get("db")
 		mapVals[tagDb] = objVal.Field(i).Interface()
+		if sb.Len() > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString("?")
 	}
-	vals := []any{}
+
 	dbFieldStrs := strings.SplitSeq(insertField, ",")
 	for v := range dbFieldStrs {
 		vals = append(vals, mapVals[v])
 	}
-	return vals, nil
+	return sb.String(), vals, nil
 }
