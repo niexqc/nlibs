@@ -3,6 +3,7 @@ package nmsql_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/nmysql"
@@ -140,4 +141,20 @@ func TestSelectDyObj(t *testing.T) {
 		}
 		fmt.Println(val.String)
 	}
+}
+
+func TestTx(t *testing.T) {
+	ntools.SlogSetTraceId("1111")
+
+	txr, _ := IDbWrapper.TxBgn(3 * time.Second)
+	defer txr.TxCommit()
+
+	txr.Exec("DELETE FROM test01")
+	r, err := txr.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	fmt.Sprintln(r, err)
+
+	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa2')")
+	fmt.Sprintln(r, err)
+
+	time.Sleep(1 * time.Second)
 }
