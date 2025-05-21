@@ -215,7 +215,7 @@ func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int6
 	return lastInsertId, err
 }
 
-func (ndbw *NMysqlWrapper) TxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err error) {
+func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err error) {
 	sqlTx, err := ndbw.sqlxDb.Beginx()
 	if nil != err {
 		return nil, err
@@ -244,16 +244,16 @@ func (ndbw *NMysqlWrapper) TxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err
 	return mysqlTxWrapper, nil
 }
 
-func (ndbw *NMysqlWrapper) TxCommit() error {
+func (ndbw *NMysqlWrapper) NdbTxCommit() error {
 	if err := recover(); err != nil {
 		slog.Info(fmt.Sprintf("即将提交事务时,捕获到异常【%v】,执行回滚", err))
-		ndbw.TxRollBack(err.(error))
+		ndbw.NdbTxRollBack(err.(error))
 		panic(err)
 	} else {
 		err := ndbw.sqlxTx.Commit()
 		slog.Info(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
 		if nil != err {
-			ndbw.TxRollBack(err)
+			ndbw.NdbTxRollBack(err)
 		} else {
 			ndbw.txDoneChan <- nil
 		}
@@ -261,7 +261,7 @@ func (ndbw *NMysqlWrapper) TxCommit() error {
 	}
 }
 
-func (ndbw *NMysqlWrapper) TxRollBack(err error) {
+func (ndbw *NMysqlWrapper) NdbTxRollBack(err error) {
 	if err == nil {
 		err = nerror.NewRunTimeError("手动回滚事务,但是没有传入错误")
 	}
