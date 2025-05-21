@@ -24,11 +24,11 @@ func NewNullString(str string) NullString {
 	return NullString{sql.NullString{Valid: true, String: str}}
 }
 
-func NewNullTime(time *time.Time) NullTime {
-	if time == nil {
+func NewNullTime(valid bool, time time.Time) NullTime {
+	if !valid {
 		return NullTime{sql.NullTime{Valid: false}}
 	}
-	return NullTime{sql.NullTime{Valid: true, Time: *time}}
+	return NullTime{sql.NullTime{Valid: true, Time: time}}
 }
 
 func (ns NullString) MarshalJSON() ([]byte, error) {

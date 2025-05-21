@@ -62,14 +62,24 @@ func sqlAnyArg(arg any) string {
 		return fmt.Sprintf("'%v'", ntools.Time2Str(v))
 	default:
 		// 反射检查底层类型（例如处理自定义类型）
-		rv := reflect.ValueOf(arg)
-		switch rv.Kind() {
-		case reflect.String:
-			return fmt.Sprintf("'%s'", rv.String())
-		case reflect.Int, reflect.Int64, reflect.Float64:
-			return fmt.Sprintf("%v", rv.Interface())
-		default:
-			return fmt.Sprintf("'%v'", arg)
+		rt := reflect.TypeOf(arg)
+		if rt == reflect.TypeOf(NullTime{}) {
+			nnullTime := arg.(NullTime)
+			if nnullTime.Valid {
+				return fmt.Sprintf("'%v'", ntools.Time2Str(nnullTime.Time))
+			} else {
+				return "NULL"
+			}
+		} else {
+			rv := reflect.ValueOf(arg)
+			switch rv.Kind() {
+			case reflect.String:
+				return fmt.Sprintf("'%s'", rv.String())
+			case reflect.Int, reflect.Int64, reflect.Float64:
+				return fmt.Sprintf("%v", rv.Interface())
+			default:
+				return fmt.Sprintf("'%v'", arg)
+			}
 		}
 	}
 }

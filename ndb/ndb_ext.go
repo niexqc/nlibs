@@ -13,19 +13,19 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *nmysql.NMysqlWrapper {
 //	 查询单个字段单个值
 //		 sqlStr:=select id from table where id=?
 //		 str:=ndb.SelectOne[string](ndbw,sql,id)
-func SelectOne[T sqlext.NdbBasicType](ndbw *nmysql.NMysqlWrapper, sqlStr string, args ...any) (t *T, err error) {
+func SelectOne[T sqlext.NdbBasicType](ndbw *nmysql.NMysqlWrapper, sqlStr string, args ...any) (t *T, findOk bool, err error) {
 	obj := new(T)
-	err = ndbw.SelectOne(obj, sqlStr, args...)
-	return obj, err
+	findOk, err = ndbw.SelectOne(obj, sqlStr, args...)
+	return obj, findOk, err
 }
 
 //	 查询单行记录返回Struct实例
 //		 sqlStr:=select * from table where id=?
 //		 user:=ndb.SelectObj[UserDo](ndbw,sql,id)
-func SelectObj[T any](ndbw *nmysql.NMysqlWrapper, sqlStr string, args ...any) (t *T, err error) {
+func SelectObj[T any](ndbw *nmysql.NMysqlWrapper, sqlStr string, args ...any) (t *T, findOk bool, err error) {
 	obj := new(T)
-	err = ndbw.SelectObj(obj, sqlStr, args...)
-	return obj, err
+	findOk, err = ndbw.SelectObj(obj, sqlStr, args...)
+	return obj, findOk, err
 }
 
 // 查询多行记录，支持值和Struct

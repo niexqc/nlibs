@@ -111,10 +111,9 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 	return objValList, err
 }
 
-func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) error {
+func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (findOk bool, err error) {
 	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
-	var err error
 
 	if ndbw.bgnTx {
 		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
@@ -123,31 +122,31 @@ func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) error
 	}
 
 	if nil != err {
-		return err
+		return false, err
 	}
 	defer rows.Close()
 	cols, err := rows.Columns()
 	if nil != err {
-		return err
+		return false, err
 	}
 	if len(cols) != 1 {
-		return nerror.NewRunTimeError("查询结果包含多个列")
+		return false, nerror.NewRunTimeError("查询结果包含多个列")
 	}
 	if rows.Next() {
 		if err := rows.Scan(dest); nil != err {
-			return err
+			return false, err
 		}
 		if rows.Next() {
 			dest = nil
-			return nerror.NewRunTimeError("查询结果中包含多个值")
+			return false, nerror.NewRunTimeError("查询结果中包含多个值")
 		}
-		return err
+		return true, err
 	} else {
-		return nerror.NewRunTimeError("未查询到结果")
+		return false, nil
 	}
 }
 
-func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) error {
+func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool, error) {
 	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
 	var err error
@@ -159,20 +158,20 @@ func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) error
 	}
 
 	if nil != err {
-		return err
+		return false, err
 	}
 	defer rows.Close()
 	if rows.Next() {
 		if err := rows.StructScan(dest); nil != err {
-			return err
+			return false, err
 		}
 		if rows.Next() {
 			dest = nil
-			return nerror.NewRunTimeError("查询结果中包含多个值")
+			return false, nerror.NewRunTimeError("查询结果中包含多个值")
 		}
-		return err
+		return true, err
 	} else {
-		return nerror.NewRunTimeError("未查询到结果")
+		return false, nil
 	}
 }
 
@@ -251,8 +250,8 @@ func (ndbw *NMysqlWrapper) NdbTxCommit() error {
 		panic(err)
 	} else {
 		err := ndbw.sqlxTx.Commit()
-		slog.Info(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
 		if nil != err {
+			slog.Info(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
 			ndbw.NdbTxRollBack(err)
 		} else {
 			ndbw.txDoneChan <- nil

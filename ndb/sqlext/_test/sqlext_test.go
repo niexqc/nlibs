@@ -29,7 +29,6 @@ var dbconf = &nyaml.YamlConfDb{
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 	IDbWrapper = ndb.NewNMysqlWrapper(dbconf)
-
 }
 
 func TestSqlFmt(t *testing.T) {

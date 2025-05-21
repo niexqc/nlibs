@@ -75,7 +75,9 @@ func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err
 	for i := range objType.NumField() {
 		field := objType.Field(i)
 		tagDb := field.Tag.Get("db")
-		mapVals[tagDb] = objVal.Field(i).Interface()
+		//解析字段类型
+		valV := objVal.Field(i).Interface()
+		mapVals[tagDb] = valV
 		if sb.Len() > 0 {
 			sb.WriteString(",")
 		}
@@ -87,4 +89,7 @@ func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err
 		vals = append(vals, mapVals[v])
 	}
 	return sb.String(), vals, nil
+}
+func NNullValue() {
+
 }

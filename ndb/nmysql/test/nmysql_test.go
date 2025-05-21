@@ -64,7 +64,7 @@ func TestSelectOne(t *testing.T) {
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
-	if res, err := ndb.SelectOne[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 WHERE id=1"); nil != err {
+	if res, _, err := ndb.SelectOne[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 WHERE id=1"); nil != err {
 		t.Error(err)
 	} else {
 		if res.NullString.String != "aaa1" {
@@ -72,7 +72,7 @@ func TestSelectOne(t *testing.T) {
 		}
 	}
 
-	if res, err := ndb.SelectOne[int64](IDbWrapper, "SELECT id FROM test01 WHERE id=1"); nil != err {
+	if res, _, err := ndb.SelectOne[int64](IDbWrapper, "SELECT id FROM test01 WHERE id=1"); nil != err {
 		t.Error(err)
 	} else {
 		if *res != 1 {
@@ -86,7 +86,7 @@ func TestSelectObj(t *testing.T) {
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
-	if obj, err := ndb.SelectObj[Test01Do](IDbWrapper, "SELECT * FROM test01 where id=1"); nil != err {
+	if obj, _, err := ndb.SelectObj[Test01Do](IDbWrapper, "SELECT * FROM test01 where id=1"); nil != err {
 		println(err.Error())
 	} else {
 		if obj.Id != 1 || obj.T03Varchar.String != "aaa1" {
