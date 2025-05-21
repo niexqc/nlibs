@@ -215,7 +215,7 @@ func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int6
 	return lastInsertId, err
 }
 
-func (ndbw *NMysqlWrapper) TxBgn(timeout time.Duration) (txWrper *NMysqlWrapper, err error) {
+func (ndbw *NMysqlWrapper) TxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err error) {
 	sqlTx, err := ndbw.sqlxDb.Beginx()
 	if nil != err {
 		return nil, err
@@ -230,8 +230,8 @@ func (ndbw *NMysqlWrapper) TxBgn(timeout time.Duration) (txWrper *NMysqlWrapper,
 	mysqlTxWrapper.txDoneChan = make(chan error, 1)
 	routine.Go(func() {
 		select {
-		case <-time.After(timeout):
-			slog.Error(fmt.Sprintf("事务执行超时:%dms", timeout.Milliseconds()))
+		case <-time.After(time.Duration(timeoutSecond) * time.Second):
+			slog.Error(fmt.Sprintf("事务执行超时:%ds", timeoutSecond))
 			txWrper.sqlxTx.Rollback()
 		case err := <-txWrper.txDoneChan:
 			if err != nil {

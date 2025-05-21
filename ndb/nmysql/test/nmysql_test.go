@@ -146,7 +146,7 @@ func TestSelectDyObj(t *testing.T) {
 func TestTx(t *testing.T) {
 	ntools.SlogSetTraceId("1111")
 
-	txr, _ := IDbWrapper.TxBgn(3 * time.Second)
+	txr, _ := IDbWrapper.TxBgn(3)
 	defer txr.TxCommit()
 
 	txr.Exec("DELETE FROM test01")
