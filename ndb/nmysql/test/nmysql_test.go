@@ -144,6 +144,7 @@ func TestSelectDyObj(t *testing.T) {
 }
 
 func TestTx(t *testing.T) {
+
 	ntools.SlogSetTraceId("1111")
 
 	txr, _ := IDbWrapper.TxBgn(3)
@@ -156,5 +157,6 @@ func TestTx(t *testing.T) {
 	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa2')")
 	fmt.Sprintln(r, err)
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(6 * time.Second)
+
 }

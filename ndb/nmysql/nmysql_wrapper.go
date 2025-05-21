@@ -236,9 +236,8 @@ func (ndbw *NMysqlWrapper) TxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err
 		case err := <-txWrper.txDoneChan:
 			if err != nil {
 				slog.Error("事务执行时发生错误:" + nerror.GenErrDetail(err))
-				txWrper.sqlxTx.Rollback()
 			} else {
-				slog.Info("事务执行完成")
+				slog.Info("事务执行并提交完成")
 			}
 		}
 	})
@@ -246,14 +245,26 @@ func (ndbw *NMysqlWrapper) TxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err
 }
 
 func (ndbw *NMysqlWrapper) TxCommit() error {
-	err := ndbw.sqlxTx.Commit()
-	ndbw.txDoneChan <- err
-	return err
+	if err := recover(); err != nil {
+		slog.Info(fmt.Sprintf("即将提交事务时,捕获到异常【%v】,执行回滚", err))
+		ndbw.TxRollBack(err.(error))
+		panic(err)
+	} else {
+		err := ndbw.sqlxTx.Commit()
+		slog.Info(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
+		if nil != err {
+			ndbw.TxRollBack(err)
+		} else {
+			ndbw.txDoneChan <- nil
+		}
+		return err
+	}
 }
 
 func (ndbw *NMysqlWrapper) TxRollBack(err error) {
 	if err == nil {
 		err = nerror.NewRunTimeError("手动回滚事务,但是没有传入错误")
 	}
+	ndbw.sqlxTx.Rollback()
 	ndbw.txDoneChan <- err
 }
