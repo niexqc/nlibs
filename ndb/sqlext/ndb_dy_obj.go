@@ -3,6 +3,7 @@ package sqlext
 import (
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/niexqc/nlibs/nerror"
@@ -56,4 +57,29 @@ func GetFiledVal[T NdbBasicType](dyObj *NdbDyObj, structFieldName string) (rt *T
 	} else {
 		return nil, nerror.NewRunTimeError(fmt.Sprintf("【%s】的字段类型为【%s】", structFieldName, fieldVal.Type().String()))
 	}
+}
+
+// insertField 需要用逗号分隔如【aaa,bbb,ccc】
+func InserSqlVals(insertField string, dostrcut any) ([]any, error) {
+	objVal := reflect.ValueOf(dostrcut)
+	if objVal.Kind() == reflect.Pointer {
+		objVal = objVal.Elem() //解引用
+	}
+	if objVal.Kind() != reflect.Struct {
+		return nil, nerror.NewRunTimeError("不能获取非结构的值")
+	}
+	objType := objVal.Type()
+
+	mapVals := map[string]any{}
+	for i := range objType.NumField() {
+		field := objType.Field(i)
+		tagDb := field.Tag.Get("db")
+		mapVals[tagDb] = objVal.Field(i).Interface()
+	}
+	vals := []any{}
+	dbFieldStrs := strings.Split(insertField, ",")
+	for _, v := range dbFieldStrs {
+		vals = append(vals, mapVals[v])
+	}
+	return vals, nil
 }

@@ -55,3 +55,28 @@ func TestNNullTime(t *testing.T) {
 	str := njson.SonicObj2Str(timeA)
 	fmt.Println(str)
 }
+
+func TestInserSqlVals(t *testing.T) {
+	type AAAA struct {
+		TaskId     string          `db:"task_id" json:"taskId" zhdesc:"任务编号"`
+		RmqMsgId   string          `db:"rmq_msg_id" json:"rmqMsgId" zhdesc:"RmqMsgId"`
+		SysCode    string          `db:"sys_code" json:"sysCode" zhdesc:"发送人编码"`
+		AreaCode   string          `db:"area_code" json:"areaCode" zhdesc:"地区编码"`
+		SendTime   sqlext.NullTime `db:"send_time" json:"sendTime" zhdesc:"发送时间"`
+		BizCode    string          `db:"biz_code" json:"bizCode" zhdesc:"业务编码"`
+		BizData    string          `db:"biz_data" json:"bizData" zhdesc:"业务数据"`
+		BizType    string          `db:"biz_type" json:"bizType" zhdesc:"操作类型"`
+		TaskStatus int             `db:"task_status" json:"taskStatus" zhdesc:"任务状态：0待执行-1成功-2失败"`
+		TaskMsg    string          `db:"task_msg" json:"taskMsg" zhdesc:"任务执行消息"`
+		CtTime     sqlext.NullTime `db:"ct_time" json:"ctTime" zhdesc:"创建时间"`
+		MdTime     sqlext.NullTime `db:"md_time" json:"mdTime" zhdesc:"修改时间"`
+	}
+	nowt := time.Now()
+	aaa := &AAAA{TaskId: "111", RmqMsgId: "SSSS", SendTime: sqlext.NewNullTime(&nowt), CtTime: sqlext.NewNullTime(nil)}
+
+	ColsStr := "task_id,rmq_msg_id,sys_code,area_code,send_time,biz_code,biz_data,biz_type,task_status,task_msg,ct_time,md_time"
+
+	vals, err := sqlext.InserSqlVals(ColsStr, aaa)
+
+	fmt.Println(vals, err)
+}
