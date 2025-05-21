@@ -3,6 +3,7 @@ package sqlext
 import (
 	"database/sql"
 	"encoding/json"
+	"time"
 
 	"strings"
 
@@ -15,6 +16,20 @@ type NullInt struct{ sql.NullInt32 }
 type NullInt64 struct{ sql.NullInt64 }
 type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
+
+func NewNullString(str string) NullString {
+	if str == "" {
+		return NullString{sql.NullString{Valid: false}}
+	}
+	return NullString{sql.NullString{Valid: true, String: str}}
+}
+
+func NewNullTime(time *time.Time) NullTime {
+	if time == nil {
+		return NullTime{sql.NullTime{Valid: false}}
+	}
+	return NullTime{sql.NullTime{Valid: true, Time: *time}}
+}
 
 func (ns NullString) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {

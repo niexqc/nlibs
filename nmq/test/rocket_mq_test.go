@@ -2,6 +2,7 @@ package nrocketmq_test
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"testing"
 	"time"
@@ -21,21 +22,23 @@ func init() {
 }
 
 func onReciveMsg(ctx context.Context, msg *primitive.MessageExt) (consumer.ConsumeResult, error) {
+
+	slog.Info(msg.GetProperty("type"))
+	slog.Info(msg.GetTags())
+
 	slog.Info(string(msg.Body))
-	return consumer.Commit, nil
+	return consumer.ConsumeSuccess, nil
 }
 
 func TestSendMsg(t *testing.T) {
-	// p01 := nmq.NewNMqProduer(NameServer, Topic, "p01")
-	// p01.SendOrderMsg("p01-test01"+ntools.Time2Str(time.Now()), "o", "")
-
+	p01 := nmq.NewNMqProduer(NameServer, Topic, "p01")
+	msgId, _ := p01.SendOrderMsg("p01-test01"+ntools.Time2Str(time.Now()), "o", "tA", nmq.NMqProperty{Key: "type", Val: "AAA"})
+	fmt.Println(msgId)
 	// p02 := nmq.NewNMqProduer(NameServer, Topic, "p02")
 	// p02.SendOrderMsg("p02-test01"+ntools.Time2Str(time.Now()), "o", "")
 
 	c01 := nmq.NewNMqConsumer(NameServer, Topic, "cc02", false)
-	c01.Subscribe("", onReciveMsg)
-	c02 := nmq.NewNMqConsumer(NameServer, Topic, "cc03", false)
-	c02.Subscribe("", onReciveMsg)
+	c01.Subscribe("*", onReciveMsg)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(2 * time.Second)
 }

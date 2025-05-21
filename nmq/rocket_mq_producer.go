@@ -17,6 +17,11 @@ type NMqProduer struct {
 	Consumer  rocketmq.PushConsumer
 }
 
+type NMqProperty struct {
+	Key string
+	Val string
+}
+
 func NewNMqProduer(nameSvrAddr, topic, groupName string) *NMqProduer {
 	rlog.SetLogLevel("warn")
 	myProducer, err := rocketmq.NewProducer(
@@ -39,14 +44,17 @@ func NewNMqProduer(nameSvrAddr, topic, groupName string) *NMqProduer {
 }
 
 // 发送顺序消息，tag可以为空
-func (mq *NMqProduer) SendOrderMsg(msgContent, shardingKey, tag string) (msgId string, err error) {
+func (mq *NMqProduer) SendOrderMsg(msgContent, shardingKey, tag string, prp ...NMqProperty) (msgId string, err error) {
 	msg := &primitive.Message{
 		Topic: mq.Topic,
 		Body:  []byte(msgContent),
 	}
 	msg.WithShardingKey(shardingKey)
-	if tag != "" {
-		msg.WithTag(tag)
+	msg.WithTag(tag)
+	if len(prp) > 0 {
+		for _, v := range prp {
+			msg.WithProperty(v.Key, v.Val)
+		}
 	}
 	res, err := mq.Producer.SendSync(context.Background(), msg)
 	if nil != err {
