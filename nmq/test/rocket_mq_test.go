@@ -22,11 +22,7 @@ func init() {
 }
 
 func onReciveMsg(ctx context.Context, msg *primitive.MessageExt) (consumer.ConsumeResult, error) {
-
-	slog.Info(msg.GetProperty("type"))
-	slog.Info(msg.GetTags())
-
-	slog.Info(string(msg.Body))
+	slog.Info(string(msg.Body) + " tag:" + msg.GetTags() + " Type:" + msg.GetProperty("type"))
 	return consumer.ConsumeSuccess, nil
 }
 
@@ -40,5 +36,5 @@ func TestSendMsg(t *testing.T) {
 	c01 := nmq.NewNMqConsumer(NameServer, Topic, "cc02", false)
 	c01.Subscribe("*", onReciveMsg)
 
-	time.Sleep(2 * time.Second)
+	time.Sleep(10 * time.Second)
 }
