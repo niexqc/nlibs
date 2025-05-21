@@ -77,8 +77,8 @@ func InserSqlVals(insertField string, dostrcut any) ([]any, error) {
 		mapVals[tagDb] = objVal.Field(i).Interface()
 	}
 	vals := []any{}
-	dbFieldStrs := strings.Split(insertField, ",")
-	for _, v := range dbFieldStrs {
+	dbFieldStrs := strings.SplitSeq(insertField, ",")
+	for v := range dbFieldStrs {
 		vals = append(vals, mapVals[v])
 	}
 	return vals, nil
