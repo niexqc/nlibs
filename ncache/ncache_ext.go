@@ -22,7 +22,7 @@ func NewRedisPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 
 	redisIdleTimeout := 100
 	redisMaxidle := 10
-	redisMaxactive := 2
+	redisMaxactive := 200
 
 	address := fmt.Sprintf("%s:%d", conf.RedisHost, conf.RedisPort)
 
