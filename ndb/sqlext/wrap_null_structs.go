@@ -3,6 +3,7 @@ package sqlext
 import (
 	"database/sql"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"strings"
@@ -39,7 +40,7 @@ func (ns NullString) MarshalJSON() ([]byte, error) {
 }
 
 func (ns *NullString) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	if string(data) == "null" || string(data) == "\"\"" {
 		ns.Valid = false
 		return nil
 	}
@@ -111,7 +112,13 @@ func (ns *NullFloat64) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	ns.Valid = true
-	return json.Unmarshal(data, &ns.Float64)
+
+	valStr := string(data)
+	valStr = strings.ReplaceAll(valStr, "\"", "")
+	num, err := strconv.ParseFloat(valStr, 64)
+	ns.Float64 = num
+	return err
+	// return json.Unmarshal(data, &ns.Float64)
 }
 
 func (ns NullBool) MarshalJSON() ([]byte, error) {

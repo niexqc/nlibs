@@ -1,6 +1,8 @@
 package njson
 
 import (
+	"log/slog"
+
 	"github.com/bytedance/sonic"
 	"github.com/bytedance/sonic/ast"
 	"github.com/niexqc/nlibs/nerror"
@@ -91,6 +93,20 @@ func SonicObj2Bytes(obj any) []byte {
 		panic(nerror.NewRunTimeErrorWithError("SonicObj2Bytes", err))
 	}
 	return bytes
+}
+
+func SonicNode2Obj[T any](node *ast.Node) *T {
+	bytes, err := node.MarshalJSON()
+	if err != nil {
+		panic(nerror.NewRunTimeErrorWithError("SonicNode2Obj-node2Bytes", err))
+	}
+	t := new(T)
+	err = sonic.Unmarshal(bytes, t)
+	if err != nil {
+		slog.Error(string(bytes))
+		panic(nerror.NewRunTimeErrorWithError("SonicNode2Obj-bytes2Obj", err))
+	}
+	return t
 }
 
 func SonicStr2Obj(str *string, t any) {
