@@ -90,6 +90,3 @@ func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err
 	}
 	return sb.String(), vals, nil
 }
-func NNullValue() {
-
-}
