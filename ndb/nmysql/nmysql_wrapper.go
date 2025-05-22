@@ -32,9 +32,9 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
 	if err != nil {
 		panic(err)
 	}
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(200)
-	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(time.Second * time.Duration(conf.ConnMaxLifetime))
+	db.SetMaxOpenConns(conf.MaxOpenConns)
+	db.SetMaxIdleConns(conf.MaxIdleConns)
 	return &NMysqlWrapper{sqlxDb: db, conf: conf, bgnTx: false}
 }
 

@@ -14,11 +14,14 @@ type YamlConfRedis struct {
 }
 
 type YamlConfDb struct {
-	DbHost string `yaml:"dbHost" hc:"dbHost"`
-	DbPort int64  `yaml:"dbPort" hc:"dbPort"`
-	DbUser string `yaml:"dbUser" hc:"dbUser"`
-	DbPwd  string `yaml:"dbPwd" hc:"dbPwd"`
-	DbName string `yaml:"dbName" hc:"DbName"`
+	DbHost          string `yaml:"dbHost" hc:"dbHost"`
+	DbPort          int64  `yaml:"dbPort" hc:"dbPort"`
+	DbUser          string `yaml:"dbUser" hc:"dbUser"`
+	DbPwd           string `yaml:"dbPwd" hc:"dbPwd"`
+	DbName          string `yaml:"dbName" hc:"DbName"`
+	ConnMaxLifetime int    `yaml:"connMaxLifetime" hc:"连接最大时长-秒"`
+	MaxOpenConns    int    `yaml:"maxOpenConns" hc:"MaxOpenConns"`
+	MaxIdleConns    int    `yaml:"maxIdleConns" hc:"MaxIdleConns"`
 
 	DbSqlLogPrint    bool   `yaml:"dbSqlLogPrint" hc:"Sql日志是否打印 true|false"`
 	DbSqlLogLevel    string `yaml:"dbSqlLogLevel" hc:"Sql日志使用【 debug|info|warn|error 】输出"`
