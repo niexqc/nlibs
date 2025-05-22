@@ -56,8 +56,8 @@ func nGinPrintReqLog(c *gin.Context, costTime *int64) {
 
 // MaxConcurrentHandlerFunc 掉项目可能出现的panic
 func MaxConcurrentHandlerFunc(max int) gin.HandlerFunc {
-	sem := make(chan int, max)
 	slog.Debug("Add Middleware MaxConcurrentHandlerFunc")
+	sem := make(chan int, max)
 	return func(c *gin.Context) {
 		select {
 		case sem <- 1: // 获取信号量
