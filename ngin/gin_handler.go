@@ -25,23 +25,23 @@ import (
 // GinLogger 接收gin框架默认的日志
 func LoggerHandlerFunc() gin.HandlerFunc {
 	slog.Debug("Add Middleware LoggerHandlerFunc")
-	return func(c *gin.Context) {
+	return func(ctx *gin.Context) {
 		start := time.Now()
-		costTime := int64(-1)
-		defer nGinPrintReqLog(c, &costTime)
-		c.Next()
-		costTime = time.Since(start).Milliseconds()
+		nGinPrintReqLog(ctx)
+		ctx.Next()
+		costTime := time.Since(start).Milliseconds()
+		slog.Info(fmt.Sprintf("%v\t%dms", ctx.Writer.Status(), costTime))
 	}
 }
 
-func nGinPrintReqLog(c *gin.Context, costTime *int64) {
-	headerVo := GetHeaderVoFromCtx(c)
+func nGinPrintReqLog(ctx *gin.Context) {
+	headerVo := GetHeaderVoFromCtx(ctx)
 	visitTar := headerVo.VisitTar
-	agentStr := (&ntools.NString{S: c.Request.UserAgent()}).CutString(32)
+	agentStr := (&ntools.NString{S: ctx.Request.UserAgent()}).CutString(32)
 	contentType := headerVo.ContentType
 
 	visitSrc := ntools.If3(headerVo.VisitSrc == "", "No_VisitSrc", headerVo.VisitSrc)
-	logStr := fmt.Sprintf("%s\t%s\t%s\t%s\t%d\t%dms\t%s", visitTar, c.Request.Method, visitSrc, c.ClientIP(), c.Writer.Status(), *costTime, ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
+	logStr := fmt.Sprintf("%s\t%s\t%s\t%s\t%s", visitTar, ctx.Request.Method, visitSrc, ctx.ClientIP(), ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
 	slog.Info(logStr)
 	// 打印原始请求参数
 	reqBodyStr := ""
@@ -50,7 +50,7 @@ func nGinPrintReqLog(c *gin.Context, costTime *int64) {
 	} else {
 		reqBodyStr = "Nil_ParseBody"
 	}
-	rawQuery := ntools.If3(c.Request.URL.RawQuery == "", "Nil_NoRawQuery", c.Request.URL.RawQuery)
+	rawQuery := ntools.If3(ctx.Request.URL.RawQuery == "", "Nil_NoRawQuery", ctx.Request.URL.RawQuery)
 	slog.Info(fmt.Sprintf("%s\t%s\t%s", contentType, rawQuery, reqBodyStr))
 }
 
