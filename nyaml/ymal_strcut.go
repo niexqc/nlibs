@@ -8,9 +8,16 @@ type YamlConfLog struct {
 }
 
 type YamlConfRedis struct {
-	RedisHost string `yaml:"redisHost" hc:"redisHost"`
-	RedisPort int    `yaml:"redisPort" hc:"redisPort"`
-	RedisPwd  string `yaml:"redisPwd" hc:"redisPwd"`
+	RedisHost      string `yaml:"redisHost" hc:"redisHost"`
+	RedisPort      int    `yaml:"redisPort" hc:"redisPort"`
+	RedisPwd       string `yaml:"redisPwd" hc:"redisPwd"`
+	DataBaseIdx    int    `yaml:"dataBaseIdx" hc:"dataBaseIdx"`
+	ConnectTimeout int    `yaml:"connectTimeout" hc:"连接超时时间-秒"`
+	ReadTimeout    int    `yaml:"readTimeout" hc:"读取超时时间-秒"`
+	WriteTimeout   int    `yaml:"writeTimeout" hc:"写入超时时间-秒"`
+	MaxIdle        int    `yaml:"maxIdle" hc:"MaxIdle"`
+	MaxActive      int    `yaml:"maxActive" hc:"MaxActive"`
+	IdleTimeout    int    `yaml:"idleTimeout" hc:"IdleTimeout-秒"`
 }
 
 type YamlConfDb struct {
