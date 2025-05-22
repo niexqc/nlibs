@@ -90,3 +90,14 @@ func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err
 	}
 	return sb.String(), vals, nil
 }
+
+func InserSqlInParam(vals []any) string {
+	sb := strings.Builder{}
+	for i := 0; i < len(vals); i++ {
+		if sb.Len() > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString("?")
+	}
+	return sb.String()
+}
