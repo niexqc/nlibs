@@ -33,7 +33,7 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
 		panic(err)
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(100)
+	db.SetMaxOpenConns(200)
 	db.SetMaxIdleConns(10)
 	return &NMysqlWrapper{sqlxDb: db, conf: conf, bgnTx: false}
 }
@@ -215,6 +215,9 @@ func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int6
 }
 
 func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err error) {
+	if timeoutSecond > 60 {
+		slog.Warn("事务时长超过60秒,判断下业务")
+	}
 	sqlTx, err := ndbw.sqlxDb.Beginx()
 	if nil != err {
 		return nil, err
@@ -236,7 +239,7 @@ func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, 
 			if err != nil {
 				slog.Error("事务执行时发生错误:" + nerror.GenErrDetail(err))
 			} else {
-				slog.Info("事务执行并提交完成")
+				slog.Debug("事务执行并提交完成")
 			}
 		}
 	})
@@ -245,13 +248,13 @@ func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, 
 
 func (ndbw *NMysqlWrapper) NdbTxCommit() error {
 	if err := recover(); err != nil {
-		slog.Info(fmt.Sprintf("即将提交事务时,捕获到异常【%v】,执行回滚", err))
+		slog.Error(fmt.Sprintf("即将提交事务时,捕获到异常【%v】,执行回滚", err))
 		ndbw.NdbTxRollBack(err.(error))
 		panic(err)
 	} else {
 		err := ndbw.sqlxTx.Commit()
 		if nil != err {
-			slog.Info(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
+			slog.Error(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
 			ndbw.NdbTxRollBack(err)
 		} else {
 			ndbw.txDoneChan <- nil

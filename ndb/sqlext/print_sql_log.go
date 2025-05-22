@@ -63,13 +63,8 @@ func sqlAnyArg(arg any) string {
 	default:
 		// 反射检查底层类型（例如处理自定义类型）
 		rt := reflect.TypeOf(arg)
-		if rt == reflect.TypeOf(NullTime{}) {
-			nnullTime := arg.(NullTime)
-			if nnullTime.Valid {
-				return fmt.Sprintf("'%v'", ntools.Time2Str(nnullTime.Time))
-			} else {
-				return "NULL"
-			}
+		if nullType, str := nullTypeResult(arg, rt); nullType {
+			return str
 		} else {
 			rv := reflect.ValueOf(arg)
 			switch rv.Kind() {
@@ -82,4 +77,52 @@ func sqlAnyArg(arg any) string {
 			}
 		}
 	}
+}
+
+func nullTypeResult(arg any, rt reflect.Type) (bool, string) {
+	if rt == reflect.TypeOf(NullTime{}) {
+		nullv := arg.(NullTime)
+		if nullv.Valid {
+			return true, fmt.Sprintf("'%v'", ntools.Time2Str(nullv.Time))
+		} else {
+			return true, "NULL"
+		}
+	} else if rt == reflect.TypeOf(NullString{}) {
+		nullv := arg.(NullString)
+		if nullv.Valid {
+			return true, fmt.Sprintf("'%v'", nullv.String)
+		} else {
+			return true, "NULL"
+		}
+	} else if rt == reflect.TypeOf(NullInt{}) {
+		nullv := arg.(NullInt)
+		if nullv.Valid {
+			return true, fmt.Sprintf("%v", nullv.Int32)
+		} else {
+			return true, "NULL"
+		}
+	} else if rt == reflect.TypeOf(NullInt64{}) {
+		nullv := arg.(NullInt64)
+		if nullv.Valid {
+			return true, fmt.Sprintf("%v", nullv.Int64)
+		} else {
+			return true, "NULL"
+		}
+	} else if rt == reflect.TypeOf(NullFloat64{}) {
+		nullv := arg.(NullFloat64)
+		if nullv.Valid {
+			return true, fmt.Sprintf("%v", nullv.Float64)
+		} else {
+			return true, "NULL"
+		}
+	} else if rt == reflect.TypeOf(NullBool{}) {
+		nullv := arg.(NullBool)
+		if nullv.Valid {
+			return true, fmt.Sprintf("%v", nullv.Bool)
+		} else {
+			return true, "NULL"
+		}
+	}
+
+	return false, ""
 }
