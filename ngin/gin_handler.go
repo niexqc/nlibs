@@ -54,6 +54,21 @@ func nGinPrintReqLog(c *gin.Context, costTime *int64) {
 	slog.Info(fmt.Sprintf("%s\t%s\t%s", contentType, rawQuery, reqBodyStr))
 }
 
+// MaxConcurrentHandlerFunc 掉项目可能出现的panic
+func MaxConcurrentHandlerFunc(max int) gin.HandlerFunc {
+	sem := make(chan int, max)
+	slog.Debug("Add Middleware MaxConcurrentHandlerFunc")
+	return func(c *gin.Context) {
+		select {
+		case sem <- 1: // 获取信号量
+			defer func() { <-sem }() // 处理完成后释放
+			c.Next()
+		default:
+			c.AbortWithStatusJSON(429, gin.H{"error": "服务繁忙，请稍后重试"})
+		}
+	}
+}
+
 // Recovery recover掉项目可能出现的panic
 func RecoveryHandlerFunc() gin.HandlerFunc {
 	slog.Debug("Add Middleware RecoveryHandlerFunc")

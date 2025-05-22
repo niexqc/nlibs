@@ -15,8 +15,14 @@ type NGin struct {
 }
 
 func NewNGin() *NGin {
+	return NewNGinWithMaxConcurrent(100)
+}
+
+func NewNGinWithMaxConcurrent(max int) *NGin {
 	gin.SetMode(gin.ReleaseMode)
-	return &NGin{GinEngine: gin.New()}
+	ngin := &NGin{GinEngine: gin.New()}
+	ngin.Use(MaxConcurrentHandlerFunc(max))
+	return ngin
 }
 
 func (nGin *NGin) Use(middleware ...gin.HandlerFunc) gin.IRoutes {
