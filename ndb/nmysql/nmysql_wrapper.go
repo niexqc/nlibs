@@ -1,10 +1,14 @@
 package nmysql
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"reflect"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -12,15 +16,24 @@ import (
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/nyaml"
-	"github.com/timandy/routine"
+)
+
+const (
+	txInActive   = int32(1)
+	txActive     = int32(2)
+	txCommitted  = int32(3)
+	txRolledBack = int32(4)
 )
 
 type NMysqlWrapper struct {
-	sqlxDb     *sqlx.DB
-	conf       *nyaml.YamlConfDb
-	bgnTx      bool
-	sqlxTx     *sqlx.Tx
-	txDoneChan chan error
+	sqlxDb                  *sqlx.DB
+	conf                    *nyaml.YamlConfDb
+	bgnTx                   bool
+	sqlxTx                  *sqlx.Tx
+	sqlxTxContext           context.Context
+	sqlxTxContextCancelFunc context.CancelFunc
+	txState                 int32 //
+	txMutx                  *sync.Mutex
 }
 
 func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
@@ -218,55 +231,68 @@ func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, 
 	if timeoutSecond > 60 {
 		slog.Warn("事务时长超过60秒,判断下业务")
 	}
-	sqlTx, err := ndbw.sqlxDb.Beginx()
-	if nil != err {
-		return nil, err
-	}
+
+	txCtx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecond)*time.Second)
 	mysqlTxWrapper := new(NMysqlWrapper)
 	mysqlTxWrapper.sqlxDb = ndbw.sqlxDb
 	mysqlTxWrapper.conf = ndbw.conf
 	mysqlTxWrapper.bgnTx = true
-	mysqlTxWrapper.sqlxTx = sqlTx
+	mysqlTxWrapper.sqlxTxContext = txCtx
 
-	//运行超时检监测的协程
-	mysqlTxWrapper.txDoneChan = make(chan error, 1)
-	routine.Go(func() {
-		select {
-		case <-time.After(time.Duration(timeoutSecond) * time.Second):
-			slog.Error(fmt.Sprintf("事务执行超时:%ds", timeoutSecond))
-			txWrper.sqlxTx.Rollback()
-		case err := <-txWrper.txDoneChan:
-			if err != nil {
-				slog.Error("事务执行时发生错误:" + nerror.GenErrDetail(err))
-			} else {
-				slog.Debug("事务执行并提交完成")
-			}
-		}
-	})
-	return mysqlTxWrapper, nil
+	sqlTx, err := ndbw.sqlxDb.BeginTxx(mysqlTxWrapper.sqlxTxContext, nil)
+	if err == nil {
+		mysqlTxWrapper.txState = txActive
+		mysqlTxWrapper.sqlxTxContextCancelFunc = cancel
+		mysqlTxWrapper.sqlxTx = sqlTx
+		mysqlTxWrapper.txMutx = &sync.Mutex{}
+		return mysqlTxWrapper, nil
+	} else {
+		mysqlTxWrapper.txState = txInActive
+		cancel() // 立即释放
+		return nil, err
+	}
 }
 
 func (ndbw *NMysqlWrapper) NdbTxCommit() error {
-	if err := recover(); err != nil {
-		slog.Error(fmt.Sprintf("即将提交事务时,捕获到异常【%v】,执行回滚", err))
-		ndbw.NdbTxRollBack(err.(error))
-		panic(err)
-	} else {
-		err := ndbw.sqlxTx.Commit()
-		if nil != err {
-			slog.Error(fmt.Sprintf("执行事务提交时,捕获到异常【%v】,执行回滚", err))
-			ndbw.NdbTxRollBack(err)
-		} else {
-			ndbw.txDoneChan <- nil
-		}
+	ndbw.txMutx.Lock()
+	defer ndbw.txMutx.Unlock()
+	defer ndbw.sqlxTxContextCancelFunc()
+	// 执行提交的时候检查是否有异常， 如果有异常就直接回滚
+	if rerr := recover(); rerr != nil {
+		err := rerr.(error)
+		slog.Error(fmt.Sprintf("提交事务前,捕获到异常【%v】,执行回滚", err))
+		ndbw.NdbTxRollBack(err)
 		return err
 	}
+	// 提交时原子检查状态
+	if !atomic.CompareAndSwapInt32(&ndbw.txState, txActive, txCommitted) {
+		return errors.New("提交事务前,检查事务状态,事务已结束")
+	}
+	err := ndbw.sqlxTx.Commit()
+	if nil != err {
+		// 明确标记状态避免重复操作
+		atomic.StoreInt32(&ndbw.txState, txRolledBack)
+		slog.Error("事务提交时,捕获到异常", "异常原因", err)
+	}
+	return err
 }
 
-func (ndbw *NMysqlWrapper) NdbTxRollBack(err error) {
-	if err == nil {
-		err = nerror.NewRunTimeError("手动回滚事务,但是没有传入错误")
+func (ndbw *NMysqlWrapper) NdbTxRollBack(err error) error {
+	ndbw.txMutx.Lock()
+	defer ndbw.txMutx.Unlock()
+	defer ndbw.sqlxTxContextCancelFunc()
+	if nil != err {
+		slog.Error("异常回滚事务", "原始错误", err)
 	}
-	ndbw.sqlxTx.Rollback()
-	ndbw.txDoneChan <- err
+	// 提交时原子检查状态
+	if !atomic.CompareAndSwapInt32(&ndbw.txState, txActive, txRolledBack) {
+		slog.Error("回滚事务前,检查事务状态,事务已结束")
+		return nerror.NewRunTimeError("回滚事务前,检查事务状态,事务已结束")
+	}
+	rollbackErr := ndbw.sqlxTx.Rollback()
+	if rollbackErr != nil {
+		slog.Error("事务回滚失败", "原始错误", err, "回滚失败错误", rollbackErr)
+		return rollbackErr
+	}
+	return nil
 }

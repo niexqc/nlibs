@@ -55,8 +55,6 @@ type Test01Do struct {
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 	IDbWrapper = ndb.NewNMysqlWrapper(dbconf)
-	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
-	IDbWrapper.Exec(ctTableSql)
 }
 
 func TestSelectOne(t *testing.T) {
@@ -150,11 +148,16 @@ func TestTx(t *testing.T) {
 	txr, _ := IDbWrapper.NdbTxBgn(3)
 	defer txr.NdbTxCommit()
 
-	txr.Exec("DELETE FROM test01")
-	r, err := txr.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	// IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
+	// IDbWrapper.Exec(ctTableSql)
+
+	r, err := txr.Insert("INSERT into test01(id,t03_varchar) VALUES(5,'aaa1')")
 	fmt.Sprintln(r, err)
 
-	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa2')")
+	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(6,'aaa2')")
+	if nil != err {
+		panic(err)
+	}
 	fmt.Sprintln(r, err)
 
 	time.Sleep(6 * time.Second)
