@@ -23,18 +23,18 @@ import (
 )
 
 // GinLogger 接收gin框架默认的日志
-func LoggerHandlerFunc() gin.HandlerFunc {
+func LoggerHandlerFunc(showReqBody bool) gin.HandlerFunc {
 	slog.Debug("Add Middleware LoggerHandlerFunc")
 	return func(ctx *gin.Context) {
 		start := time.Now()
-		nGinPrintReqLog(ctx)
+		nGinPrintReqLog(ctx, showReqBody)
 		ctx.Next()
 		costTime := time.Since(start).Milliseconds()
 		slog.Info(fmt.Sprintf("%v\t%dms", ctx.Writer.Status(), costTime))
 	}
 }
 
-func nGinPrintReqLog(ctx *gin.Context) {
+func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 	headerVo := GetHeaderVoFromCtx(ctx)
 	visitTar := headerVo.VisitTar
 	agentStr := (&ntools.NString{S: ctx.Request.UserAgent()}).CutString(32)
@@ -44,14 +44,18 @@ func nGinPrintReqLog(ctx *gin.Context) {
 	logStr := fmt.Sprintf("%s\t%s\t%s\t%s\t%s", visitTar, ctx.Request.Method, visitSrc, ctx.ClientIP(), ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
 	slog.Info(logStr)
 	// 打印原始请求参数
-	reqBodyStr := ""
-	if strings.ContainsAny(contentType, "json") || strings.ContainsAny(contentType, "text") || strings.ContainsAny(contentType, "xml") {
-		reqBodyStr = string(*headerVo.ReqBody)
-	} else {
-		reqBodyStr = "Nil_ParseBody"
-	}
 	rawQuery := ntools.If3(ctx.Request.URL.RawQuery == "", "Nil_NoRawQuery", ctx.Request.URL.RawQuery)
-	slog.Info(fmt.Sprintf("%s\t%s\t%s", contentType, rawQuery, reqBodyStr))
+	if showReqBody {
+		reqBodyStr := ""
+		if strings.ContainsAny(contentType, "json") || strings.ContainsAny(contentType, "text") || strings.ContainsAny(contentType, "xml") {
+			reqBodyStr = string(*headerVo.ReqBody)
+		} else {
+			reqBodyStr = "Nil_ParseBody"
+		}
+		slog.Info(fmt.Sprintf("%s\t%s\t%s", contentType, rawQuery, reqBodyStr))
+	} else {
+		slog.Info(fmt.Sprintf("%s\t%s", contentType, rawQuery))
+	}
 }
 
 // MaxConcurrentHandlerFunc 掉项目可能出现的panic
