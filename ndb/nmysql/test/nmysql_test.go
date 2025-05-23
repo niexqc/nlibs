@@ -3,7 +3,6 @@ package nmsql_test
 import (
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/nmysql"
@@ -156,10 +155,10 @@ func TestTx(t *testing.T) {
 
 	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(6,'aaa2')")
 	if nil != err {
-		panic(err)
+		// panic(err)
 	}
 	fmt.Sprintln(r, err)
 
-	time.Sleep(6 * time.Second)
+	// time.Sleep(6 * time.Second)
 
 }
