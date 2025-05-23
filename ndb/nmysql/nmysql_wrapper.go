@@ -231,7 +231,6 @@ func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, 
 	if timeoutSecond > 60 {
 		slog.Warn("事务时长超过60秒,判断下业务")
 	}
-
 	txCtx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecond)*time.Second)
 	mysqlTxWrapper := new(NMysqlWrapper)
 	mysqlTxWrapper.sqlxDb = ndbw.sqlxDb
@@ -271,6 +270,8 @@ func (ndbw *NMysqlWrapper) NdbTxCommit() error {
 	err := ndbw.sqlxTx.Commit()
 	if nil != err {
 		slog.Error("事务提交时,捕获到异常", "异常原因", err)
+	} else {
+		slog.Debug("事务提交成功")
 	}
 	return err
 }
