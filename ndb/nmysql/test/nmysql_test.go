@@ -147,8 +147,8 @@ func TestTx(t *testing.T) {
 	txr, _ := IDbWrapper.NdbTxBgn(3)
 	defer txr.NdbTxCommit()
 
-	// IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
-	// IDbWrapper.Exec(ctTableSql)
+	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
+	IDbWrapper.Exec(ctTableSql)
 
 	r, err := txr.Insert("INSERT into test01(id,t03_varchar) VALUES(5,'aaa1')")
 	fmt.Sprintln(r, err)
