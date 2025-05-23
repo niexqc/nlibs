@@ -16,14 +16,14 @@ type NGin struct {
 }
 
 func NewNGin() *NGin {
-	return NewNGinWithMaxConcurrent(100)
+	nvalider := NewNValider("json", "zhdesc")
+	return NewNGinWithMaxConcurrent(100, nvalider)
 }
 
-func NewNGinWithMaxConcurrent(max int) *NGin {
+func NewNGinWithMaxConcurrent(max int, nvalider *NValider) *NGin {
 	gin.SetMode(gin.ReleaseMode)
-	valider := NewNValider("json", "zhdesc")
 
-	ngin := &NGin{GinEngine: gin.New(), NValider: valider}
+	ngin := &NGin{GinEngine: gin.New(), NValider: nvalider}
 	ngin.Use(MaxConcurrentHandlerFunc(max))
 	return ngin
 }

@@ -1,6 +1,7 @@
 package ngin
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"log/slog"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	ut "github.com/go-playground/universal-translator"
 	"github.com/go-playground/validator/v10"
 	zh_translations "github.com/go-playground/validator/v10/translations/zh"
+	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 )
 
@@ -39,11 +41,30 @@ func NewNValider(tagJsonName, tagZhdescName string) *NValider {
 			}
 			return fld.Name
 		})
+		// 注册自定义类型
+		registerNullFunc(v)
+
 		return &NValider{Validate: v, ZhTrans: zhTrans}
 	} else {
 		panic(nerror.NewRunTimeError("检查binding.Validator.Engine()是否是*validator.Validate"))
 	}
 
+}
+func registerNullFunc(validate *validator.Validate) {
+	validate.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if valuer, ok := field.Interface().(driver.Valuer); ok {
+			val, _ := valuer.Value()
+			return val
+		}
+		return nil
+	},
+		sqlext.NullString{},
+		sqlext.NullTime{},
+		sqlext.NullInt{},
+		sqlext.NullString{},
+		sqlext.NullInt64{},
+		sqlext.NullFloat64{},
+		sqlext.NullBool{})
 }
 
 func (nvld *NValider) TransErr2Zh(err error) {
@@ -55,6 +76,18 @@ func (nvld *NValider) TransErr2Zh(err error) {
 		}
 		panic(validErr)
 	}
+}
+
+func (nvld *NValider) TransErr2ZhErr(err error) error {
+	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		validErr := &NiexqValidErr{}
+		// 遍历每个错误并翻译
+		for _, e := range validationErrors {
+			validErr.ErrDescList = append(validErr.ErrDescList, e.Translate(nvld.ZhTrans)+";")
+		}
+		return validErr
+	}
+	return err
 }
 
 type NiexqValidErr struct {
