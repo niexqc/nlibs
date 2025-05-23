@@ -12,6 +12,7 @@ import (
 
 type NGin struct {
 	GinEngine *gin.Engine
+	NValider  *NValider
 }
 
 func NewNGin() *NGin {
@@ -20,7 +21,9 @@ func NewNGin() *NGin {
 
 func NewNGinWithMaxConcurrent(max int) *NGin {
 	gin.SetMode(gin.ReleaseMode)
-	ngin := &NGin{GinEngine: gin.New()}
+	valider := NewNValider("json", "zhdesc")
+
+	ngin := &NGin{GinEngine: gin.New(), NValider: valider}
 	ngin.Use(MaxConcurrentHandlerFunc(max))
 	return ngin
 }
@@ -51,11 +54,11 @@ func (nGin *NGin) RouterRedirect(redirectPath string, ctx *gin.Context) {
 	nGin.GinEngine.HandleContext(ctx)
 }
 
-func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context) *T {
+func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context, nValider *NValider) *T {
 	if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "application/json") {
-		return ShouldBindJSON[T](ctx)
+		return ShouldBindJSON[T](ctx, nValider)
 	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "	application/x-www-form-urlencoded") {
-		return ShouldBind[T](ctx)
+		return ShouldBind[T](ctx, nValider)
 	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "multipart/form-data") {
 		panic(nerror.NewRunTimeError("ContentType:multipart/form-data 还未处理"))
 	} else {
@@ -63,28 +66,28 @@ func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context) *T 
 	}
 }
 
-func ShouldBind[T any](ctx *gin.Context) *T {
+func ShouldBind[T any](ctx *gin.Context, nValider *NValider) *T {
 	obj := new(T)
 	if err := ctx.ShouldBind(obj); err != nil {
-		transErr2Zh(err)
+		nValider.TransErr2Zh(err)
 		return obj
 	}
 	return obj
 }
 
-func ShouldBindJSON[T any](ctx *gin.Context) *T {
+func ShouldBindJSON[T any](ctx *gin.Context, nValider *NValider) *T {
 	obj := new(T)
 	if err := ctx.ShouldBindJSON(obj); err != nil {
-		transErr2Zh(err)
+		nValider.TransErr2Zh(err)
 		return obj
 	}
 	return obj
 }
 
-func ReadHeader(ctx *gin.Context) *NiexqGinHeaderVo {
+func ReadHeader(ctx *gin.Context, nValider *NValider) *NiexqGinHeaderVo {
 	obj := &NiexqGinHeaderVo{}
 	if err := ctx.ShouldBindJSON(obj); err != nil {
-		transErr2Zh(err)
+		nValider.TransErr2Zh(err)
 		return obj
 	}
 	return obj
