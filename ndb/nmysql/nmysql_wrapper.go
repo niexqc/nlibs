@@ -270,8 +270,6 @@ func (ndbw *NMysqlWrapper) NdbTxCommit() error {
 	}
 	err := ndbw.sqlxTx.Commit()
 	if nil != err {
-		// 明确标记状态避免重复操作
-		atomic.StoreInt32(&ndbw.txState, txRolledBack)
 		slog.Error("事务提交时,捕获到异常", "异常原因", err)
 	}
 	return err
