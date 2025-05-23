@@ -61,10 +61,10 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 // MaxConcurrentHandlerFunc 掉项目可能出现的panic
 func MaxConcurrentHandlerFunc(max int) gin.HandlerFunc {
 	slog.Debug("Add Middleware MaxConcurrentHandlerFunc")
-	sem := make(chan int, max)
+	sem := make(chan struct{}, max)
 	return func(c *gin.Context) {
 		select {
-		case sem <- 1: // 获取信号量
+		case sem <- struct{}{}: // 获取信号量
 			defer func() { <-sem }() // 处理完成后释放
 			c.Next()
 		default:
