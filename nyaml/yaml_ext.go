@@ -150,12 +150,8 @@ func anyToYamlNode(model any, skip bool) (*yaml.Node, error) {
 
 		model = res
 	}
-
-	v := reflect.ValueOf(model)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
+	modev := ntools.AnyElem(model)
+	v := reflect.ValueOf(modev)
 	node := new(yaml.Node)
 
 	switch v.Kind() {

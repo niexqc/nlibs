@@ -51,11 +51,9 @@ func SqlFmt(sqlStr string, args ...any) string {
 }
 
 func sqlAnyArg(arg any) string {
-	argvf := reflect.ValueOf(arg)
-	if argvf.Kind() == reflect.Ptr {
-		argvf = argvf.Elem()
-	}
-	switch v := argvf.Interface().(type) {
+	//如果是指针需要解引用
+	argv := ntools.AnyElem(arg)
+	switch v := argv.(type) {
 	case nil:
 		return "NULL"
 	case bool:
