@@ -58,7 +58,7 @@ type NiexqGinHeaderVo struct {
 	UserAgent   string `json:"userAgent" zhdesc:"用户浏览器"`
 	ContentType string `json:"contentType" zhdesc:"请求的类型" `
 
-	UserToken string `json:"userToken" zhdesc:"用户访问凭证" `
+	UserToken string `json:"userToken" zhdesc:"用户访问凭证" header:"user-token"`
 
 	AppType string `json:"clientType" zhdesc:"客户端类型" `
 	AppVer  string `json:"clientVer" zhdesc:"客户端版本" `
@@ -69,7 +69,7 @@ type NiexqGinHeaderVo struct {
 
 	VisitTar string  `json:"VisitTar" zhdesc:"请求访问的目标" `
 	UserIp   string  `json:"clientIp" zhdesc:"客户端Ip" `
-	ReqBody  *[]byte `json:"reqBody" zhdesc:"请求原始的Body" `
+	ReqBody  *[]byte `json:"-" zhdesc:"请求原始的Body" `
 }
 
 func emptyObj() *BaseResp {
