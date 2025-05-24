@@ -51,7 +51,11 @@ func SqlFmt(sqlStr string, args ...any) string {
 }
 
 func sqlAnyArg(arg any) string {
-	switch v := arg.(type) {
+	argvf := reflect.ValueOf(arg)
+	if argvf.Kind() == reflect.Ptr {
+		argvf = argvf.Elem()
+	}
+	switch v := argvf.Interface().(type) {
 	case nil:
 		return "NULL"
 	case bool:

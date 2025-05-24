@@ -18,15 +18,16 @@ type NGin struct {
 
 func NewNGin() *NGin {
 	nvalider := NewNValider("json", "zhdesc")
-	return NewNGinWithMaxConcurrent(100, 100, nvalider)
+	return NewNGinWithMaxConcurrent(100, 200, 100, nvalider)
 }
 
-func NewNGinWithMaxConcurrent(maxConcurrent int, maxBodySize int64, nvalider *NValider) *NGin {
+func NewNGinWithMaxConcurrent(maxConcurrent int, maxMultipartMemory, maxBodySize int64, nvalider *NValider) *NGin {
 	gin.SetMode(gin.ReleaseMode)
 
 	ngin := &NGin{GinEngine: gin.New(), NValider: nvalider}
+	ngin.GinEngine.MaxMultipartMemory = maxMultipartMemory << 20 // 50MB 内存缓冲区
 	ngin.Use(MaxConcurrentHandlerFunc(maxConcurrent))
-	ngin.Use(limits.RequestSizeLimiter(maxBodySize << 20))
+	ngin.Use(limits.RequestSizeLimiter(maxBodySize << 20)) // 请求大小限制
 	return ngin
 }
 
