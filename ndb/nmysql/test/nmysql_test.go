@@ -2,11 +2,13 @@ package nmsql_test
 
 import (
 	"fmt"
+	"log/slog"
 	"testing"
 
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -158,6 +160,22 @@ func TestTx(t *testing.T) {
 		// panic(err)
 	}
 	fmt.Sprintln(r, err)
+
+	// time.Sleep(6 * time.Second)
+
+}
+
+func TestSqlInNotExist(t *testing.T) {
+
+	ntools.SlogSetTraceId("1111")
+
+	txr, _ := IDbWrapper.NdbTxBgn(3)
+	defer txr.NdbTxCommit()
+
+	ids := []int64{5, 6}
+	sqlStr, allArgs, _ := sqlext.SqlInNotExist("test01", "id", ids)
+
+	slog.Info(sqlStr + njson.SonicObj2Str(allArgs))
 
 	// time.Sleep(6 * time.Second)
 

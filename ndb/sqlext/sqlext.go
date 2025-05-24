@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
@@ -125,4 +127,37 @@ func nullTypeResult(arg any, rt reflect.Type) (bool, string) {
 	}
 
 	return false, ""
+}
+
+// 使用In查询返回没有记录的 参数
+func SqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T) (sqlStr string, allArgs []T, err error) {
+	if len(args) < 1 {
+		return sqlStr, allArgs, nerror.NewRunTimeError("参数个数必须大于0")
+	}
+
+	sqlStr = `	SELECT t1.%s FROM (%s) t1 
+	LEFT JOIN (%s) t2 ON t1.%s=t2.%s
+	WHERE t2.%s IS NULL`
+
+	t2SqlStr := fmt.Sprintf(" SELECT %s FROM  %s WHERE %s IN (?)", dbFieldName, tableName, dbFieldName)
+	t2SqlStr, inAraargs, err := sqlx.In(t2SqlStr, args) // []T 和 []interface{}（即 []any）类型不兼容，无法直接赋值。
+	if nil != err {
+		return sqlStr, allArgs, nil
+	}
+
+	lenArgs := len(args)
+	allArgs = make([]T, lenArgs*2)
+	t1SqlStr := ""
+	for idx, v := range inAraargs {
+		if idx > 0 {
+			t1SqlStr += " UNION ALL "
+		}
+		t1SqlStr += fmt.Sprintf(" SELECT ? AS %s", dbFieldName)
+		allArgs[idx] = v.(T)
+		allArgs[idx+lenArgs] = v.(T)
+	}
+
+	sqlStr = fmt.Sprintf(sqlStr, dbFieldName, t1SqlStr, t2SqlStr, dbFieldName, dbFieldName, dbFieldName)
+
+	return sqlStr, allArgs, nil
 }
