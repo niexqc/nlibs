@@ -6,6 +6,7 @@ import (
 
 	"strings"
 
+	limits "github.com/gin-contrib/size"
 	"github.com/gin-gonic/gin"
 	"github.com/niexqc/nlibs/nerror"
 )
@@ -17,14 +18,15 @@ type NGin struct {
 
 func NewNGin() *NGin {
 	nvalider := NewNValider("json", "zhdesc")
-	return NewNGinWithMaxConcurrent(100, nvalider)
+	return NewNGinWithMaxConcurrent(100, 100, nvalider)
 }
 
-func NewNGinWithMaxConcurrent(max int, nvalider *NValider) *NGin {
+func NewNGinWithMaxConcurrent(maxConcurrent int, maxBodySize int64, nvalider *NValider) *NGin {
 	gin.SetMode(gin.ReleaseMode)
 
 	ngin := &NGin{GinEngine: gin.New(), NValider: nvalider}
-	ngin.Use(MaxConcurrentHandlerFunc(max))
+	ngin.Use(MaxConcurrentHandlerFunc(maxConcurrent))
+	ngin.Use(limits.RequestSizeLimiter(maxBodySize << 20))
 	return ngin
 }
 
