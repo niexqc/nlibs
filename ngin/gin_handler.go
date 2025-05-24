@@ -29,22 +29,26 @@ func LoggerHandlerFunc(showReqBody bool) gin.HandlerFunc {
 		start := time.Now()
 		nGinPrintReqLog(ctx, showReqBody)
 		ctx.Next()
-		costTime := time.Since(start).Milliseconds()
-		slog.Info(fmt.Sprintf("%v\t%dms", ctx.Writer.Status(), costTime))
+		slog.Info(fmt.Sprintf("Resp:%s\t%v\t%dms", ctx.Request.RequestURI, ctx.Writer.Status(), time.Since(start).Milliseconds()))
 	}
 }
 
 func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 	headerVo := GetHeaderVoFromCtx(ctx)
 	visitTar := headerVo.VisitTar
-	agentStr := (&ntools.NString{S: ctx.Request.UserAgent()}).CutString(32)
+	rawQuery := ntools.If3(ctx.Request.URL.RawQuery == "", "Nil_NoRawQuery", ctx.Request.URL.RawQuery)
+	reqMethod := ctx.Request.Method
 	contentType := headerVo.ContentType
-
 	visitSrc := ntools.If3(headerVo.VisitSrc == "", "No_VisitSrc", headerVo.VisitSrc)
-	logStr := fmt.Sprintf("%s\t%s\t%s\t%s\t%s", visitTar, ctx.Request.Method, visitSrc, ctx.ClientIP(), ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr))
+	clientIp := ctx.ClientIP()
+
+	agentStr := (&ntools.NString{S: ctx.Request.UserAgent()}).CutString(120)
+	agentStr = ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr)
+
+	logStr := fmt.Sprintf("Req:%s\t%s\t%s\t%s\t%s\t%s\t%s", visitTar, rawQuery, reqMethod, contentType, visitSrc, clientIp, agentStr)
 	slog.Info(logStr)
 	// 打印原始请求参数
-	rawQuery := ntools.If3(ctx.Request.URL.RawQuery == "", "Nil_NoRawQuery", ctx.Request.URL.RawQuery)
+
 	if showReqBody {
 		reqBodyStr := ""
 		if strings.ContainsAny(contentType, "json") || strings.ContainsAny(contentType, "text") || strings.ContainsAny(contentType, "xml") {
@@ -52,9 +56,7 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 		} else {
 			reqBodyStr = "Nil_ParseBody"
 		}
-		slog.Info(fmt.Sprintf("%s\t%s\t%s", contentType, rawQuery, reqBodyStr))
-	} else {
-		slog.Info(fmt.Sprintf("%s\t%s", contentType, rawQuery))
+		slog.Info(fmt.Sprintf("ReqBody:%s", reqBodyStr))
 	}
 }
 
@@ -118,12 +120,12 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		return &body
 	}
 
-	return func(c *gin.Context) {
-		readAndResetBody(c)
-		ginHeaders := c.Request.Header
+	return func(ctx *gin.Context) {
+		readAndResetBody(ctx)
+		ginHeaders := ctx.Request.Header
 		heaerVo := NiexqGinHeaderVo{}
-		heaerVo.ReqBody = readAndResetBody(c)
-		heaerVo.UserAgent = ginHeaders.Get("user-agent")
+		heaerVo.ReqBody = readAndResetBody(ctx)
+		heaerVo.UserAgent = ctx.Request.UserAgent()
 		heaerVo.ContentType = ginHeaders.Get("content-type")
 		heaerVo.UserToken = ginHeaders.Get("user-token")
 		heaerVo.AppType = ginHeaders.Get("app-type")
@@ -131,10 +133,10 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo.ClientTime = ginHeaders.Get("client-time")
 		heaerVo.OneceStr = ginHeaders.Get("onece-str")
 		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
-		heaerVo.UserIp = c.ClientIP()
-		heaerVo.VisitTar = c.Request.RequestURI
-		c.Set(reflect.TypeOf(heaerVo).Name(), &heaerVo)
-		c.Next()
+		heaerVo.UserIp = ctx.ClientIP()
+		heaerVo.VisitTar = ctx.Request.RequestURI
+		ctx.Set(reflect.TypeOf(heaerVo).Name(), &heaerVo)
+		ctx.Next()
 	}
 }
 
