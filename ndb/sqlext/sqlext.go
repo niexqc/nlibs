@@ -139,25 +139,24 @@ func SqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T) (sql
 	LEFT JOIN (%s) t2 ON t1.%s=t2.%s
 	WHERE t2.%s IS NULL`
 
-	t2SqlStr := fmt.Sprintf(" SELECT %s FROM  %s WHERE %s IN (?)", dbFieldName, tableName, dbFieldName)
-	t2SqlStr, inAraargs, err := sqlx.In(t2SqlStr, args) // []T 和 []interface{}（即 []any）类型不兼容，无法直接赋值。
-	if nil != err {
-		return sqlStr, allArgs, nil
-	}
-
-	lenArgs := len(args)
-	allArgs = make([]T, lenArgs*2)
 	t1SqlStr := ""
-	for idx, v := range inAraargs {
+	for idx := range args {
 		if idx > 0 {
 			t1SqlStr += " UNION ALL "
 		}
 		t1SqlStr += fmt.Sprintf(" SELECT ? AS %s", dbFieldName)
-		allArgs[idx] = v.(T)
-		allArgs[idx+lenArgs] = v.(T)
+	}
+
+	t2SqlStr := fmt.Sprintf(" SELECT %s FROM  %s WHERE %s IN (?)", dbFieldName, tableName, dbFieldName)
+	t2SqlStr, t2Args, err := sqlx.In(t2SqlStr, args) // []T 和 []interface{}（即 []any）类型不兼容，无法直接赋值。
+	if nil != err {
+		return sqlStr, allArgs, nil
+	}
+	//将t2的参数追加到参数中
+	for _, v := range t2Args {
+		args = append(args, v.(T))
 	}
 
 	sqlStr = fmt.Sprintf(sqlStr, dbFieldName, t1SqlStr, t2SqlStr, dbFieldName, dbFieldName, dbFieldName)
-
-	return sqlStr, allArgs, nil
+	return sqlStr, args, nil
 }
