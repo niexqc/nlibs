@@ -20,6 +20,7 @@ import (
 	"github.com/niexqc/nlibs/ntools"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/semaphore"
 )
 
 // GinLogger 接收gin框架默认的日志
@@ -60,18 +61,19 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 	}
 }
 
-// MaxConcurrentHandlerFunc 掉项目可能出现的panic
+// MaxConcurrentHandlerFunc 控制服务最大承载
 func MaxConcurrentHandlerFunc(max int) gin.HandlerFunc {
 	slog.Debug("Add Middleware MaxConcurrentHandlerFunc")
-	sem := make(chan struct{}, max)
+	sem := semaphore.NewWeighted(int64(max))
 	return func(c *gin.Context) {
-		select {
-		case sem <- struct{}{}: // 获取信号量
-			defer func() { <-sem }() // 处理完成后释放
-			c.Next()
-		default:
+		// 尝试获取信号量,非阻塞模式，获取失败直接返回错误
+		if !sem.TryAcquire(1) {
 			c.AbortWithStatusJSON(429, gin.H{"error": "服务繁忙，请稍后重试"})
+			return
 		}
+		defer sem.Release(1)
+		//执行
+		c.Next()
 	}
 }
 
