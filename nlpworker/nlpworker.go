@@ -1,7 +1,6 @@
 package nlpworker
 
 import (
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -56,7 +55,7 @@ func (nlp *NlpWorkGroup[T]) Start() {
 	go nlp.printNlpWorkGroupStatus()
 
 	go func() {
-		slog.Debug("NlpGroup start working")
+		slog.Debug("NlpGroup start working", "workGroupName", nlp.workGroupName)
 		for {
 			nlp.nlpLoopWork()
 		}
@@ -66,11 +65,11 @@ func (nlp *NlpWorkGroup[T]) Start() {
 
 func (nlp *NlpWorkGroup[T]) printNlpWorkGroupStatus() {
 	//实现30秒打印一次,		nlp.workPool转状态
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 	ntools.SlogSetTraceId("printNlpWorkGroupStatus")
 	for range ticker.C {
-		slog.Info(fmt.Sprintf("NlpWorkGroup[%s]", nlp.workGroupName), "maxGrpNum", nlp.maxGrpNum, " maxGrpWorkDoTaskNum", nlp.maxGrpWorkDoTaskNum, " RuningGrpWorker", nlp.workPool.Running())
+		slog.Info("NlpWorkGroup Status", " workGroupName", nlp.workGroupName, " maxGrpNum", nlp.maxGrpNum, " maxGrpWorkDoTaskNum", nlp.maxGrpWorkDoTaskNum, " RuningGrpWorker", nlp.workPool.Running())
 	}
 }
 
