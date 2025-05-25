@@ -20,7 +20,7 @@ require (
 	github.com/timandy/routine v1.1.5
 	github.com/tjfoc/gmsm v1.4.1
 	github.com/xuri/excelize/v2 v2.9.0
-	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sync v0.13.0
 	golang.org/x/time v0.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
 )
