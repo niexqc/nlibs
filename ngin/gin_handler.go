@@ -17,6 +17,7 @@ import (
 
 	"github.com/niexqc/nlibs/ncache"
 	"github.com/niexqc/nlibs/nerror"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 
 	"github.com/gin-gonic/gin"
@@ -49,7 +50,6 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 	logStr := fmt.Sprintf("Req:%s\t%s\t%s\t%s\t%s\t%s\t%s", visitTar, rawQuery, reqMethod, contentType, visitSrc, clientIp, agentStr)
 	slog.Info(logStr)
 	// 打印原始请求参数
-
 	if showReqBody {
 		reqBodyStr := ""
 		if strings.ContainsAny(contentType, "json") || strings.ContainsAny(contentType, "text") || strings.ContainsAny(contentType, "xml") {
@@ -137,6 +137,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
 		heaerVo.UserIp = ctx.ClientIP()
 		heaerVo.VisitTar = ctx.Request.RequestURI
+		slog.Debug("Headers:", "json", njson.SonicObj2Str(heaerVo))
 		ctx.Set(reflect.TypeOf(heaerVo).Name(), &heaerVo)
 		ctx.Next()
 	}
@@ -148,7 +149,6 @@ func GetHeaderVoFromCtx(c *gin.Context) *NiexqGinHeaderVo {
 			return ne
 		}
 	}
-
 	return &NiexqGinHeaderVo{}
 }
 
