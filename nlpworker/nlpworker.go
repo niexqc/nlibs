@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/niexqc/nlibs/ntools"
 	"github.com/panjf2000/ants/v2"
 )
 
@@ -65,10 +66,11 @@ func (nlp *NlpWorkGroup[T]) Start() {
 
 func (nlp *NlpWorkGroup[T]) printNlpWorkGroupStatus() {
 	//实现30秒打印一次,		nlp.workPool转状态
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
+	ntools.SlogSetTraceId("printNlpWorkGroupStatus")
 	for range ticker.C {
-		slog.Info(fmt.Sprintf("NlpWorkGroup[%s]", nlp.workGroupName), "maxGrpNum", nlp.maxGrpNum, "maxGrpWorkDoTaskNum", nlp.maxGrpWorkDoTaskNum, "RuningGrpWorker", nlp.workPool.Running())
+		slog.Info(fmt.Sprintf("NlpWorkGroup[%s]", nlp.workGroupName), "maxGrpNum", nlp.maxGrpNum, " maxGrpWorkDoTaskNum", nlp.maxGrpWorkDoTaskNum, " RuningGrpWorker", nlp.workPool.Running())
 	}
 }
 
@@ -78,6 +80,7 @@ func (nlp *NlpWorkGroup[T]) nlpLoopWork() {
 			slog.Error("NlpWorkGroup-nlpLoopWork 发生异常", "err", r)
 		}
 	}()
+	ntools.SlogSetTraceId("nlpLoopWork")
 	// 在findGrpFun内部不存在竞态条件
 	grpNames := nlp.findGrpFun(nlp.maxGrpNum)
 	if len(grpNames) == 0 {
@@ -127,6 +130,7 @@ func newNlpWorker[T any](grpWrkName string, workGroup *NlpWorkGroup[T]) *nlpWork
 }
 
 func (wrk *nlpWorker[T]) Start() {
+	ntools.SlogSetTraceId("GRPN_" + wrk.grpWrkName)
 	slog.Debug("NewNlpWorker start working", "grpWrkName", wrk.grpWrkName)
 	taskRunCount := 0
 	for {
@@ -134,6 +138,7 @@ func (wrk *nlpWorker[T]) Start() {
 			slog.Warn("NewNlpWorker dotask times over,giveup wait next run ", "maxGrpWorkDoTaskNum", wrk.workGroup.maxGrpWorkDoTaskNum)
 			break
 		}
+		ntools.SlogSetTraceId("GRPN_" + wrk.grpWrkName)
 		// 这里需要读取任务直到所有任务完成--
 		task := wrk.workGroup.nextTaskFun(wrk.grpWrkName)
 		if task != nil {
