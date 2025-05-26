@@ -15,6 +15,12 @@ func NewRunTimeError(errDesc string) *RunTimeErr {
 	}
 }
 
+func NewRunTimeErrorFmt(fmtStr string, arg ...any) *RunTimeErr {
+	return &RunTimeErr{
+		ErrDesc: fmt.Sprintf(fmtStr, arg...),
+	}
+}
+
 func NewRunTimeErrorWithError(errDesc string, err error) *RunTimeErr {
 	return &RunTimeErr{
 		ErrDesc: errDesc,
