@@ -40,12 +40,20 @@ func (ns NullString) MarshalJSON() ([]byte, error) {
 }
 
 func (ns *NullString) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" || string(data) == "\"\"" {
-		ns.Valid = false
-		return nil
+	str, valid := nullVlaleStr(data)
+	ns.Valid = valid
+	ns.String = str
+	return nil
+}
+
+func nullVlaleStr(data []byte) (string, bool) {
+	valStr := string(data)
+	valStr = strings.TrimPrefix(valStr, "\"")
+	valStr = strings.TrimSuffix(valStr, "\"")
+	if valStr == "" || strings.ToLower(string(valStr)) == "null" {
+		return "", true
 	}
-	ns.Valid = true
-	return json.Unmarshal(data, &ns.String)
+	return valStr, false
 }
 
 func (nt NullTime) MarshalJSON() ([]byte, error) {
@@ -56,14 +64,9 @@ func (nt NullTime) MarshalJSON() ([]byte, error) {
 }
 
 func (nt *NullTime) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
-		nt.Valid = false
-		return nil
-	}
-	timeStr := string(data)
-	timeStr = strings.ReplaceAll(timeStr, "\"", "")
-	nt.Time = ntools.TimeStr2Time(timeStr)
-	nt.Valid = true
+	str, valid := nullVlaleStr(data)
+	nt.Valid = valid
+	nt.Time = ntools.TimeStr2Time(str)
 	return nil
 }
 
@@ -75,12 +78,16 @@ func (ns NullInt) MarshalJSON() ([]byte, error) {
 }
 
 func (ns *NullInt) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	str, valid := nullVlaleStr(data)
+	intv, err := strconv.ParseInt(str, 10, 32)
+	if nil != err {
 		ns.Valid = false
-		return nil
+		return err
 	}
-	ns.Valid = true
-	return json.Unmarshal(data, &ns.Int32)
+	ns.Valid = valid
+	ns.Int32 = int32(intv)
+
+	return nil
 }
 
 func (ns NullInt64) MarshalJSON() ([]byte, error) {
@@ -91,12 +98,15 @@ func (ns NullInt64) MarshalJSON() ([]byte, error) {
 }
 
 func (ns *NullInt64) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	str, valid := nullVlaleStr(data)
+	intv, err := strconv.ParseInt(str, 10, 32)
+	if nil != err {
 		ns.Valid = false
-		return nil
+		return err
 	}
-	ns.Valid = true
-	return json.Unmarshal(data, &ns.Int64)
+	ns.Valid = valid
+	ns.Int64 = intv
+	return nil
 }
 
 func (ns NullFloat64) MarshalJSON() ([]byte, error) {
@@ -107,18 +117,15 @@ func (ns NullFloat64) MarshalJSON() ([]byte, error) {
 }
 
 func (ns *NullFloat64) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	str, valid := nullVlaleStr(data)
+	intv, err := strconv.ParseFloat(str, 64)
+	if nil != err {
 		ns.Valid = false
-		return nil
+		return err
 	}
-	ns.Valid = true
-
-	valStr := string(data)
-	valStr = strings.ReplaceAll(valStr, "\"", "")
-	num, err := strconv.ParseFloat(valStr, 64)
-	ns.Float64 = num
-	return err
-	// return json.Unmarshal(data, &ns.Float64)
+	ns.Valid = valid
+	ns.Float64 = intv
+	return nil
 }
 
 func (ns NullBool) MarshalJSON() ([]byte, error) {
@@ -129,10 +136,13 @@ func (ns NullBool) MarshalJSON() ([]byte, error) {
 }
 
 func (ns *NullBool) UnmarshalJSON(data []byte) error {
-	if string(data) == "null" {
+	str, valid := nullVlaleStr(data)
+	intv, err := strconv.ParseBool(str)
+	if nil != err {
 		ns.Valid = false
-		return nil
+		return err
 	}
-	ns.Valid = true
-	return json.Unmarshal(data, &ns.Bool)
+	ns.Valid = valid
+	ns.Bool = intv
+	return nil
 }
