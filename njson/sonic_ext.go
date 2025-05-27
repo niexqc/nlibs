@@ -116,6 +116,12 @@ func SonicStr2Obj(str *string, t any) {
 	}
 }
 
+func SonicStr2T[T any](str *string) (*T, error) {
+	t := new(T)
+	err := sonic.UnmarshalString(*str, t)
+	return t, err
+}
+
 func SonicStr2NwNode(str string) *NwNode {
 	root, err := sonic.GetFromString(str)
 	if err != nil {

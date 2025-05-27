@@ -128,8 +128,8 @@ func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
 	}
 	result := []string{}
 	//字段
-	for range doType.NumField() {
-		dbTag := doType.Field(0).Tag
+	for idx := range doType.NumField() {
+		dbTag := doType.Field(idx).Tag
 		dbcol := dbTag.Get("db")
 		if dbcol == "" {
 			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[db]", doType.Name()))
@@ -141,4 +141,16 @@ func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
 		}
 	}
 	return result
+}
+
+func StructDoDbColStr(doType reflect.Type, tableAlias string) string {
+	sb := &strings.Builder{}
+	cols := StructDoDbColList(doType, tableAlias)
+	for idx, v := range cols {
+		if idx > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(v)
+	}
+	return sb.String()
 }
