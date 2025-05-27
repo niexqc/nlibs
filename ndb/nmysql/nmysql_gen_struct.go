@@ -11,11 +11,6 @@ import (
 	"github.com/niexqc/nlibs/ntools"
 )
 
-type NMysqlTableInfo struct {
-	ColsStr   string
-	TableName string
-}
-
 type columnSchemaDo struct {
 	TableName     string `db:"TABLE_NAME"`
 	ColumnName    string `db:"COLUMN_NAME"`
@@ -24,7 +19,7 @@ type columnSchemaDo struct {
 	IsNullable    string `db:"IS_NULLABLE"`
 }
 
-func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
+func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) string {
 	tcSql := "SELECT TABLE_COMMENT FROM INFORMATION_SCHEMA.`TABLES` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
 	tableComment := ""
 	dbw.SelectOne(&tableComment, tcSql, tableSchema, tableName)
@@ -41,7 +36,6 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 	resultStr := fmt.Sprintf("// %s `%s`.%s\n", tableComment, tableSchema, tableName)
 	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.Under2Camel(true))
 
-	clmSql := ""
 	for _, v := range dos {
 		isNull := v.IsNullable == "YES"
 		NsCStr := &ntools.NString{S: v.ColumnName}
@@ -49,18 +43,11 @@ func (dbw *NMysqlWrapper) PrintStructDoByTable(tableSchema, tableName string) {
 		// Name() 返回 NullString
 		goType := mysqlTypeToGoType(v.DataType, isNull).String()
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
-		resultStr += fmt.Sprintf(" `db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment)
-		clmSql += (ntools.If3(len(clmSql) > 0, ",", "") + v.ColumnName)
+		resultStr += fmt.Sprintf(" `dbtb:\"%s\" db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.TableName, v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment)
+
 	}
 	resultStr += "\n}"
-
-	infoTmp := "\nvar %sTbInfo = &nmysql.NMysqlTableInfo{"
-	infoTmp += "\n  TableName: \"%s\","
-	infoTmp += "\n  ColsStr:   \"%s\","
-	infoTmp += "\n}"
-	resultStr += fmt.Sprintf(infoTmp, NsStr.Under2Camel(true), tableName, clmSql)
-	println(resultStr)
-
+	return resultStr
 }
 
 func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
@@ -121,4 +108,37 @@ func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 	}
 	// 创建动态结构体类型
 	return reflect.StructOf(fields), filedInfos
+}
+
+func StructDoTableName(doType reflect.Type) string {
+	if doType.NumField() <= 0 {
+		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
+	}
+	dbtbTag := doType.Field(0).Tag
+	tbname := dbtbTag.Get("dbtb")
+	if tbname == "" {
+		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[dbtb]", doType.Name()))
+	}
+	return tbname
+}
+
+func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
+	if doType.NumField() <= 0 {
+		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
+	}
+	result := []string{}
+	//字段
+	for range doType.NumField() {
+		dbTag := doType.Field(0).Tag
+		dbcol := dbTag.Get("db")
+		if dbcol == "" {
+			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[db]", doType.Name()))
+		}
+		if tableAlias == "" {
+			result = append(result, dbcol)
+		} else {
+			result = append(result, fmt.Sprintf("%s.%s", tableAlias, dbcol))
+		}
+	}
+	return result
 }
