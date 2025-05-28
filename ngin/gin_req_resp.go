@@ -28,9 +28,9 @@ type BaseReq struct {
 type BaseReqPage struct {
 	BaseReq
 	// 页码，从1开始
-	PageNo int `json:"pageNo" zhdesc:"页码" binding:"required,gte=1"`
+	PageNo ReqVoInt `json:"pageNo" zhdesc:"页码" binding:"required,gte=1"`
 	// 页码，每页大小，必须大于1
-	PageSize int `json:"pageSize" zhdesc:"每页大小" binding:"required,gte=1"`
+	PageSize ReqVoInt `json:"pageSize" zhdesc:"每页大小" binding:"required,gte=1"`
 }
 
 // BaseResp 基础响应

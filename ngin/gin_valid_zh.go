@@ -50,6 +50,7 @@ func NewNValider(tagJsonName, tagZhdescName string) *NValider {
 	}
 
 }
+
 func registerNullFunc(validate *validator.Validate) {
 	validate.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
 		if valuer, ok := field.Interface().(driver.Valuer); ok {
@@ -88,6 +89,10 @@ func (nvld *NValider) TransErr2ZhErr(err error) error {
 		return validErr
 	}
 	return err
+}
+
+func (nvld *NValider) ValidStrct(obj any) error {
+	return nvld.Validate.Struct(obj)
 }
 
 type NiexqValidErr struct {

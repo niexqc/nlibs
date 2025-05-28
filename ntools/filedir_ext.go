@@ -3,12 +3,13 @@ package ntools
 import (
 	"bufio"
 	"container/list"
-	"errors"
 
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/niexqc/nlibs/nerror"
 )
 
 type fileDirExt struct{}
@@ -116,7 +117,7 @@ func (fde *fileDirExt) WriteFileByWriterFun(filename string, writeFun func(*bufi
 // ReadFileByte 读取文本文件内容
 func (fde *fileDirExt) ReadFileByte(filename string) ([]byte, error) {
 	if !fde.CheckFileIsExist(filename) {
-		return nil, errors.New("文件不存在")
+		return nil, nerror.NewRunTimeErrorFmt("文件%s不存在", filename)
 	}
 	//ReadFile函数会读取文件的全部内容，并将结果以[]byte类型返回
 	data, err := os.ReadFile(filename)

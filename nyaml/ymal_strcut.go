@@ -32,7 +32,7 @@ type YamlConfDb struct {
 
 	DbSqlLogPrint    bool   `yaml:"dbSqlLogPrint" hc:"Sql日志是否打印 true|false"`
 	DbSqlLogLevel    string `yaml:"dbSqlLogLevel" hc:"Sql日志使用【 debug|info|warn|error 】输出"`
-	DbSqlLogCompress bool   `yaml:"dbLogCompress" hc:"Sql日志打印是否压缩 true|false"`
+	DbSqlLogCompress bool   `yaml:"dbSqlLogCompress" hc:"Sql日志打印是否压缩 true|false"`
 }
 
 type YamlConfEndnKey struct {
