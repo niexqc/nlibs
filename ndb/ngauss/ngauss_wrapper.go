@@ -92,8 +92,8 @@ func (ndbw *NGaussWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64,
 	return rowsAffected, err
 }
 
-// 实现返回ID需要[InsertAndLastId]方法
-func (ndbw *NGaussWrapper) Insert(sqlStr string, args ...any) (rowsAffected int64, err error) {
+// 实现返回ID需要
+func (ndbw *NGaussWrapper) InsertWithRowsAffected(sqlStr string, args ...any) (rowsAffected int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
 	var r sql.Result
@@ -111,7 +111,7 @@ func (ndbw *NGaussWrapper) Insert(sqlStr string, args ...any) (rowsAffected int6
 
 // 实现返回ID需要其他方法
 // Sql示例:INSERT INTO users (name) VALUES ($1) RETURNING id
-func (ndbw *NGaussWrapper) InsertAndLastId(sqlStr string, args ...any) (lastInsertId int64, err error) {
+func (ndbw *NGaussWrapper) InsertWithLastId(sqlStr string, args ...any) (lastInsertId int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
 	var id int64
