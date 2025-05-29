@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/nyaml"
@@ -50,6 +51,37 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb, sqlPrintConf *nyaml.YamlConfSqlPri
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
 	return &NMysqlWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}
+}
+
+//	 查询单个字段单个值
+//		 sqlStr:=select id from table where id=?
+//		 str:=ndb.SelectOne[string](ndbw,sql,id)
+func SelectOne[T sqlext.NdbBasicType](ndbw *NMysqlWrapper, sqlStr string, args ...any) (t *T, findOk bool, err error) {
+	obj := new(T)
+	findOk, err = ndbw.SelectOne(obj, sqlStr, args...)
+	return obj, findOk, err
+}
+
+//	 查询单行记录返回Struct实例
+//		 sqlStr:=select * from table where id=?
+//		 user:=ndb.SelectObj[UserDo](ndbw,sql,id)
+func SelectObj[T any](ndbw *NMysqlWrapper, sqlStr string, args ...any) (t *T, findOk bool, err error) {
+	obj := new(T)
+	findOk, err = ndbw.SelectObj(obj, sqlStr, args...)
+	return obj, findOk, err
+}
+
+// 查询多行记录，支持值和Struct
+func SelectList[T any](ndbw *NMysqlWrapper, sqlStr string, args ...any) (tlist []*T, err error) {
+	objs := new([]*T)
+	err = ndbw.SelectList(objs, sqlStr, args...)
+	return *objs, err
+}
+
+// SqlLimitStr
+// pageNo 页码从1开始
+func SqlLimitStr(pageNo, pageSize int) string {
+	return ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
 }
 
 func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {

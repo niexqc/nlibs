@@ -51,6 +51,31 @@ func NewNGaussWrapper(conf *nyaml.YamlConfGaussDb, sqlPrintConf *nyaml.YamlConfS
 	return &NGaussWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}
 }
 
+//	 查询单个字段单个值
+//		 sqlStr:=select id from table where id=?
+//		 str:=ndb.SelectOne[string](ndbw,sql,id)
+func SelectOne[T sqlext.NdbBasicType](ndbw *NGaussWrapper, sqlStr string, args ...any) (t *T, findOk bool, err error) {
+	obj := new(T)
+	findOk, err = ndbw.SelectOne(obj, sqlStr, args...)
+	return obj, findOk, err
+}
+
+//	 查询单行记录返回Struct实例
+//		 sqlStr:=select * from table where id=?
+//		 user:=ndb.SelectObj[UserDo](ndbw,sql,id)
+func SelectObj[T any](ndbw *NGaussWrapper, sqlStr string, args ...any) (t *T, findOk bool, err error) {
+	obj := new(T)
+	findOk, err = ndbw.SelectObj(obj, sqlStr, args...)
+	return obj, findOk, err
+}
+
+// 查询多行记录，支持值和Struct
+func SelectList[T any](ndbw *NGaussWrapper, sqlStr string, args ...any) (tlist []*T, err error) {
+	objs := new([]*T)
+	err = ndbw.SelectList(objs, sqlStr, args...)
+	return *objs, err
+}
+
 func (ndbw *NGaussWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)

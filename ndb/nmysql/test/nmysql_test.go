@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
@@ -53,7 +52,7 @@ var IDbWrapper *nmysql.NMysqlWrapper
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
-	IDbWrapper = ndb.NewNMysqlWrapper(dbconf, sqlPrintConf)
+	IDbWrapper = nmysql.NewNMysqlWrapper(dbconf, sqlPrintConf)
 
 }
 
@@ -84,7 +83,7 @@ func TestSelectOne(t *testing.T) {
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
-	if res, _, err := ndb.SelectOne[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 WHERE id=1"); nil != err {
+	if res, _, err := nmysql.SelectOne[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 WHERE id=1"); nil != err {
 		t.Error(err)
 	} else {
 		if res.NullString.String != "aaa1" {
@@ -92,7 +91,7 @@ func TestSelectOne(t *testing.T) {
 		}
 	}
 
-	if res, _, err := ndb.SelectOne[int64](IDbWrapper, "SELECT id FROM test01 WHERE id=1"); nil != err {
+	if res, _, err := nmysql.SelectOne[int64](IDbWrapper, "SELECT id FROM test01 WHERE id=1"); nil != err {
 		t.Error(err)
 	} else {
 		if *res != 1 {
@@ -122,7 +121,7 @@ func TestSelectObj(t *testing.T) {
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
-	if obj, _, err := ndb.SelectObj[Test01Do](IDbWrapper, "SELECT * FROM test01 where id=1"); nil != err {
+	if obj, _, err := nmysql.SelectObj[Test01Do](IDbWrapper, "SELECT * FROM test01 where id=1"); nil != err {
 		println(err.Error())
 	} else {
 		if obj.Id != 1 || obj.T03Varchar.String != "aaa1" {
@@ -152,7 +151,7 @@ func TestSelectList(t *testing.T) {
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
-	if list, err := ndb.SelectList[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 ORDER BY id"); nil != err {
+	if list, err := nmysql.SelectList[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 ORDER BY id"); nil != err {
 		println(err.Error())
 	} else {
 		if len(list) != 2 || list[0].String != "aaa1" || list[1].String != "aaa2" {
@@ -160,7 +159,7 @@ func TestSelectList(t *testing.T) {
 		}
 	}
 
-	if list, err := ndb.SelectList[Test01Do](IDbWrapper, "SELECT * FROM test01 ORDER BY id"); nil != err {
+	if list, err := nmysql.SelectList[Test01Do](IDbWrapper, "SELECT * FROM test01 ORDER BY id"); nil != err {
 		println(err.Error())
 	} else {
 		if len(list) != 2 || list[0].Id != 1 || list[1].Id != 2 {
