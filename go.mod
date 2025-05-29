@@ -77,7 +77,6 @@ require (
 	stathat.com/c/consistent v1.0.0 // indirect
 )
 
-require (
-	github.com/shopspring/decimal v1.4.0 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-)
+require github.com/shopspring/decimal v1.4.0
+
+require golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
