@@ -232,10 +232,12 @@ func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, 
 	if timeoutSecond > 60 {
 		slog.Warn("事务时长超过60秒,判断下业务")
 	}
+
 	txCtx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecond)*time.Second)
 	mysqlTxWrapper := new(NMysqlWrapper)
 	mysqlTxWrapper.sqlxDb = ndbw.sqlxDb
 	mysqlTxWrapper.conf = ndbw.conf
+	mysqlTxWrapper.sqlPrintConf = ndbw.sqlPrintConf
 	mysqlTxWrapper.bgnTx = true
 	mysqlTxWrapper.sqlxTxContext = txCtx
 

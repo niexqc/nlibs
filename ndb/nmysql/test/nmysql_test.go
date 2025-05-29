@@ -3,20 +3,26 @@ package nmsql_test
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
+	"github.com/shopspring/decimal"
 )
 
-var IDbWrapper *nmysql.NMysqlWrapper
-var ctTableSql = `CREATE TABLE IF NOT EXISTS test01  (
+var tableName = "test01"
+var schameName = "niexq01"
+
+var delTableStr = fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
+var crtTableStr = fmt.Sprintf(`CREATE TABLE %s (
   id bigint(20) NOT NULL AUTO_INCREMENT,
-  t01_bigint bigint(20) NULL DEFAULT NULL,
   t02_int int(11) NULL DEFAULT NULL,
   t03_varchar varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL,
   t04_text text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL,
@@ -26,42 +32,55 @@ var ctTableSql = `CREATE TABLE IF NOT EXISTS test01  (
   t08_double double NULL DEFAULT NULL,
   t09_datetime datetime NULL DEFAULT NULL,
   t10_bool bit(1) NULL DEFAULT NULL,
-  PRIMARY KEY (id) USING BTREE)  COMMENT='Test'`
+  PRIMARY KEY (id)
+)  ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='Test'`, tableName)
 
 var dbconf = &nyaml.YamlConfDb{
 	DbHost: "8.137.54.220",
 	DbPort: 3306,
 	DbUser: "root",
 	DbPwd:  "Nxq@198943",
-	DbName: "niexq01",
+	DbName: schameName,
 }
+
 var sqlPrintConf = &nyaml.YamlConfSqlPrint{
 	DbSqlLogPrint:    true,
 	DbSqlLogLevel:    "debug",
 	DbSqlLogCompress: false,
 }
 
-type Test01Do struct {
-	Id          int64              `db:"id" json:"id" zhdesc:""`
-	T01Bigint   sqlext.NullInt64   `db:"t01_bigint" json:"t01Bigint" zhdesc:""`
-	T02Int      sqlext.NullInt     `db:"t02_int" json:"t02Int" zhdesc:""`
-	T03Varchar  sqlext.NullString  `db:"t03_varchar" json:"t03Varchar" zhdesc:""`
-	T04Text     sqlext.NullString  `db:"t04_text" json:"t04Text" zhdesc:""`
-	T05Longtext sqlext.NullString  `db:"t05_longtext" json:"t05Longtext" zhdesc:""`
-	T06Decimal  sqlext.NullFloat64 `db:"t06_decimal" json:"t06Decimal" zhdesc:""`
-	T07Float    sqlext.NullFloat64 `db:"t07_float" json:"t07Float" zhdesc:""`
-	T08Double   sqlext.NullFloat64 `db:"t08_double" json:"t08Double" zhdesc:""`
-	T09Datetime sqlext.NullTime    `db:"t09_datetime" json:"t09Datetime" zhdesc:""`
-	T10Bool     sqlext.NullBool    `db:"t10_bool" json:"t10Bool" zhdesc:""`
-}
+var IDbWrapper *nmysql.NMysqlWrapper
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 	IDbWrapper = ndb.NewNMysqlWrapper(dbconf, sqlPrintConf)
+
+}
+
+func TestGenStruct(t *testing.T) {
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
+	str := IDbWrapper.GetStructDoByTableStr(schameName, tableName)
+	if !strings.Contains(str, "T04Text sqlext.NullString") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T04Text sqlext.NullString")
+	}
+	if !strings.Contains(str, "T06Decimal decimal.NullDecimal") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T06Decimal decimal.NullDecimal")
+	}
+	if !strings.Contains(str, "T08Double sqlext.NullFloat64") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T08Double sqlext.NullFloat64")
+	}
+	if !strings.Contains(str, "Test `niexq01`.test01") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "Test `niexq01`.test01")
+	}
+	t.Log("TestGenStruct 执行成功")
 }
 
 func TestSelectOne(t *testing.T) {
-	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
@@ -83,7 +102,23 @@ func TestSelectOne(t *testing.T) {
 }
 
 func TestSelectObj(t *testing.T) {
-	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
+	type Test01Do struct {
+		Id          int64               `db:"id" json:"id" zhdesc:""`
+		T01Bigint   sqlext.NullInt64    `db:"t01_bigint" json:"t01Bigint" zhdesc:""`
+		T02Int      sqlext.NullInt      `db:"t02_int" json:"t02Int" zhdesc:""`
+		T03Varchar  sqlext.NullString   `db:"t03_varchar" json:"t03Varchar" zhdesc:""`
+		T04Text     sqlext.NullString   `db:"t04_text" json:"t04Text" zhdesc:""`
+		T05Longtext sqlext.NullString   `db:"t05_longtext" json:"t05Longtext" zhdesc:""`
+		T06Decimal  decimal.NullDecimal `db:"t06_decimal" json:"t06Decimal" zhdesc:""`
+		T07Float    sqlext.NullFloat64  `db:"t07_float" json:"t07Float" zhdesc:""`
+		T08Double   sqlext.NullFloat64  `db:"t08_double" json:"t08Double" zhdesc:""`
+		T09Datetime sqlext.NullTime     `db:"t09_datetime" json:"t09Datetime" zhdesc:""`
+		T10Bool     sqlext.NullBool     `db:"t10_bool" json:"t10Bool" zhdesc:""`
+	}
+
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
@@ -97,7 +132,23 @@ func TestSelectObj(t *testing.T) {
 }
 
 func TestSelectList(t *testing.T) {
-	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
+	type Test01Do struct {
+		Id          int64               `db:"id" json:"id" zhdesc:""`
+		T01Bigint   sqlext.NullInt64    `db:"t01_bigint" json:"t01Bigint" zhdesc:""`
+		T02Int      sqlext.NullInt      `db:"t02_int" json:"t02Int" zhdesc:""`
+		T03Varchar  sqlext.NullString   `db:"t03_varchar" json:"t03Varchar" zhdesc:""`
+		T04Text     sqlext.NullString   `db:"t04_text" json:"t04Text" zhdesc:""`
+		T05Longtext sqlext.NullString   `db:"t05_longtext" json:"t05Longtext" zhdesc:""`
+		T06Decimal  decimal.NullDecimal `db:"t06_decimal" json:"t06Decimal" zhdesc:""`
+		T07Float    sqlext.NullFloat64  `db:"t07_float" json:"t07Float" zhdesc:""`
+		T08Double   sqlext.NullFloat64  `db:"t08_double" json:"t08Double" zhdesc:""`
+		T09Datetime sqlext.NullTime     `db:"t09_datetime" json:"t09Datetime" zhdesc:""`
+		T10Bool     sqlext.NullBool     `db:"t10_bool" json:"t10Bool" zhdesc:""`
+	}
+
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
@@ -116,10 +167,13 @@ func TestSelectList(t *testing.T) {
 			t.Error("返回值不匹配")
 		}
 	}
+
 }
 
 func TestSelectDyObj(t *testing.T) {
-	IDbWrapper.Exec("DELETE FROM test01")
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
 	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
@@ -144,41 +198,59 @@ func TestSelectDyObj(t *testing.T) {
 	}
 }
 
+func TestSqlInNotExist(t *testing.T) {
+
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(3,'aaa3')")
+	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(4,'aaa4')")
+
+	ids := []int64{1, 2, 6, 7}
+
+	sqlStr, allArgs, _ := sqlext.SqlFmtSqlInNotExist("test01", "id", ids)
+	notExistIdds := []int64{}
+
+	err := IDbWrapper.SelectList(&notExistIdds, sqlStr, sqlext.ArrBaseTypeExpand2ArrAny(allArgs)...)
+
+	if nil != err {
+		panic(err)
+	}
+
+	exResult := "[6,7]"
+	acResult := njson.SonicObj2Str(notExistIdds)
+	if acResult != exResult {
+		panic(nerror.NewRunTimeErrorFmt("查询结果不匹配，期望:%s,实际:%s", exResult, acResult))
+	}
+
+}
+
 func TestTx(t *testing.T) {
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
 
+	time.Sleep(time.Second)
 	ntools.SlogSetTraceId("1111")
-
-	txr, _ := IDbWrapper.NdbTxBgn(3)
+	// time.Sleep(6 * time.Second)
+	txr, err := IDbWrapper.NdbTxBgn(3)
+	if nil != err {
+		panic(err)
+	}
 	defer txr.NdbTxCommit()
 
-	IDbWrapper.Exec("DROP TABLE IF EXISTS test01 ")
-	IDbWrapper.Exec(ctTableSql)
-
 	r, err := txr.Insert("INSERT into test01(id,t03_varchar) VALUES(5,'aaa1')")
-	fmt.Sprintln(r, err)
+	if err != nil {
+		panic(err)
+	}
+
+	slog.Info("TestTx", "lastInsertId", r)
 
 	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(6,'aaa2')")
 	if nil != err {
 		// panic(err)
 	}
 	fmt.Sprintln(r, err)
-
-	// time.Sleep(6 * time.Second)
-
-}
-
-func TestSqlInNotExist(t *testing.T) {
-
-	ntools.SlogSetTraceId("1111")
-
-	txr, _ := IDbWrapper.NdbTxBgn(3)
-	defer txr.NdbTxCommit()
-
-	ids := []int64{5, 6}
-	sqlStr, allArgs, _ := sqlext.SqlFmtSqlInNotExist("test01", "id", ids)
-
-	slog.Info(sqlStr + njson.SonicObj2Str(allArgs))
-
-	// time.Sleep(6 * time.Second)
 
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
+	"github.com/shopspring/decimal"
 )
 
 type columnSchemaDo struct {
@@ -62,8 +63,10 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
 		case "DATETIME", "DATE":
 			return reflect.TypeOf(sqlext.NullTime{})
-		case "DOUBLE", "FLOAT", "DECIMAL":
+		case "DOUBLE", "FLOAT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
+		case "DECIMAL":
+			return ntools.If3(isNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{}))
 		default:
 			panic(nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mtype)))
 		}

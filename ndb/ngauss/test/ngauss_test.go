@@ -36,7 +36,6 @@ func init() {
 func TestGetStructDoByTableStr(t *testing.T) {
 	str := NGaussWrapper.GetStructDoByTableStr("public", "test0")
 	slog.Info("\n" + str)
-
 }
 
 func TestInsert(t *testing.T) {
@@ -141,5 +140,29 @@ func TestSelectObjList(t *testing.T) {
 		t.Error(err)
 	}
 	slog.Info(njson.SonicObj2Str(dos))
+
+}
+
+func TestTx(t *testing.T) {
+
+	ntools.SlogSetTraceId("1111")
+	// time.Sleep(6 * time.Second)
+	txr, err := NGaussWrapper.NdbTxBgn(3)
+	if nil != err {
+		panic(err)
+	}
+	defer txr.NdbTxCommit()
+
+	rowsAffected, err := txr.Insert("INSERT into public.test0(name) VALUES(?)", "TestInsert")
+	if nil != err {
+		t.Error(err)
+	}
+	slog.Info("rowsAffected:", "rowsAffected", rowsAffected)
+
+	lastInsertId, err := txr.InsertAndLastId("INSERT into public.test0(name) VALUES(?) RETURNING id", "InsertAndLastId")
+	if nil != err {
+		t.Error(err)
+	}
+	slog.Info("lastInsertId:", "lastInsertId", lastInsertId)
 
 }

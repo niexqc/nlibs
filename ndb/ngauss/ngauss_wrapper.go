@@ -38,7 +38,7 @@ type NGaussWrapper struct {
 }
 
 func NewNGaussWrapper(conf *nyaml.YamlConfGaussDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *NGaussWrapper {
-	connStr := "host=%s port=%d user=%s password=%s dbname=%s sslmode=disable"
+	connStr := "host=%s port=%d user=%s password=%s dbname=%s sslmode=disable "
 	connStr = fmt.Sprintf(connStr, conf.DbHost, conf.DbPort, conf.DbUser, conf.DbPwd, conf.DbName)
 	slog.Debug(connStr)
 	db, err := sqlx.Open("opengauss", connStr)
@@ -274,6 +274,7 @@ func (ndbw *NGaussWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NGaussWrapper, 
 	txCtx, cancel := context.WithTimeout(context.Background(), time.Duration(timeoutSecond)*time.Second)
 	mysqlTxWrapper := new(NGaussWrapper)
 	mysqlTxWrapper.sqlxDb = ndbw.sqlxDb
+	mysqlTxWrapper.sqlPrintConf = ndbw.sqlPrintConf
 	mysqlTxWrapper.conf = ndbw.conf
 	mysqlTxWrapper.bgnTx = true
 	mysqlTxWrapper.sqlxTxContext = txCtx

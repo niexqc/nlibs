@@ -68,6 +68,15 @@ func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err
 	return sb.String(), vals, nil
 }
 
+// 基础类型切片展开为为any切片
+func ArrBaseTypeExpand2ArrAny[T NdbBasicType](args []T) []any {
+	anyArgs := make([]any, len(args))
+	for i, v := range args {
+		anyArgs[i] = v
+	}
+	return anyArgs
+}
+
 func StructDoTableName(doType reflect.Type) string {
 	if doType.NumField() <= 0 {
 		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
