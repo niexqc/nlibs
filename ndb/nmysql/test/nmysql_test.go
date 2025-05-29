@@ -29,11 +29,13 @@ var ctTableSql = `CREATE TABLE IF NOT EXISTS test01  (
   PRIMARY KEY (id) USING BTREE)  COMMENT='Test'`
 
 var dbconf = &nyaml.YamlConfDb{
-	DbHost:           "8.137.54.220",
-	DbPort:           3306,
-	DbUser:           "root",
-	DbPwd:            "Nxq@198943",
-	DbName:           "niexq01",
+	DbHost: "8.137.54.220",
+	DbPort: 3306,
+	DbUser: "root",
+	DbPwd:  "Nxq@198943",
+	DbName: "niexq01",
+}
+var sqlPrintConf = &nyaml.YamlConfSqlPrint{
 	DbSqlLogPrint:    true,
 	DbSqlLogLevel:    "debug",
 	DbSqlLogCompress: false,
@@ -55,7 +57,7 @@ type Test01Do struct {
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
-	IDbWrapper = ndb.NewNMysqlWrapper(dbconf)
+	IDbWrapper = ndb.NewNMysqlWrapper(dbconf, sqlPrintConf)
 }
 
 func TestSelectOne(t *testing.T) {
@@ -124,7 +126,7 @@ func TestSelectDyObj(t *testing.T) {
 	if dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1"); nil != err {
 		println(err.Error())
 	} else {
-		val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
+		val, err := nmysql.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
 		if nil != err {
 			panic(err)
 		}
@@ -134,7 +136,7 @@ func TestSelectDyObj(t *testing.T) {
 	if dyObjList, err := IDbWrapper.SelectDyObjList("SELECT * FROM test01 "); nil != err {
 		println(err.Error())
 	} else {
-		val, err := sqlext.GetFiledVal[sqlext.NullString](dyObjList[1], "T03Varchar")
+		val, err := nmysql.GetFiledVal[sqlext.NullString](dyObjList[1], "T03Varchar")
 		if nil != err {
 			panic(err)
 		}
@@ -173,7 +175,7 @@ func TestSqlInNotExist(t *testing.T) {
 	defer txr.NdbTxCommit()
 
 	ids := []int64{5, 6}
-	sqlStr, allArgs, _ := sqlext.SqlInNotExist("test01", "id", ids)
+	sqlStr, allArgs, _ := sqlext.SqlFmtSqlInNotExist("test01", "id", ids)
 
 	slog.Info(sqlStr + njson.SonicObj2Str(allArgs))
 

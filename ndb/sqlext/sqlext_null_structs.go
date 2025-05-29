@@ -18,6 +18,8 @@ type NullInt64 struct{ sql.NullInt64 }
 type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
 
+// decimal.NullDecimal
+
 func NewNullString(str string) NullString {
 	if str == "" {
 		return NullString{sql.NullString{Valid: false}}

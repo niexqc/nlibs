@@ -6,8 +6,8 @@ import (
 	"github.com/niexqc/nlibs/nyaml"
 )
 
-func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *nmysql.NMysqlWrapper {
-	return nmysql.NewNMysqlWrapper(conf)
+func NewNMysqlWrapper(conf *nyaml.YamlConfDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *nmysql.NMysqlWrapper {
+	return nmysql.NewNMysqlWrapper(conf, sqlPrintConf)
 }
 
 //	 查询单个字段单个值

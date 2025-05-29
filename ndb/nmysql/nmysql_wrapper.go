@@ -28,6 +28,7 @@ const (
 type NMysqlWrapper struct {
 	sqlxDb                  *sqlx.DB
 	conf                    *nyaml.YamlConfDb
+	sqlPrintConf            *nyaml.YamlConfSqlPrint
 	bgnTx                   bool
 	sqlxTx                  *sqlx.Tx
 	sqlxTxContext           context.Context
@@ -36,7 +37,7 @@ type NMysqlWrapper struct {
 	txMutx                  *sync.Mutex
 }
 
-func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
+func NewNMysqlWrapper(conf *nyaml.YamlConfDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *NMysqlWrapper {
 	//开始连接数据库
 	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
 	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
@@ -48,14 +49,14 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb) *NMysqlWrapper {
 	db.SetConnMaxLifetime(time.Second * time.Duration(conf.ConnMaxLifetime))
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
-	return &NMysqlWrapper{sqlxDb: db, conf: conf, bgnTx: false}
+	return &NMysqlWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}
 }
 
 //	 查询并生成动态对象返回
 //		 dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1")
 //		 val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
-func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *sqlext.NdbDyObj, err error) {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NMysqlDyObj, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
 	if ndbw.bgnTx {
 		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
@@ -71,7 +72,7 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *sqlex
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, fieldsInfo := createDyStruct(cols)
+	dyStructType, fieldsInfo := CreateDyStruct(cols)
 	if rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -83,15 +84,15 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *sqlex
 		if rows.Next() {
 			return nil, nerror.NewRunTimeError("查询结果中包含多个值")
 		}
-		return &sqlext.NdbDyObj{Data: instance, FiledsInfo: fieldsInfo}, err
+		return &NMysqlDyObj{Data: instance, FiledsInfo: fieldsInfo}, err
 		// return instance, err
 	} else {
 		return nil, nerror.NewRunTimeError("未查询到结果")
 	}
 }
 
-func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValList []*sqlext.NdbDyObj, err error) {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValList []*NMysqlDyObj, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 
 	var rows *sqlx.Rows
 	if ndbw.bgnTx {
@@ -109,8 +110,8 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, fieldsInfo := createDyStruct(cols)
-	objValList = make([]*sqlext.NdbDyObj, 0)
+	dyStructType, fieldsInfo := CreateDyStruct(cols)
+	objValList = make([]*NMysqlDyObj, 0)
 	for rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -119,13 +120,13 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		if nil != err {
 			return nil, err
 		}
-		objValList = append(objValList, &sqlext.NdbDyObj{Data: instance, FiledsInfo: fieldsInfo})
+		objValList = append(objValList, &NMysqlDyObj{Data: instance, FiledsInfo: fieldsInfo})
 	}
 	return objValList, err
 }
 
 func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (findOk bool, err error) {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
 
 	if ndbw.bgnTx {
@@ -160,7 +161,7 @@ func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (find
 }
 
 func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool, error) {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
 	var err error
 
@@ -189,7 +190,7 @@ func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool
 }
 
 func (ndbw *NMysqlWrapper) SelectList(dest any, sqlStr string, args ...any) error {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	if ndbw.bgnTx {
 		return ndbw.sqlxTx.Select(dest, sqlStr, args...)
 	} else {
@@ -198,7 +199,7 @@ func (ndbw *NMysqlWrapper) SelectList(dest any, sqlStr string, args ...any) erro
 }
 
 func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var r sql.Result
 	if ndbw.bgnTx {
 		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)
@@ -213,7 +214,7 @@ func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64,
 }
 
 func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int64, err error) {
-	defer sqlext.PrintSql(ndbw.conf, time.Now(), sqlStr, args...)
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var r sql.Result
 	if ndbw.bgnTx {
 		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)

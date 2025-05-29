@@ -9,16 +9,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
 
-var blankRegexp = regexp.MustCompile(`\s+`)
-var argsRegexp = regexp.MustCompile(`\?`)
+type NdbBasicType interface {
+	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 |
+		~float32 | ~float64 | ~string | ~bool |
+		time.Time | NullBool | NullFloat64 | NullInt | NullInt64 | NullString | NullTime
+}
 
-func PrintSql(dbConf *nyaml.YamlConfDb, start time.Time, sqlStr string, args ...any) {
+var blankRegexp = regexp.MustCompile(`\s+`)
+
+func PrintSql(dbConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr string, args ...any) {
 	if !dbConf.DbSqlLogPrint {
 		return
 	}
@@ -32,133 +36,79 @@ func PrintSql(dbConf *nyaml.YamlConfDb, start time.Time, sqlStr string, args ...
 	slog.Log(context.Background(), ntools.SlogLevelStr2Level(dbConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
 }
 
-// Sql参数格式化.只支持?格式
-func SqlFmt(sqlStr string, args ...any) string {
-	if len(args) > 0 {
-		splTexts := []string{}
-		argsRange := argsRegexp.FindAllStringIndex(sqlStr, -1)
-		splTexts = append(splTexts, sqlStr[0:argsRange[0][0]])
-		for idx := 1; idx < len(argsRange); idx++ {
-			splTexts = append(splTexts, sqlStr[argsRange[idx-1][1]:argsRange[idx][0]])
-		}
-		splTexts = append(splTexts, sqlStr[argsRange[len(argsRange)-1][1]:])
-		sqlStr = splTexts[0]
-		for idx, v := range args {
-			sqlStr += sqlAnyArg(v) + splTexts[idx+1]
-		}
+// insertField 需要用逗号分隔如【aaa,bbb,ccc】
+func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err error) {
+	objVal := reflect.ValueOf(dostrcut)
+	if objVal.Kind() == reflect.Pointer {
+		objVal = objVal.Elem() //解引用
 	}
-	return sqlStr
+	if objVal.Kind() != reflect.Struct {
+		return "", nil, nerror.NewRunTimeError("不能获取非结构的值")
+	}
+	objType := objVal.Type()
+
+	mapVals := map[string]any{}
+	sb := strings.Builder{}
+	for i := range objType.NumField() {
+		field := objType.Field(i)
+		tagDb := field.Tag.Get("db")
+		//解析字段类型
+		valV := objVal.Field(i).Interface()
+		mapVals[tagDb] = valV
+		if sb.Len() > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString("?")
+	}
+
+	dbFieldStrs := strings.SplitSeq(insertField, ",")
+	for v := range dbFieldStrs {
+		vals = append(vals, mapVals[v])
+	}
+	return sb.String(), vals, nil
 }
 
-func sqlAnyArg(arg any) string {
-	//如果是指针需要解引用
-	argv := ntools.AnyElem(arg)
-	switch v := argv.(type) {
-	case nil:
-		return "NULL"
-	case bool:
-		return fmt.Sprintf("%v", v)
-	case string:
-		return fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
-	case int, uint, int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64:
-		return fmt.Sprintf("%v", v)
-	case time.Time:
-		return fmt.Sprintf("'%v'", ntools.Time2Str(v))
-	default:
-		// 反射检查底层类型（例如处理自定义类型）
-		rt := reflect.TypeOf(arg)
-		if nullType, str := nullTypeResult(arg, rt); nullType {
-			return str
-		} else {
-			rv := reflect.ValueOf(arg)
-			switch rv.Kind() {
-			case reflect.String:
-				return fmt.Sprintf("'%s'", rv.String())
-			case reflect.Int, reflect.Int64, reflect.Float64:
-				return fmt.Sprintf("%v", rv.Interface())
-			default:
-				return fmt.Sprintf("'%v'", arg)
-			}
-		}
+func StructDoTableName(doType reflect.Type) string {
+	if doType.NumField() <= 0 {
+		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
 	}
+	dbtbTag := doType.Field(0).Tag
+	tbname := dbtbTag.Get("dbtb")
+	if tbname == "" {
+		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[dbtb]", doType.Name()))
+	}
+	return tbname
 }
 
-func nullTypeResult(arg any, rt reflect.Type) (bool, string) {
-	if rt == reflect.TypeOf(NullTime{}) {
-		nullv := arg.(NullTime)
-		if nullv.Valid {
-			return true, fmt.Sprintf("'%v'", ntools.Time2Str(nullv.Time))
-		} else {
-			return true, "NULL"
+func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
+	if doType.NumField() <= 0 {
+		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
+	}
+	result := []string{}
+	//字段
+	for idx := range doType.NumField() {
+		dbTag := doType.Field(idx).Tag
+		dbcol := dbTag.Get("db")
+		if dbcol == "" {
+			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[db]", doType.Name()))
 		}
-	} else if rt == reflect.TypeOf(NullString{}) {
-		nullv := arg.(NullString)
-		if nullv.Valid {
-			return true, fmt.Sprintf("'%v'", nullv.String)
+		if tableAlias == "" {
+			result = append(result, dbcol)
 		} else {
-			return true, "NULL"
-		}
-	} else if rt == reflect.TypeOf(NullInt{}) {
-		nullv := arg.(NullInt)
-		if nullv.Valid {
-			return true, fmt.Sprintf("%v", nullv.Int32)
-		} else {
-			return true, "NULL"
-		}
-	} else if rt == reflect.TypeOf(NullInt64{}) {
-		nullv := arg.(NullInt64)
-		if nullv.Valid {
-			return true, fmt.Sprintf("%v", nullv.Int64)
-		} else {
-			return true, "NULL"
-		}
-	} else if rt == reflect.TypeOf(NullFloat64{}) {
-		nullv := arg.(NullFloat64)
-		if nullv.Valid {
-			return true, fmt.Sprintf("%v", nullv.Float64)
-		} else {
-			return true, "NULL"
-		}
-	} else if rt == reflect.TypeOf(NullBool{}) {
-		nullv := arg.(NullBool)
-		if nullv.Valid {
-			return true, fmt.Sprintf("%v", nullv.Bool)
-		} else {
-			return true, "NULL"
+			result = append(result, fmt.Sprintf("%s.%s", tableAlias, dbcol))
 		}
 	}
-
-	return false, ""
+	return result
 }
 
-// 使用In查询返回没有记录的 参数
-func SqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T) (sqlStr string, allArgs []T, err error) {
-	if len(args) < 1 {
-		return sqlStr, allArgs, nerror.NewRunTimeError("参数个数必须大于0")
-	}
-
-	sqlStr = `	SELECT t1.%s FROM (%s) t1 
-	LEFT JOIN (%s) t2 ON t1.%s=t2.%s
-	WHERE t2.%s IS NULL`
-
-	t1SqlStr := ""
-	for idx := range args {
+func StructDoDbColStr(doType reflect.Type, tableAlias string) string {
+	sb := &strings.Builder{}
+	cols := StructDoDbColList(doType, tableAlias)
+	for idx, v := range cols {
 		if idx > 0 {
-			t1SqlStr += " UNION ALL "
+			sb.WriteString(",")
 		}
-		t1SqlStr += fmt.Sprintf(" SELECT ? AS %s", dbFieldName)
+		sb.WriteString(v)
 	}
-
-	t2SqlStr := fmt.Sprintf(" SELECT %s FROM  %s WHERE %s IN (?)", dbFieldName, tableName, dbFieldName)
-	t2SqlStr, t2Args, err := sqlx.In(t2SqlStr, args) // []T 和 []interface{}（即 []any）类型不兼容，无法直接赋值。
-	if nil != err {
-		return sqlStr, allArgs, nil
-	}
-	//将t2的参数追加到参数中
-	for _, v := range t2Args {
-		args = append(args, v.(T))
-	}
-
-	sqlStr = fmt.Sprintf(sqlStr, dbFieldName, t1SqlStr, t2SqlStr, dbFieldName, dbFieldName, dbFieldName)
-	return sqlStr, args, nil
+	return sb.String()
 }

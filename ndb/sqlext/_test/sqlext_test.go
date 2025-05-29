@@ -2,6 +2,7 @@ package sqlext_test
 
 import (
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -16,11 +17,13 @@ import (
 var IDbWrapper *nmysql.NMysqlWrapper
 
 var dbconf = &nyaml.YamlConfDb{
-	DbHost:           "8.137.54.220",
-	DbPort:           3306,
-	DbUser:           "root",
-	DbPwd:            "Nxq@198943",
-	DbName:           "niexq01",
+	DbHost: "8.137.54.220",
+	DbPort: 3306,
+	DbUser: "root",
+	DbPwd:  "Nxq@198943",
+	DbName: "niexq01",
+}
+var sqlPrintConf = &nyaml.YamlConfSqlPrint{
 	DbSqlLogPrint:    true,
 	DbSqlLogLevel:    "debug",
 	DbSqlLogCompress: false,
@@ -28,7 +31,7 @@ var dbconf = &nyaml.YamlConfDb{
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
-	IDbWrapper = ndb.NewNMysqlWrapper(dbconf)
+	IDbWrapper = ndb.NewNMysqlWrapper(dbconf, sqlPrintConf)
 }
 
 func TestSqlFmt(t *testing.T) {
@@ -36,12 +39,21 @@ func TestSqlFmt(t *testing.T) {
 	if sqlext.SqlFmt(sqlStr) != sqlStr {
 		t.Errorf("格式化失败:%s", sqlStr)
 	}
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name='nixq'")
-	sqlext.PrintSql(dbconf, time.Now(), "? WHERE name=? ORDER BY id desc", "aaa", "niexq2")
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=?", "niexq", 1)
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=? AND no=?", "niexq", 1, int64(2))
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), time.Now())
-	sqlext.PrintSql(dbconf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), time.Now(), true, false)
+	sqlext.PrintSql(sqlPrintConf, time.Now(), " WHERE name='nixq'")
+	sqlext.PrintSql(sqlPrintConf, time.Now(), "? WHERE name=? ORDER BY id desc", "aaa", "niexq2")
+	sqlext.PrintSql(sqlPrintConf, time.Now(), " WHERE name=? AND id=?", "niexq", 1)
+	sqlext.PrintSql(sqlPrintConf, time.Now(), " WHERE name=? AND id=? AND no=?", "niexq", 1, int64(2))
+	sqlext.PrintSql(sqlPrintConf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), time.Now())
+	sqlext.PrintSql(sqlPrintConf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), time.Now(), true, false)
+}
+
+func TestSqlFmtSqlStr2Gauss(t *testing.T) {
+	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name='nixq'"))
+	slog.Info(sqlext.SqlFmtSqlStr2Gauss("? WHERE name=? ORDER BY id desc"))
+	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=?"))
+	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=?"))
+	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=? AND time>?"))
+	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?"))
 }
 
 func TestNNullTime(t *testing.T) {
@@ -70,8 +82,8 @@ func TestInserSqlVals(t *testing.T) {
 		CtTime     sqlext.NullTime `db:"ct_time" json:"ctTime" zhdesc:"创建时间"`
 		MdTime     sqlext.NullTime `db:"md_time" json:"mdTime" zhdesc:"修改时间"`
 	}
-	nowt := time.Now()
-	aaa := &AAAA{TaskId: "111", RmqMsgId: "SSSS", SendTime: sqlext.NewNullTime(&nowt), CtTime: sqlext.NewNullTime(nil)}
+
+	aaa := &AAAA{TaskId: "111", RmqMsgId: "SSSS", SendTime: sqlext.NewNullTime(true, time.Now())}
 
 	ColsStr := "task_id,rmq_msg_id,sys_code,area_code,send_time,biz_code,biz_data,biz_type,task_status,task_msg,ct_time,md_time"
 

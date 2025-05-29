@@ -20,6 +20,7 @@ type YamlConfRedis struct {
 	IdleTimeout    int    `yaml:"idleTimeout" hc:"IdleTimeout-秒"`
 }
 
+// 历史原因这个用于mysql
 type YamlConfDb struct {
 	DbHost          string `yaml:"dbHost" hc:"dbHost"`
 	DbPort          int64  `yaml:"dbPort" hc:"dbPort"`
@@ -29,10 +30,23 @@ type YamlConfDb struct {
 	ConnMaxLifetime int    `yaml:"connMaxLifetime" hc:"连接最大时长-秒"`
 	MaxOpenConns    int    `yaml:"maxOpenConns" hc:"MaxOpenConns"`
 	MaxIdleConns    int    `yaml:"maxIdleConns" hc:"MaxIdleConns"`
+}
 
+type YamlConfSqlPrint struct {
 	DbSqlLogPrint    bool   `yaml:"dbSqlLogPrint" hc:"Sql日志是否打印 true|false"`
 	DbSqlLogLevel    string `yaml:"dbSqlLogLevel" hc:"Sql日志使用【 debug|info|warn|error 】输出"`
 	DbSqlLogCompress bool   `yaml:"dbSqlLogCompress" hc:"Sql日志打印是否压缩 true|false"`
+}
+
+type YamlConfGaussDb struct {
+	DbHost          string `yaml:"dbHost" hc:"dbHost"`
+	DbPort          int64  `yaml:"dbPort" hc:"dbPort"`
+	DbUser          string `yaml:"dbUser" hc:"dbUser"`
+	DbPwd           string `yaml:"dbPwd" hc:"dbPwd"`
+	DbName          string `yaml:"dbName" hc:"DbName"`
+	ConnMaxLifetime int    `yaml:"connMaxLifetime" hc:"连接最大时长-秒"`
+	MaxOpenConns    int    `yaml:"maxOpenConns" hc:"MaxOpenConns"`
+	MaxIdleConns    int    `yaml:"maxIdleConns" hc:"MaxIdleConns"`
 }
 
 type YamlConfEndnKey struct {

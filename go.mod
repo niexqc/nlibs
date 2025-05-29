@@ -3,6 +3,7 @@ module github.com/niexqc/nlibs
 go 1.24
 
 require (
+	gitee.com/opengauss/openGauss-connector-go-pq v1.0.7
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/bytedance/sonic v1.13.2
 	github.com/gin-gonic/gin v1.10.0
@@ -74,4 +75,9 @@ require (
 	golang.org/x/term v0.31.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	stathat.com/c/consistent v1.0.0 // indirect
+)
+
+require (
+	github.com/shopspring/decimal v1.4.0 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 )

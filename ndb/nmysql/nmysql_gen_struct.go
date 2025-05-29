@@ -1,7 +1,6 @@
 package nmysql
 
 import (
-	"database/sql"
 	"fmt"
 	"reflect"
 	"strings"
@@ -69,88 +68,5 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
 			panic(nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mtype)))
 		}
 	}(strings.ToUpper(mysqlType))
-
 	return goType
-
-}
-
-func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*sqlext.NdbDyObjFieldInfo) {
-	fields := []reflect.StructField{}
-	mysqlType2GoType := func(col *sql.ColumnType) reflect.Type {
-		nullable, ok := col.Nullable()
-		if !ok {
-			nullable = false
-		}
-		return mysqlTypeToGoType(col.DatabaseTypeName(), nullable)
-	}
-	filedInfos = make(map[string]*sqlext.NdbDyObjFieldInfo)
-	for _, v := range cols {
-		DbNameNstr := &ntools.NString{S: v.Name()}
-		dbFname := DbNameNstr.S
-		structFname := DbNameNstr.Under2Camel(true)
-		jsonFname := DbNameNstr.Under2Camel(false)
-		goType := mysqlType2GoType(v)
-		tag := reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, dbFname, jsonFname))
-
-		fields = append(fields, reflect.StructField{Name: structFname, Type: goType, Tag: tag})
-
-		nullable, ok := v.Nullable()
-		if !ok {
-			nullable = false
-		}
-		filedInfos[dbFname] = &sqlext.NdbDyObjFieldInfo{
-			StructFieldName: structFname,
-			DbColName:       dbFname,
-			GoColType:       goType.String(),
-			DbColType:       v.DatabaseTypeName(),
-			DbColIsNull:     nullable,
-		}
-	}
-	// 创建动态结构体类型
-	return reflect.StructOf(fields), filedInfos
-}
-
-func StructDoTableName(doType reflect.Type) string {
-	if doType.NumField() <= 0 {
-		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
-	}
-	dbtbTag := doType.Field(0).Tag
-	tbname := dbtbTag.Get("dbtb")
-	if tbname == "" {
-		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[dbtb]", doType.Name()))
-	}
-	return tbname
-}
-
-func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
-	if doType.NumField() <= 0 {
-		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
-	}
-	result := []string{}
-	//字段
-	for idx := range doType.NumField() {
-		dbTag := doType.Field(idx).Tag
-		dbcol := dbTag.Get("db")
-		if dbcol == "" {
-			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[db]", doType.Name()))
-		}
-		if tableAlias == "" {
-			result = append(result, dbcol)
-		} else {
-			result = append(result, fmt.Sprintf("%s.%s", tableAlias, dbcol))
-		}
-	}
-	return result
-}
-
-func StructDoDbColStr(doType reflect.Type, tableAlias string) string {
-	sb := &strings.Builder{}
-	cols := StructDoDbColList(doType, tableAlias)
-	for idx, v := range cols {
-		if idx > 0 {
-			sb.WriteString(",")
-		}
-		sb.WriteString(v)
-	}
-	return sb.String()
 }
