@@ -52,6 +52,80 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfDb, sqlPrintConf *nyaml.YamlConfSqlPri
 	return &NMysqlWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}
 }
 
+func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	var r sql.Result
+	if ndbw.bgnTx {
+		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)
+	} else {
+		r, err = ndbw.sqlxDb.Exec(sqlStr, args...)
+	}
+	if nil != err {
+		return rowsAffected, err
+	}
+	rowsAffected, _ = r.RowsAffected()
+	return rowsAffected, err
+}
+
+func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int64, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	var r sql.Result
+	if ndbw.bgnTx {
+		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)
+	} else {
+		r, err = ndbw.sqlxDb.Exec(sqlStr, args...)
+	}
+	if nil != err {
+		return lastInsertId, err
+	}
+	lastInsertId, _ = r.LastInsertId()
+	return lastInsertId, err
+}
+
+func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (findOk bool, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	var rows *sqlx.Rows
+
+	if ndbw.bgnTx {
+		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
+	} else {
+		rows, err = ndbw.sqlxDb.Queryx(sqlStr, args...)
+	}
+
+	if nil != err {
+		return false, err
+	}
+	defer rows.Close()
+	cols, err := rows.Columns()
+	if nil != err {
+		return false, err
+	}
+	if len(cols) != 1 {
+		return false, nerror.NewRunTimeError("查询结果包含多个列")
+	}
+	if rows.Next() {
+		if err := rows.Scan(dest); nil != err {
+			return false, err
+		}
+		if rows.Next() {
+			dest = nil
+			return false, nerror.NewRunTimeError("查询结果中包含多个值")
+		}
+		return true, err
+	} else {
+		return false, nil
+	}
+}
+
+func (ndbw *NMysqlWrapper) SelectList(dest any, sqlStr string, args ...any) error {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	if ndbw.bgnTx {
+		return ndbw.sqlxTx.Select(dest, sqlStr, args...)
+	} else {
+		return ndbw.sqlxDb.Select(dest, sqlStr, args...)
+	}
+}
+
 //	 查询并生成动态对象返回
 //		 dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1")
 //		 val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
@@ -125,41 +199,6 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 	return objValList, err
 }
 
-func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (findOk bool, err error) {
-	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	var rows *sqlx.Rows
-
-	if ndbw.bgnTx {
-		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
-	} else {
-		rows, err = ndbw.sqlxDb.Queryx(sqlStr, args...)
-	}
-
-	if nil != err {
-		return false, err
-	}
-	defer rows.Close()
-	cols, err := rows.Columns()
-	if nil != err {
-		return false, err
-	}
-	if len(cols) != 1 {
-		return false, nerror.NewRunTimeError("查询结果包含多个列")
-	}
-	if rows.Next() {
-		if err := rows.Scan(dest); nil != err {
-			return false, err
-		}
-		if rows.Next() {
-			dest = nil
-			return false, nerror.NewRunTimeError("查询结果中包含多个值")
-		}
-		return true, err
-	} else {
-		return false, nil
-	}
-}
-
 func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool, error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
@@ -187,45 +226,6 @@ func (ndbw *NMysqlWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool
 	} else {
 		return false, nil
 	}
-}
-
-func (ndbw *NMysqlWrapper) SelectList(dest any, sqlStr string, args ...any) error {
-	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	if ndbw.bgnTx {
-		return ndbw.sqlxTx.Select(dest, sqlStr, args...)
-	} else {
-		return ndbw.sqlxDb.Select(dest, sqlStr, args...)
-	}
-}
-
-func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
-	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	var r sql.Result
-	if ndbw.bgnTx {
-		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)
-	} else {
-		r, err = ndbw.sqlxDb.Exec(sqlStr, args...)
-	}
-	if nil != err {
-		return rowsAffected, err
-	}
-	rowsAffected, _ = r.RowsAffected()
-	return rowsAffected, err
-}
-
-func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int64, err error) {
-	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	var r sql.Result
-	if ndbw.bgnTx {
-		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)
-	} else {
-		r, err = ndbw.sqlxDb.Exec(sqlStr, args...)
-	}
-	if nil != err {
-		return lastInsertId, err
-	}
-	lastInsertId, _ = r.LastInsertId()
-	return lastInsertId, err
 }
 
 func (ndbw *NMysqlWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NMysqlWrapper, err error) {

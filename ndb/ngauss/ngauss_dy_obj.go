@@ -19,8 +19,8 @@ type NGaussDyObjFieldInfo struct {
 }
 
 type NGaussDyObj struct {
-	FiledsInfo map[string]*NGaussDyObjFieldInfo
-	Data       any
+	DbNameFiledsMap map[string]*NGaussDyObjFieldInfo
+	Data            any
 }
 
 func GetFiledVal[T sqlext.NdbBasicType](dyObj *NGaussDyObj, structFieldName string) (rt *T, err error) {
@@ -55,22 +55,17 @@ func GetFiledVal[T sqlext.NdbBasicType](dyObj *NGaussDyObj, structFieldName stri
 	}
 }
 
-func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NGaussDyObjFieldInfo) {
+func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFiledsMap map[string]*NGaussDyObjFieldInfo) {
 	fields := []reflect.StructField{}
-	mysqlType2GoType := func(col *sql.ColumnType) reflect.Type {
-		nullable, ok := col.Nullable()
-		if !ok {
-			nullable = false
-		}
-		return gaussDbUdtNameToGoType(col.DatabaseTypeName(), nullable)
-	}
-	filedInfos = make(map[string]*NGaussDyObjFieldInfo)
+	dbNameFiledsMap = make(map[string]*NGaussDyObjFieldInfo)
 	for _, v := range cols {
 		DbNameNstr := &ntools.NString{S: v.Name()}
 		dbFname := DbNameNstr.S
 		structFname := DbNameNstr.Under2Camel(true)
 		jsonFname := DbNameNstr.Under2Camel(false)
-		goType := mysqlType2GoType(v)
+		//高斯驱动在查询是否不返回字段是否允许为空，所以固定为空
+		goType := gaussDbUdtNameToGoType(v.DatabaseTypeName(), true)
+
 		tag := reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, dbFname, jsonFname))
 
 		fields = append(fields, reflect.StructField{Name: structFname, Type: goType, Tag: tag})
@@ -79,7 +74,7 @@ func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 		if !ok {
 			nullable = false
 		}
-		filedInfos[dbFname] = &NGaussDyObjFieldInfo{
+		dbNameFiledsMap[dbFname] = &NGaussDyObjFieldInfo{
 			StructFieldName: structFname,
 			DbColName:       dbFname,
 			GoColType:       goType.String(),
@@ -88,5 +83,5 @@ func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 		}
 	}
 	// 创建动态结构体类型
-	return reflect.StructOf(fields), filedInfos
+	return reflect.StructOf(fields), dbNameFiledsMap
 }
