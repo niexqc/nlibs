@@ -89,7 +89,6 @@ func TestInsert(t *testing.T) {
 	if rowEff != 4 {
 		t.Error("InsertWithRowsAffected应该返回4")
 	}
-
 }
 
 func TestSelectOne(t *testing.T) {
