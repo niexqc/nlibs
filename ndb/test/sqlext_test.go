@@ -1,38 +1,18 @@
-package sqlext_test
+package ndb_test
 
 import (
 	"fmt"
 	"log/slog"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/niexqc/nlibs/ndb"
-	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
-	"github.com/niexqc/nlibs/nyaml"
 )
-
-var IDbWrapper *nmysql.NMysqlWrapper
-
-var dbconf = &nyaml.YamlConfDb{
-	DbHost: "8.137.54.220",
-	DbPort: 3306,
-	DbUser: "root",
-	DbPwd:  "Nxq@198943",
-	DbName: "niexq01",
-}
-var sqlPrintConf = &nyaml.YamlConfSqlPrint{
-	DbSqlLogPrint:    true,
-	DbSqlLogLevel:    "debug",
-	DbSqlLogCompress: false,
-}
-
-func init() {
-	ntools.SlogConf("test", "debug", 1, 2)
-	IDbWrapper = ndb.NewNMysqlWrapper(dbconf, sqlPrintConf)
-}
 
 func TestSqlFmt(t *testing.T) {
 	sqlStr := " WHERE name='nixq'"
@@ -68,26 +48,32 @@ func TestNNullTime(t *testing.T) {
 }
 
 func TestInserSqlVals(t *testing.T) {
-	type AAAA struct {
+	type TestVo struct {
 		TaskId     string          `db:"task_id" json:"taskId" zhdesc:"任务编号"`
 		RmqMsgId   string          `db:"rmq_msg_id" json:"rmqMsgId" zhdesc:"RmqMsgId"`
-		SysCode    string          `db:"sys_code" json:"sysCode" zhdesc:"发送人编码"`
-		AreaCode   string          `db:"area_code" json:"areaCode" zhdesc:"地区编码"`
-		SendTime   sqlext.NullTime `db:"send_time" json:"sendTime" zhdesc:"发送时间"`
-		BizCode    string          `db:"biz_code" json:"bizCode" zhdesc:"业务编码"`
-		BizData    string          `db:"biz_data" json:"bizData" zhdesc:"业务数据"`
-		BizType    string          `db:"biz_type" json:"bizType" zhdesc:"操作类型"`
 		TaskStatus int             `db:"task_status" json:"taskStatus" zhdesc:"任务状态：0待执行-1成功-2失败"`
-		TaskMsg    string          `db:"task_msg" json:"taskMsg" zhdesc:"任务执行消息"`
-		CtTime     sqlext.NullTime `db:"ct_time" json:"ctTime" zhdesc:"创建时间"`
 		MdTime     sqlext.NullTime `db:"md_time" json:"mdTime" zhdesc:"修改时间"`
 	}
 
-	aaa := &AAAA{TaskId: "111", RmqMsgId: "SSSS", SendTime: sqlext.NewNullTime(true, time.Now())}
+	colsStr := "task_id,rmq_msg_id,task_status,md_time"
+	slog.Info("ColStr:" + colsStr)
+	strcVo := &TestVo{TaskId: "111", RmqMsgId: "SSSS", MdTime: sqlext.NewNullTime(true, ntools.TimeStr2TimeByLayout("2025-05-01", "2006-01-02"))}
 
-	ColsStr := "task_id,rmq_msg_id,sys_code,area_code,send_time,biz_code,biz_data,biz_type,task_status,task_msg,ct_time,md_time"
+	dyColStr := ndb.StructDoDbColStr(reflect.TypeOf(TestVo{}), "", "task_id", "rmq_msg_id")
+	slog.Info("dyColStr:" + dyColStr)
+	if dyColStr != "task_status,md_time" {
+		t.Error("动态SQL列失败")
+	}
 
-	zwf, vals, err := sqlext.InserSqlVals(ColsStr, aaa)
+	zwf, vals, _ := sqlext.InserSqlVals(dyColStr, strcVo)
+	slog.Info("zwf:", "len", len(strings.Split(zwf, ",")), "text", zwf)
+	if zwf != "?,?" {
+		t.Error("占位符返回失败")
+	}
+	valsJsonStr := njson.SonicObj2Str(vals)
+	slog.Info("val:", "len", len(vals), "valsJson", valsJsonStr)
+	if valsJsonStr != `[0,"2025-05-01 00:00:00"]` {
+		t.Error("值列表返回失败")
+	}
 
-	fmt.Println(zwf, vals, err)
 }

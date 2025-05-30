@@ -27,7 +27,7 @@ type YamlConfSqlPrint struct {
 }
 
 // 历史原因这个用于mysql
-type YamlConfDb struct {
+type YamlConfMysqlDb struct {
 	DbHost          string `yaml:"dbHost" hc:"dbHost"`
 	DbPort          int64  `yaml:"dbPort" hc:"dbPort"`
 	DbUser          string `yaml:"dbUser" hc:"dbUser"`

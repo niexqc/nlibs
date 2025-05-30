@@ -34,7 +34,7 @@ var crtTableStr = fmt.Sprintf(`CREATE TABLE %s (
   PRIMARY KEY (id)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='Test'`, tableName)
 
-var dbconf = &nyaml.YamlConfDb{
+var dbconf = &nyaml.YamlConfMysqlDb{
 	DbHost: "8.137.54.220",
 	DbPort: 3306,
 	DbUser: "root",

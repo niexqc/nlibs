@@ -28,7 +28,7 @@ const (
 
 type NMysqlWrapper struct {
 	sqlxDb                  *sqlx.DB
-	conf                    *nyaml.YamlConfDb
+	conf                    *nyaml.YamlConfMysqlDb
 	sqlPrintConf            *nyaml.YamlConfSqlPrint
 	bgnTx                   bool
 	sqlxTx                  *sqlx.Tx
@@ -38,7 +38,7 @@ type NMysqlWrapper struct {
 	txMutx                  *sync.Mutex
 }
 
-func NewNMysqlWrapper(conf *nyaml.YamlConfDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *NMysqlWrapper {
+func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *NMysqlWrapper {
 	//开始连接数据库
 	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
 	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
