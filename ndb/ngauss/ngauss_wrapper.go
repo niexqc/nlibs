@@ -202,11 +202,12 @@ func (ndbw *NGaussWrapper) SelectList(dest any, sqlStr string, args ...any) erro
 //		 val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
 func (ndbw *NGaussWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NGaussDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
 	var rows *sqlx.Rows
 	if ndbw.bgnTx {
-		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
+		rows, err = ndbw.sqlxTx.Queryx(gaussSqlStr, args...)
 	} else {
-		rows, err = ndbw.sqlxDb.Queryx(sqlStr, args...)
+		rows, err = ndbw.sqlxDb.Queryx(gaussSqlStr, args...)
 	}
 	if nil != err {
 		return nil, err
@@ -238,12 +239,13 @@ func (ndbw *NGaussWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NGaus
 
 func (ndbw *NGaussWrapper) SelectDyObjList(sqlStr string, args ...any) (objValList []*NGaussDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
 
 	var rows *sqlx.Rows
 	if ndbw.bgnTx {
-		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
+		rows, err = ndbw.sqlxTx.Queryx(gaussSqlStr, args...)
 	} else {
-		rows, err = ndbw.sqlxDb.Queryx(sqlStr, args...)
+		rows, err = ndbw.sqlxDb.Queryx(gaussSqlStr, args...)
 	}
 
 	if nil != err {
@@ -272,13 +274,14 @@ func (ndbw *NGaussWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 
 func (ndbw *NGaussWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool, error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
 	var rows *sqlx.Rows
 	var err error
 
 	if ndbw.bgnTx {
-		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
+		rows, err = ndbw.sqlxTx.Queryx(gaussSqlStr, args...)
 	} else {
-		rows, err = ndbw.sqlxDb.Queryx(sqlStr, args...)
+		rows, err = ndbw.sqlxDb.Queryx(gaussSqlStr, args...)
 	}
 
 	if nil != err {

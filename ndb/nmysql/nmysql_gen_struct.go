@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
@@ -46,9 +45,9 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 		goType := mysqlTypeToGoType(v.DataType, isNull).String()
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
 		resultStr += fmt.Sprintf(" `%s:\"%s\" %s:\"%s\" %s:\"%s\" json:\"%s\" zhdesc:\"%s\"`",
-			ndb.NdbTags.TableSchema, v.TableSchema,
-			ndb.NdbTags.TableName, v.TableName,
-			ndb.NdbTags.TableColumn, v.ColumnName,
+			sqlext.NdbTags.TableSchema, v.TableSchema,
+			sqlext.NdbTags.TableName, v.TableName,
+			sqlext.NdbTags.TableColumn, v.ColumnName,
 			NsCStr.Under2Camel(false), v.ColumnComment)
 	}
 	resultStr += "\n}"

@@ -5,15 +5,11 @@ import (
 	"reflect"
 	"strings"
 
+	"slices"
+
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 )
-
-var NdbTags = struct {
-	TableSchema string
-	TableName   string
-	TableColumn string
-}{TableSchema: "schm", TableName: "tbn", TableColumn: "db"}
 
 // Sql参数格式化.只支持?格式
 // 暂时只简单转换后续再处理或过滤其他字符
@@ -26,9 +22,9 @@ func StructDoTableSchema(doType reflect.Type) string {
 		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
 	}
 	dbtbTag := doType.Field(0).Tag
-	tbname := dbtbTag.Get(NdbTags.TableSchema)
+	tbname := dbtbTag.Get(sqlext.NdbTags.TableSchema)
 	if tbname == "" {
-		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), NdbTags.TableSchema))
+		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableSchema))
 	}
 	return tbname
 }
@@ -38,9 +34,9 @@ func StructDoTableName(doType reflect.Type) string {
 		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
 	}
 	dbtbTag := doType.Field(0).Tag
-	tbname := dbtbTag.Get(NdbTags.TableName)
+	tbname := dbtbTag.Get(sqlext.NdbTags.TableName)
 	if tbname == "" {
-		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), NdbTags.TableName))
+		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableName))
 	}
 	return tbname
 }
@@ -53,9 +49,9 @@ func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
 	//字段
 	for idx := range doType.NumField() {
 		dbTag := doType.Field(idx).Tag
-		dbcol := dbTag.Get(NdbTags.TableColumn)
+		dbcol := dbTag.Get(sqlext.NdbTags.TableColumn)
 		if dbcol == "" {
-			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), NdbTags.TableColumn))
+			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableColumn))
 		}
 		if tableAlias == "" {
 			result = append(result, dbcol)
@@ -66,11 +62,14 @@ func StructDoDbColList(doType reflect.Type, tableAlias string) []string {
 	return result
 }
 
-func StructDoDbColStr(doType reflect.Type, tableAlias string) string {
+func StructDoDbColStr(doType reflect.Type, tableAlias string, excludeCols ...string) string {
 	sb := &strings.Builder{}
 	cols := StructDoDbColList(doType, tableAlias)
-	for idx, v := range cols {
-		if idx > 0 {
+	for _, v := range cols {
+		if slices.Contains(excludeCols, v) {
+			continue
+		}
+		if sb.Len() > 0 {
 			sb.WriteString(",")
 		}
 		sb.WriteString(v)

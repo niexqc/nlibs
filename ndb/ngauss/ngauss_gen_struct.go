@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
@@ -28,7 +27,7 @@ func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 	tableComment := ""
 	findOk, err := dbw.SelectOne(&tableComment, tcSql)
 	if nil != err {
-		panic(nerror.NewRunTimeErrorFmt("查询表[%s.%s注]释异常:%v", tableSchema, tableName, err))
+		panic(nerror.NewRunTimeErrorFmt("查询表[%s.%s]注释异常:%v", tableSchema, tableName, err))
 	}
 	if !findOk {
 		panic(nerror.NewRunTimeErrorFmt("未获取到表[%s.%s]注释", tableSchema, tableName))
@@ -61,9 +60,9 @@ func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
 		// resultStr += fmt.Sprintf(" `schm:\"%s\" tbn:\"%s\" db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.TableSchema, v.TableName, v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment.String)
 		resultStr += fmt.Sprintf(" `%s:\"%s\" %s:\"%s\" %s:\"%s\" json:\"%s\" zhdesc:\"%s\"`",
-			ndb.NdbTags.TableSchema, v.TableSchema,
-			ndb.NdbTags.TableName, v.TableName,
-			ndb.NdbTags.TableColumn, v.ColumnName,
+			sqlext.NdbTags.TableSchema, v.TableSchema,
+			sqlext.NdbTags.TableName, v.TableName,
+			sqlext.NdbTags.TableColumn, v.ColumnName,
 			NsCStr.Under2Camel(false), v.ColumnComment.String)
 	}
 	resultStr += "\n}"
