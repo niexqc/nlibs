@@ -13,6 +13,7 @@ import (
 
 	_ "gitee.com/opengauss/openGauss-connector-go-pq"
 	"github.com/jmoiron/sqlx"
+	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/nyaml"
@@ -74,6 +75,12 @@ func SelectList[T any](ndbw *NGaussWrapper, sqlStr string, args ...any) (tlist [
 	objs := new([]*T)
 	err = ndbw.SelectList(objs, sqlStr, args...)
 	return *objs, err
+}
+
+// SqlLimitStr
+// pageNo 页码从1开始
+func (ndbw *NGaussWrapper) SqlLimitStr(pageNo, pageSize int) string {
+	return ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
 }
 
 func (ndbw *NGaussWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
