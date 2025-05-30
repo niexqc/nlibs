@@ -85,7 +85,7 @@ func (ndbw *NGaussWrapper) SqlLimitStr(pageNo, pageSize int) string {
 
 func (ndbw *NGaussWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var r sql.Result
 	if ndbw.bgnTx {
 		r, err = ndbw.sqlxTx.Exec(gaussSqlStr, args...)
@@ -102,7 +102,7 @@ func (ndbw *NGaussWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64,
 // 实现返回ID需要
 func (ndbw *NGaussWrapper) InsertWithRowsAffected(sqlStr string, args ...any) (rowsAffected int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var r sql.Result
 	if ndbw.bgnTx {
 		r, err = ndbw.sqlxTx.Exec(gaussSqlStr, args...)
@@ -120,7 +120,7 @@ func (ndbw *NGaussWrapper) InsertWithRowsAffected(sqlStr string, args ...any) (r
 // Sql示例:INSERT INTO users (name) VALUES ($1) RETURNING id
 func (ndbw *NGaussWrapper) InsertWithLastId(sqlStr string, args ...any) (lastInsertId int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var id int64
 	if ndbw.bgnTx {
 		err = ndbw.sqlxTx.QueryRow(gaussSqlStr, args...).Scan(&id)
@@ -135,7 +135,7 @@ func (ndbw *NGaussWrapper) InsertWithLastId(sqlStr string, args ...any) (lastIns
 
 func (ndbw *NGaussWrapper) InsertFor(sqlStr string, args ...any) (rowsAffected int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var r sql.Result
 	if ndbw.bgnTx {
 		r, err = ndbw.sqlxTx.Exec(gaussSqlStr, args...)
@@ -151,7 +151,7 @@ func (ndbw *NGaussWrapper) InsertFor(sqlStr string, args ...any) (rowsAffected i
 
 func (ndbw *NGaussWrapper) SelectOne(dest any, sqlStr string, args ...any) (findOk bool, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 
 	var rows *sqlx.Rows
 
@@ -188,7 +188,7 @@ func (ndbw *NGaussWrapper) SelectOne(dest any, sqlStr string, args ...any) (find
 
 func (ndbw *NGaussWrapper) SelectList(dest any, sqlStr string, args ...any) error {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 
 	if ndbw.bgnTx {
 		return ndbw.sqlxTx.Select(dest, gaussSqlStr, args...)
@@ -202,7 +202,7 @@ func (ndbw *NGaussWrapper) SelectList(dest any, sqlStr string, args ...any) erro
 //		 val, err := sqlext.GetFiledVal[sqlext.NullString](dyObj, dyObj.FiledsInfo["t03_varchar"].StructFieldName)
 func (ndbw *NGaussWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NGaussDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var rows *sqlx.Rows
 	if ndbw.bgnTx {
 		rows, err = ndbw.sqlxTx.Queryx(gaussSqlStr, args...)
@@ -239,7 +239,7 @@ func (ndbw *NGaussWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NGaus
 
 func (ndbw *NGaussWrapper) SelectDyObjList(sqlStr string, args ...any) (objValList []*NGaussDyObj, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 
 	var rows *sqlx.Rows
 	if ndbw.bgnTx {
@@ -274,7 +274,7 @@ func (ndbw *NGaussWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 
 func (ndbw *NGaussWrapper) SelectObj(dest any, sqlStr string, args ...any) (bool, error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var rows *sqlx.Rows
 	var err error
 
@@ -370,4 +370,24 @@ func (ndbw *NGaussWrapper) NdbTxRollBack(err error) error {
 		return rollbackErr
 	}
 	return nil
+}
+
+// Gauss驱动不支持?参数，需要将?参数全部替换为$1的格式
+func (ndbw *NGaussWrapper) SqlFmtSqlStr2Gauss(sqlStr string) string {
+	splTexts := []string{}
+	argsRange := sqlext.SqlParamArgsRegexp.FindAllStringIndex(sqlStr, -1)
+	if len(argsRange) > 0 {
+		splTexts = append(splTexts, sqlStr[0:argsRange[0][0]])
+
+		for idx := 1; idx < len(argsRange); idx++ {
+			splTexts = append(splTexts, sqlStr[argsRange[idx-1][1]:argsRange[idx][0]])
+		}
+		splTexts = append(splTexts, sqlStr[argsRange[len(argsRange)-1][1]:])
+		sqlStr = splTexts[0]
+
+		for idx := range len(splTexts) - 1 {
+			sqlStr += fmt.Sprintf("$%d", idx+1) + splTexts[idx+1]
+		}
+	}
+	return sqlStr
 }

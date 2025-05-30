@@ -166,3 +166,12 @@ func TestTx(t *testing.T) {
 	slog.Info("lastInsertId:", "lastInsertId", lastInsertId)
 
 }
+
+func TestSqlFmtSqlStr2Gauss(t *testing.T) {
+	slog.Info(NGaussWrapper.SqlFmtSqlStr2Gauss(" WHERE name='nixq'"))
+	slog.Info(NGaussWrapper.SqlFmtSqlStr2Gauss("? WHERE name=? ORDER BY id desc"))
+	slog.Info(NGaussWrapper.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=?"))
+	slog.Info(NGaussWrapper.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=?"))
+	slog.Info(NGaussWrapper.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=? AND time>?"))
+	slog.Info(NGaussWrapper.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?"))
+}

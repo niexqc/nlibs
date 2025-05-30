@@ -101,12 +101,11 @@ func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64,
 
 func (ndbw *NMysqlWrapper) InsertWithRowsAffected(sqlStr string, args ...any) (rowsAffected int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
-	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
 	var r sql.Result
 	if ndbw.bgnTx {
-		r, err = ndbw.sqlxTx.Exec(gaussSqlStr, args...)
+		r, err = ndbw.sqlxTx.Exec(sqlStr, args...)
 	} else {
-		r, err = ndbw.sqlxDb.Exec(gaussSqlStr, args...)
+		r, err = ndbw.sqlxDb.Exec(sqlStr, args...)
 	}
 	if nil != err {
 		return rowsAffected, err

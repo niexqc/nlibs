@@ -27,15 +27,6 @@ func TestSqlFmt(t *testing.T) {
 	sqlext.PrintSql(sqlPrintConf, time.Now(), " WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), time.Now(), true, false)
 }
 
-func TestSqlFmtSqlStr2Gauss(t *testing.T) {
-	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name='nixq'"))
-	slog.Info(sqlext.SqlFmtSqlStr2Gauss("? WHERE name=? ORDER BY id desc"))
-	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=?"))
-	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=?"))
-	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=? AND time>?"))
-	slog.Info(sqlext.SqlFmtSqlStr2Gauss(" WHERE name=? AND id=? AND no=? AND time>? AND bool_true=? AND bool_false=?"))
-}
-
 func TestNNullTime(t *testing.T) {
 	type TimeA struct {
 		T09Datetime sqlext.NullTime `json:"T09Datetime"`

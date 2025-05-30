@@ -13,13 +13,13 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-var argsRegexp = regexp.MustCompile(`\?`)
+var SqlParamArgsRegexp = regexp.MustCompile(`\?`)
 
 // Sql参数格式化.只支持?格式
 func SqlFmt(sqlStr string, args ...any) string {
 	if len(args) > 0 {
 		splTexts := []string{}
-		argsRange := argsRegexp.FindAllStringIndex(sqlStr, -1)
+		argsRange := SqlParamArgsRegexp.FindAllStringIndex(sqlStr, -1)
 		splTexts = append(splTexts, sqlStr[0:argsRange[0][0]])
 		for idx := 1; idx < len(argsRange); idx++ {
 			splTexts = append(splTexts, sqlStr[argsRange[idx-1][1]:argsRange[idx][0]])
@@ -28,26 +28,6 @@ func SqlFmt(sqlStr string, args ...any) string {
 		sqlStr = splTexts[0]
 		for idx, v := range args {
 			sqlStr += sqlFmtSqlAnyArg(v) + splTexts[idx+1]
-		}
-	}
-	return sqlStr
-}
-
-// Gauss驱动不支持?参数，需要将?参数全部替换为$1的格式
-func SqlFmtSqlStr2Gauss(sqlStr string) string {
-	splTexts := []string{}
-	argsRange := argsRegexp.FindAllStringIndex(sqlStr, -1)
-	if len(argsRange) > 0 {
-		splTexts = append(splTexts, sqlStr[0:argsRange[0][0]])
-
-		for idx := 1; idx < len(argsRange); idx++ {
-			splTexts = append(splTexts, sqlStr[argsRange[idx-1][1]:argsRange[idx][0]])
-		}
-		splTexts = append(splTexts, sqlStr[argsRange[len(argsRange)-1][1]:])
-		sqlStr = splTexts[0]
-
-		for idx := range len(splTexts) - 1 {
-			sqlStr += fmt.Sprintf("$%d", idx+1) + splTexts[idx+1]
 		}
 	}
 	return sqlStr
