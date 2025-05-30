@@ -99,7 +99,23 @@ func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64,
 	return rowsAffected, err
 }
 
-func (ndbw *NMysqlWrapper) Insert(sqlStr string, args ...any) (lastInsertId int64, err error) {
+func (ndbw *NMysqlWrapper) InsertWithRowsAffected(sqlStr string, args ...any) (rowsAffected int64, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	gaussSqlStr := sqlext.SqlFmtSqlStr2Gauss(sqlStr)
+	var r sql.Result
+	if ndbw.bgnTx {
+		r, err = ndbw.sqlxTx.Exec(gaussSqlStr, args...)
+	} else {
+		r, err = ndbw.sqlxDb.Exec(gaussSqlStr, args...)
+	}
+	if nil != err {
+		return rowsAffected, err
+	}
+	rowsAffected, _ = r.RowsAffected()
+	return rowsAffected, err
+}
+
+func (ndbw *NMysqlWrapper) InsertWithLastId(sqlStr string, args ...any) (lastInsertId int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var r sql.Result
 	if ndbw.bgnTx {

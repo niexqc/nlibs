@@ -76,12 +76,27 @@ func TestGenStruct(t *testing.T) {
 	t.Log("TestGenStruct 执行成功")
 }
 
+func TestInsert(t *testing.T) {
+	IDbWrapper.Exec(delTableStr)
+	IDbWrapper.Exec(crtTableStr)
+
+	IDbWrapper.InsertWithLastId("INSERT into test01(t03_varchar) VALUES('aaa2')")
+	lasetId, _ := IDbWrapper.InsertWithLastId("INSERT into test01(t03_varchar) VALUES('aaa2')")
+	if lasetId != 2 {
+		t.Error("InsertWithLastId 应该返回2")
+	}
+	rowEff, _ := IDbWrapper.InsertWithRowsAffected("INSERT into test01(t03_varchar) VALUES('aaa1'),('aaa2'),('aaa2'),('aaa2')")
+	if rowEff != 4 {
+		t.Error("InsertWithRowsAffected应该返回4")
+	}
+}
+
 func TestSelectOne(t *testing.T) {
 	IDbWrapper.Exec(delTableStr)
 	IDbWrapper.Exec(crtTableStr)
 
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
 	if res, _, err := nmysql.SelectOne[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 WHERE id=1"); nil != err {
 		t.Error(err)
@@ -118,8 +133,8 @@ func TestSelectObj(t *testing.T) {
 		T10Bool     sqlext.NullBool     `db:"t10_bool" json:"t10Bool" zhdesc:""`
 	}
 
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
 	if obj, _, err := nmysql.SelectObj[Test01Do](IDbWrapper, "SELECT * FROM test01 where id=1"); nil != err {
 		println(err.Error())
@@ -148,8 +163,8 @@ func TestSelectList(t *testing.T) {
 		T10Bool     sqlext.NullBool     `db:"t10_bool" json:"t10Bool" zhdesc:""`
 	}
 
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
 	if list, err := nmysql.SelectList[sqlext.NullString](IDbWrapper, "SELECT t03_varchar FROM test01 ORDER BY id"); nil != err {
 		println(err.Error())
@@ -173,8 +188,8 @@ func TestSelectDyObj(t *testing.T) {
 	IDbWrapper.Exec(delTableStr)
 	IDbWrapper.Exec(crtTableStr)
 
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
 
 	if dyObj, err := IDbWrapper.SelectDyObj("SELECT * FROM test01 where id=1"); nil != err {
 		println(err.Error())
@@ -202,10 +217,10 @@ func TestSqlInNotExist(t *testing.T) {
 	IDbWrapper.Exec(delTableStr)
 	IDbWrapper.Exec(crtTableStr)
 
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(3,'aaa3')")
-	IDbWrapper.Insert("INSERT into test01(id,t03_varchar) VALUES(4,'aaa4')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(1,'aaa1')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(2,'aaa2')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(3,'aaa3')")
+	IDbWrapper.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(4,'aaa4')")
 
 	ids := []int64{1, 2, 6, 7}
 
@@ -239,14 +254,14 @@ func TestTx(t *testing.T) {
 	}
 	defer txr.NdbTxCommit()
 
-	r, err := txr.Insert("INSERT into test01(id,t03_varchar) VALUES(5,'aaa1')")
+	r, err := txr.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(5,'aaa1')")
 	if err != nil {
 		panic(err)
 	}
 
 	slog.Info("TestTx", "lastInsertId", r)
 
-	r, err = txr.Insert("INSERT into test01(id,t03_varchar) VALUES(6,'aaa2')")
+	r, err = txr.InsertWithLastId("INSERT into test01(id,t03_varchar) VALUES(6,'aaa2')")
 	if nil != err {
 		// panic(err)
 	}

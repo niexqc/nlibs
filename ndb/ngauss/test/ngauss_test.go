@@ -43,13 +43,13 @@ func TestInsert(t *testing.T) {
 	// if nil != err {
 	// 	slog.Info("错误发生,测试通过:", "err", err)
 	// }
-	rowsAffected, err := NGaussWrapper.Insert("INSERT into public.test0(name) VALUES(?)", "TestInsert")
+	rowsAffected, err := NGaussWrapper.InsertWithRowsAffected("INSERT into public.test0(name) VALUES(?)", "TestInsert")
 	if nil != err {
 		t.Error(err)
 	}
 	slog.Info("rowsAffected:", "rowsAffected", rowsAffected)
 
-	lastInsertId, err := NGaussWrapper.InsertAndLastId("INSERT into public.test0(name) VALUES(?) RETURNING id", "InsertAndLastId")
+	lastInsertId, err := NGaussWrapper.InsertWithLastId("INSERT into public.test0(name) VALUES(?) RETURNING id", "InsertAndLastId")
 	if nil != err {
 		t.Error(err)
 	}
@@ -153,13 +153,13 @@ func TestTx(t *testing.T) {
 	}
 	defer txr.NdbTxCommit()
 
-	rowsAffected, err := txr.Insert("INSERT into public.test0(name) VALUES(?)", "TestInsert")
+	rowsAffected, err := txr.InsertWithRowsAffected("INSERT into public.test0(name) VALUES(?)", "TestInsert")
 	if nil != err {
 		t.Error(err)
 	}
 	slog.Info("rowsAffected:", "rowsAffected", rowsAffected)
 
-	lastInsertId, err := txr.InsertAndLastId("INSERT into public.test0(name) VALUES(?) RETURNING id", "InsertAndLastId")
+	lastInsertId, err := txr.InsertWithLastId("INSERT into public.test0(name) VALUES(?) RETURNING id", "InsertAndLastId")
 	if nil != err {
 		t.Error(err)
 	}
