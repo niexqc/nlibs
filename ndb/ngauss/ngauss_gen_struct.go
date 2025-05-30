@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
@@ -58,7 +59,12 @@ func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 		// Name() 返回 NullString
 		goType := gaussDbUdtNameToGoType(v.UdtName, isNull).String()
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
-		resultStr += fmt.Sprintf(" `dbtb:\"%s\" db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.TableName, v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment.String)
+		// resultStr += fmt.Sprintf(" `schm:\"%s\" tbn:\"%s\" db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.TableSchema, v.TableName, v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment.String)
+		resultStr += fmt.Sprintf(" `%s:\"%s\" %s:\"%s\" %s:\"%s\" json:\"%s\" zhdesc:\"%s\"`",
+			ndb.NdbTags.TableSchema, v.TableSchema,
+			ndb.NdbTags.TableName, v.TableName,
+			ndb.NdbTags.TableColumn, v.ColumnName,
+			NsCStr.Under2Camel(false), v.ColumnComment.String)
 	}
 	resultStr += "\n}"
 	return resultStr

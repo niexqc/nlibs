@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
@@ -12,11 +13,12 @@ import (
 )
 
 type columnSchemaDo struct {
+	TableSchema   string `db:"TABLE_SCHEMA"`
 	TableName     string `db:"TABLE_NAME"`
 	ColumnName    string `db:"COLUMN_NAME"`
 	DataType      string `db:"DATA_TYPE"`
 	ColumnComment string `db:"COLUMN_COMMENT"`
-	IsNullable    string `db:"IS_NULLABLE"`
+	AllowNull     string `db:"IS_NULLABLE"`
 }
 
 func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) string {
@@ -25,7 +27,7 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 	dbw.SelectOne(&tableComment, tcSql, tableSchema, tableName)
 
 	sqlStr := `
-	SELECT TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
+	SELECT TABLE_SCHEMA ,TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
 		FROM INFORMATION_SCHEMA.COLUMNS 
 		WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
 	`
@@ -37,14 +39,17 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.Under2Camel(true))
 
 	for _, v := range dos {
-		isNull := v.IsNullable == "YES"
+		isNull := v.AllowNull == "YES"
 		NsCStr := &ntools.NString{S: v.ColumnName}
 		// String() 返回 sqlext.NullString
 		// Name() 返回 NullString
 		goType := mysqlTypeToGoType(v.DataType, isNull).String()
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
-		resultStr += fmt.Sprintf(" `dbtb:\"%s\" db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.TableName, v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment)
-
+		resultStr += fmt.Sprintf(" `%s:\"%s\" %s:\"%s\" %s:\"%s\" json:\"%s\" zhdesc:\"%s\"`",
+			ndb.NdbTags.TableSchema, v.TableSchema,
+			ndb.NdbTags.TableName, v.TableName,
+			ndb.NdbTags.TableColumn, v.ColumnName,
+			NsCStr.Under2Camel(false), v.ColumnComment)
 	}
 	resultStr += "\n}"
 	return resultStr
