@@ -70,6 +70,7 @@ func TestInserSqlVals(t *testing.T) {
 	if zwf != "?,?" {
 		t.Error("占位符返回失败")
 	}
+
 	valsJsonStr := njson.SonicObj2Str(vals)
 	slog.Info("val:", "len", len(vals), "valsJson", valsJsonStr)
 	if valsJsonStr != `[0,"2025-05-01 00:00:00"]` {
