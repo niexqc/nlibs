@@ -69,10 +69,10 @@ func TestKeyRestExpire(t *testing.T) {
 }
 
 func TestRedisIncr(t *testing.T) {
-	redisService.Int64Incr("aaaa", 1200)
-	redisService.Int64Incr("aaaa", 1200)
-	redisService.Int64Incr("aaaa", 1200)
-	num, err := redisService.Int64Incr("aaaa", 1200)
+	redisService.Int64Incr("TestRedisIncr", 2500)
+	redisService.Int64Incr("TestRedisIncr", 2500)
+	redisService.Int64Incr("TestRedisIncr", 2500)
+	num, err := redisService.Int64Incr("TestRedisIncr", 2500)
 	ntools.TestErrPainic(t, "测试 TestRedisIncr", err)
 	ntools.TestEq(t, "TestKeyRestExpire", int64(4), num)
 }
@@ -127,5 +127,6 @@ func TestRedisProducerConsumer(t *testing.T) {
 			fmt.Println(v)
 		}
 	}()
-	redisService.Consumer(key, reciveChan)
+	slog.Info("如果要接收所有的 序列测试方法会暂停")
+	// redisService.Consumer(key, reciveChan)
 }
