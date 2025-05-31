@@ -1,15 +1,9 @@
 package ndb_test
 
 import (
-	"github.com/niexqc/nlibs/ndb/ngauss"
-	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
 )
-
-var NGaussWrapper *ngauss.NGaussWrapper
-
-var NMysqlWrapper *nmysql.NMysqlWrapper
 
 var gaussConf = &nyaml.YamlConfGaussDb{
 	DbHost: "8.137.54.220",
@@ -35,8 +29,6 @@ var sqlPrintConf = &nyaml.YamlConfSqlPrint{
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
-	NGaussWrapper = ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
-	NMysqlWrapper = nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 }
 
 var GaussDbCreateTable = `

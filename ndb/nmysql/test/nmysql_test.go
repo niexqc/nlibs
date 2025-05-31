@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/niexqc/nlibs"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
@@ -227,7 +228,7 @@ func TestSqlInNotExist(t *testing.T) {
 	sqlStr, allArgs, _ := sqlext.SqlFmtSqlInNotExist("test01", "id", ids)
 	notExistIdds := []int64{}
 
-	err := IDbWrapper.SelectList(&notExistIdds, sqlStr, sqlext.ArrBaseTypeExpand2ArrAny(allArgs)...)
+	err := IDbWrapper.SelectList(&notExistIdds, sqlStr, nlibs.Arr2ArrAny(allArgs)...)
 
 	if nil != err {
 		panic(err)

@@ -30,7 +30,7 @@ func TestRedisPutExStr(t *testing.T) {
 
 	_, err := redisService.GetStr("aaa")
 	if err == nil {
-		ntools.TestErrPainic(t, "TestRedisPutExStr 此时应该返回错误", nil)
+		ntools.TestErrPanicMsg(t, "TestRedisPutExStr 此时应该返回错误")
 	}
 	ntools.TestEq(t, "TestRedisPutExStr 2秒后", "redigo: nil returned", err.Error())
 }

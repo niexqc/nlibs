@@ -29,18 +29,18 @@ type NdbBasicType interface {
 
 var blankRegexp = regexp.MustCompile(`\s+`)
 
-func PrintSql(dbConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr string, args ...any) {
-	if !dbConf.DbSqlLogPrint {
+func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr string, args ...any) {
+	if !sqlPrintConf.DbSqlLogPrint {
 		return
 	}
 	costTime := time.Now().UnixMilli() - start.UnixMilli()
 	//去除换行符
-	if dbConf.DbSqlLogCompress {
+	if sqlPrintConf.DbSqlLogCompress {
 		sqlStr = string(blankRegexp.ReplaceAllString(sqlStr, " "))
 	}
 	sqlStr = SqlFmt(sqlStr, args...)
 	//打印日志
-	slog.Log(context.Background(), ntools.SlogLevelStr2Level(dbConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+	slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
 }
 
 // insertField 需要用逗号分隔如【aaa,bbb,ccc】
@@ -76,20 +76,9 @@ func InserSqlVals(insertField string, dostrcut any) (zwf string, vals []any, err
 			}
 			sb.WriteString("?")
 		}
-
 	}
-
 	for _, v := range fieldArr {
 		vals = append(vals, mapVals[v])
 	}
 	return sb.String(), vals, nil
-}
-
-// 基础类型切片展开为为any切片
-func ArrBaseTypeExpand2ArrAny[T NdbBasicType](args []T) []any {
-	anyArgs := make([]any, len(args))
-	for i, v := range args {
-		anyArgs[i] = v
-	}
-	return anyArgs
 }

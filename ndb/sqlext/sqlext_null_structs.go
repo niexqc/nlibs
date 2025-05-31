@@ -20,8 +20,8 @@ type NullBool struct{ sql.NullBool }
 
 // decimal.NullDecimal
 
-func NewNullString(str string) NullString {
-	if str == "" {
+func NewNullString(valid bool, str string) NullString {
+	if !valid {
 		return NullString{sql.NullString{Valid: false}}
 	}
 	return NullString{sql.NullString{Valid: true, String: str}}
@@ -32,6 +32,34 @@ func NewNullTime(valid bool, time time.Time) NullTime {
 		return NullTime{sql.NullTime{Valid: false}}
 	}
 	return NullTime{sql.NullTime{Valid: true, Time: time}}
+}
+
+func NewNullInt(valid bool, val int) NullInt {
+	if !valid {
+		return NullInt{sql.NullInt32{Valid: false}}
+	}
+	return NullInt{sql.NullInt32{Valid: true, Int32: int32(val)}}
+}
+
+func NewNullFloat64(valid bool, val float64) NullFloat64 {
+	if !valid {
+		return NullFloat64{sql.NullFloat64{Valid: false}}
+	}
+	return NullFloat64{sql.NullFloat64{Valid: true, Float64: val}}
+}
+
+func NewNullInt64(valid bool, val int) NullInt64 {
+	if !valid {
+		return NullInt64{sql.NullInt64{Valid: false}}
+	}
+	return NullInt64{sql.NullInt64{Valid: true, Int64: int64(val)}}
+}
+
+func NewNullBool(valid bool, val bool) NullBool {
+	if !valid {
+		return NullBool{sql.NullBool{Valid: false}}
+	}
+	return NullBool{sql.NullBool{Valid: true, Bool: val}}
 }
 
 func (ns NullString) MarshalJSON() ([]byte, error) {

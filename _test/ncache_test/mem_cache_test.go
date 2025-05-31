@@ -16,7 +16,7 @@ func TestMemPutExStr(t *testing.T) {
 
 	_, err := memCacheService.GetStr("aaa")
 	if err == nil {
-		ntools.TestErrPainic(t, "MemCacheService TestPutExStr 此时应该返回错误", nil)
+		ntools.TestErrPanicMsg(t, "MemCacheService TestPutExStr 此时应该返回错误")
 	}
 	ntools.TestEq(t, "MemCacheService TestPutExStr 2秒后", "缓存不存在", err.Error())
 }

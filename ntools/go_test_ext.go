@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+func TestErrPanicMsg(t *testing.T, titleAndmsg string) {
+	t.Error(titleAndmsg)
+}
+
 func TestErrPainic(t *testing.T, title string, err error) {
 	if nil != err {
 		t.Errorf(title+":异常:%v", err)

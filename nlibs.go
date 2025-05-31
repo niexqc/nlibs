@@ -24,3 +24,12 @@ func NewCronWithSeconds() *cron.Cron {
 		cron.Hour | cron.Dom | cron.Month | cron.DowOptional | cron.Descriptor)
 	return cron.New(cron.WithParser(secondParser), cron.WithChain())
 }
+
+// 基础类型切片展开为为any切片
+func Arr2ArrAny[T any](args []T) []any {
+	anyArgs := make([]any, len(args))
+	for i, v := range args {
+		anyArgs[i] = v
+	}
+	return anyArgs
+}

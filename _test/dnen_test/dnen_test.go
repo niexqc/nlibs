@@ -39,11 +39,11 @@ func TestLoadFromHex(t *testing.T) {
 
 	priKeyLoadFromHex := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
 	if keyXText != priKeyLoadFromHex.X.Text(10) || keyYText != priKeyLoadFromHex.Y.Text(10) || keyDText != priKeyLoadFromHex.D.Text(10) {
-		ntools.TestErrPainic(t, "从Hex加载私钥后,X,Y,D不匹配", nil)
+		ntools.TestErrPanicMsg(t, "从Hex加载私钥后,X,Y,D不匹配")
 	}
 	pubKeyLoadFromHex := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
 	if keyXText != pubKeyLoadFromHex.X.Text(10) || keyYText != pubKeyLoadFromHex.Y.Text(10) {
-		ntools.TestErrPainic(t, "从Hex加载公钥后,X,Y不匹配", nil)
+		ntools.TestErrPanicMsg(t, "从Hex加载公钥后,X,Y不匹配")
 	}
 
 }
@@ -56,11 +56,11 @@ func TestLoadFromDerB64(t *testing.T) {
 	pubDerB64Str := "MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEZJNn7eibPcCkMBihB7a1Mm92jH6gYkzVupfm+LQDrXUazM9VTi8awcFszd8/7qU9vTeU1aMKT1TYlt144EfGzQ=="
 	priKeyLoadFromDerB64 := ndnen.Sm2LoadPriKeyFromDerB64(priDerB64Str)
 	if keyXText != priKeyLoadFromDerB64.X.Text(10) || keyYText != priKeyLoadFromDerB64.Y.Text(10) || keyDText != priKeyLoadFromDerB64.D.Text(10) {
-		ntools.TestErrPainic(t, "从Der2B64加载私钥后,X,Y,D不匹配", nil)
+		ntools.TestErrPanicMsg(t, "从Der2B64加载私钥后,X,Y,D不匹配")
 	}
 	pubKeyLoadFromDerB64 := ndnen.Sm2LoadPubKeyFromDerB64(pubDerB64Str)
 	if keyXText != pubKeyLoadFromDerB64.X.Text(10) || keyYText != pubKeyLoadFromDerB64.Y.Text(10) {
-		ntools.TestErrPainic(t, "从Der2B64加载公钥后,X,Y不匹配", nil)
+		ntools.TestErrPanicMsg(t, "从Der2B64加载公钥后,X,Y不匹配")
 	}
 }
 
@@ -81,11 +81,11 @@ amnmOfsRz1kASJyt2D73zQgT+qKipIsA1gCZh74vcAJwo9kwmpR6tLBYKA==
 
 	priKeyLoadFromPem := ndnen.Sm2LoadPriKeyFromPem(priPemStr)
 	if keyXText != priKeyLoadFromPem.X.Text(10) || keyYText != priKeyLoadFromPem.Y.Text(10) || keyDText != priKeyLoadFromPem.D.Text(10) {
-		ntools.TestErrPainic(t, "从DerPem加载私钥后,X,Y,D不匹配", nil)
+		ntools.TestErrPanicMsg(t, "从DerPem加载私钥后,X,Y,D不匹配")
 	}
 	pubKeyLoadFromPem := ndnen.Sm2LoadPubKeyFromPem(pubPemStr)
 	if keyXText != pubKeyLoadFromPem.X.Text(10) || keyYText != pubKeyLoadFromPem.Y.Text(10) {
-		ntools.TestErrPainic(t, "从DerPem加载公钥后,X,Y不匹配", nil)
+		ntools.TestErrPanicMsg(t, "从DerPem加载公钥后,X,Y不匹配")
 	}
 }
 
@@ -98,14 +98,14 @@ func TestSm2EnDn(t *testing.T) {
 	sm2EnedStr := ndnen.Sm2EncryptToBase64(pub, orginText)
 	dnok, sm2DnedStr := ndnen.Sm2DecryptBase64(pri, sm2EnedStr)
 	if !dnok {
-		ntools.TestErrPainic(t, "SM2加解密失败", nil)
+		ntools.TestErrPanicMsg(t, "SM2加解密失败")
 	}
 	ntools.TestEq(t, "测试 TestSm2EnDn 加密解密", orginText, sm2DnedStr)
 	//密文
 	sm2EnedStr = "BMKUnLTSPEFjTyYQsdnJetfWcieodAphSsfbrNeWuN3JGLCcBQ9q/w7rr81cA6KL5PMX1Oxw3fmANPDWzCmJtI2nNDY9WIGEHeWLejDIq8gU+jb0TOlda/N6EcEaD7tmAhR5tw=="
 	dnok, sm2DnedStr = ndnen.Sm2DecryptBase64(pri, sm2EnedStr)
 	if !dnok {
-		ntools.TestErrPainic(t, "SM2加解密失败", nil)
+		ntools.TestErrPanicMsg(t, "SM2加解密失败")
 	}
 	ntools.TestEq(t, "测试 TestSm2EnDn 加密解密", orginText, sm2DnedStr)
 
@@ -122,7 +122,7 @@ func TestSm2Verify(t *testing.T) {
 	verfiyResult := ndnen.Sm2VerifyByPubKey(pub, sourceStr, jsGenB64DerSignStr)
 	slog.Info("Sm2Verify 签名验证", "原文", sourceStr, "签名", jsGenB64DerSignStr, "结果", verfiyResult)
 	if !verfiyResult {
-		ntools.TestErrPainic(t, "Sm2Verify验签失败", nil)
+		ntools.TestErrPanicMsg(t, "Sm2Verify验签失败")
 	}
 
 	// 自签验证
@@ -130,7 +130,7 @@ func TestSm2Verify(t *testing.T) {
 	verfiyResult = ndnen.Sm2VerifyByPubKey(pub, sourceStr, selfSignStr)
 	slog.Info("Sm2Verify 自签验证", "原文", sourceStr, "签名", jsGenB64DerSignStr, "结果", verfiyResult)
 	if !verfiyResult {
-		ntools.TestErrPainic(t, "Sm2Verify自签验证失败", nil)
+		ntools.TestErrPanicMsg(t, "Sm2Verify自签验证失败")
 	}
 
 }

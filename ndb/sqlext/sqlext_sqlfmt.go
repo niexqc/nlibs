@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/niexqc/nlibs"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/shopspring/decimal"
@@ -27,6 +28,10 @@ func SqlFmt(sqlStr string, args ...any) string {
 		splTexts = append(splTexts, sqlStr[argsRange[len(argsRange)-1][1]:])
 		sqlStr = splTexts[0]
 		for idx, v := range args {
+			//判断args是否是数组
+			if nlibs.IsArrayOrSlice(v) {
+				panic(nerror.NewRunTimeErrorFmt("参数【%v】不能为Array|Slice", v))
+			}
 			sqlStr += sqlFmtSqlAnyArg(v) + splTexts[idx+1]
 		}
 	}
@@ -40,9 +45,10 @@ func SqlFmtSqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T
 		return sqlStr, allArgs, nerror.NewRunTimeError("参数个数必须大于0")
 	}
 
-	sqlStr = `	SELECT t1.%s FROM (%s) t1 
-	LEFT JOIN (%s) t2 ON t1.%s=t2.%s
-	WHERE t2.%s IS NULL`
+	sqlStr = `SELECT t1.%s  
+FROM (%s) t1 
+LEFT JOIN (%s) t2 ON t1.%s=t2.%s 
+WHERE t2.%s IS NULL`
 
 	t1SqlStr := ""
 	for idx := range args {
