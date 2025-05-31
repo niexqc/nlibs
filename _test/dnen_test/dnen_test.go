@@ -11,14 +11,20 @@ import (
 func TestKeyGen(t *testing.T) {
 	pri, pub := ndnen.Sm2GenKeyPair()
 	priHex, pubHex := ndnen.Sm2Key2Hex(pri, pub)
+	slog.Info("私钥 Hex:" + priHex)
+	slog.Info("公钥 Hex:" + pubHex)
 	ntools.TestEq(t, "测试 Sm2Key2Hex,私钥长度不匹配", 64, len(priHex))
 	ntools.TestEq(t, "测试 Sm2Key2Hex,公钥长度不匹配", 130, len(pubHex))
 
 	priDerB64, pubDerB64 := ndnen.Sm2Key2Der2B64(pri, pub)
+	slog.Info("私钥 DerB64:" + priDerB64)
+	slog.Info("公钥 DerB64:" + pubDerB64)
 	ntools.TestEq(t, "测试 Sm2Key2Der2B64,私钥长度不匹配", 200, len(priDerB64))
 	ntools.TestEq(t, "测试 Sm2Key2Der2B64,公钥长度不匹配", 124, len(pubDerB64))
 
 	priPem, pubPem := ndnen.Sm2Key2Pem(pri, pub)
+	slog.Info("私钥 DerPem:\n" + priPem)
+	slog.Info("公钥 DerPem:\n" + pubPem)
 	ntools.TestEq(t, "测试 Sm2Key2Pem,私钥长度不匹配", 258, len(priPem))
 	ntools.TestEq(t, "测试 Sm2Key2Pem,公钥长度不匹配", 178, len(pubPem))
 }
