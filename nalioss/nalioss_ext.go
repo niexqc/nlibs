@@ -182,6 +182,7 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 		slog.Error("完成分片上传请求，执行失败:" + nerror.GenErrDetail(err))
 		return err
 	}
+	slog.Info(fmt.Sprintf("本地文件:%s,已上传到:%s", localFile, objKey))
 	return err
 }
 
