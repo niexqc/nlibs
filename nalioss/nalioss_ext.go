@@ -12,28 +12,17 @@ import (
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
+	"github.com/niexqc/nlibs/nyaml"
 	"github.com/panjf2000/ants/v2"
 )
 
-type NAliOssConf struct {
-	InternalEndpoint       bool   `yaml:"internalEndpoint" hc:"程序是否运行在OSS所在地域内网"`
-	BucketName             string `yaml:"bucketName" hc:"Bucket名称"`
-	OssRegion              string `yaml:"ossRegion" hc:"Bucket所在地区的地址[cn-chengdu]"`
-	OssKey                 string `yaml:"ossKey" hc:"OssKey"`
-	OssKeySecret           string `yaml:"ossKeySecret" hc:"OssKeySecret"`
-	OssPrefix              string `yaml:"ossPrefix" hc:"Oss存储的前缀"`
-	ProxyEnabel            bool   `yaml:"proxyEnabel" hc:"是否开启代理"`
-	ProxyHttpUrl           string `yaml:"proxyHttpUrl" hc:"代理的地址"`
-	MultipartUploadWorkNum int    `yaml:"multipartUploadWorkNum" hc:"上传文件最大的并发数"`
-}
-
 type NAliOssClient struct {
-	Cnf                     *NAliOssConf
+	Cnf                     *nyaml.YamlConfNAliOssConf
 	OssClient               *oss.Client
 	MultipartUploadWorkPool *ants.Pool
 }
 
-func NewNAliOssClient(cnf *NAliOssConf) *NAliOssClient {
+func NewNAliOssClient(cnf *nyaml.YamlConfNAliOssConf) *NAliOssClient {
 	var cfg = oss.LoadDefaultConfig().
 		WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cnf.OssKey, cnf.OssKeySecret)).
 		WithRegion("cn-chengdu").

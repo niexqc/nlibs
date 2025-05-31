@@ -9,26 +9,26 @@ import (
 	"github.com/niexqc/nlibs/nalioss"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
+	"github.com/niexqc/nlibs/nyaml"
 )
 
 var aliOssClient *nalioss.NAliOssClient
-var aliOssConf *nalioss.NAliOssConf
+var aliOssConf *nyaml.YamlConfNAliOssConf
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
-	aliOssConf = &nalioss.NAliOssConf{
+	aliOssConf = &nyaml.YamlConfNAliOssConf{
 		InternalEndpoint:       false,
 		BucketName:             "wts-backup-sanzi2025",
 		OssRegion:              "cn-chengdu",
 		OssKey:                 "",
 		OssKeySecret:           "",
 		OssPrefix:              "xbak/dev253",
-		ProxyEnabel:            true,
+		ProxyEnabel:            false,
 		ProxyHttpUrl:           "http://192.168.0.251:1080",
 		MultipartUploadWorkNum: 30,
 	}
 	aliOssClient = nalioss.NewNAliOssClient(aliOssConf)
-
 }
 
 func TestListObjects(t *testing.T) {

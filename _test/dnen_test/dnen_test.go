@@ -11,6 +11,7 @@ func TestGenSm2Key(t *testing.T) {
 	pri, pub := ndnen.Sm2GenKeyPair()
 
 	priStr, pubStr := ndnen.Sm2Key2Hex(pri, pub)
+
 	fmt.Println("私钥Hex:\n" + priStr)
 	fmt.Println("公钥Hex:\n" + pubStr)
 	pri = ndnen.Sm2LoadPriKeyFromHex(priStr)
