@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -120,6 +121,9 @@ func (ndbw *NGaussWrapper) InsertWithRowsAffected(sqlStr string, args ...any) (r
 // Sql示例:INSERT INTO users (name) VALUES ($1) RETURNING id
 func (ndbw *NGaussWrapper) InsertWithLastId(sqlStr string, args ...any) (lastInsertId int64, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	if !strings.Contains(strings.ToUpper(sqlStr), "RETURNING") {
+		return 0, nerror.NewRunTimeError("InsertWithLastId 必须包含 RETURNING")
+	}
 	gaussSqlStr := ndbw.SqlFmtSqlStr2Gauss(sqlStr)
 	var id int64
 	if ndbw.bgnTx {

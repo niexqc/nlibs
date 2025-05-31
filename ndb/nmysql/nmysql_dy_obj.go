@@ -7,20 +7,22 @@ import (
 
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 )
 
 type NMysqlDyObjFieldInfo struct {
 	DbColName       string
 	StructFieldName string
+	JsonColName     string
 	GoColType       string
 	DbColType       string
 	DbColIsNull     bool
 }
 
 type NMysqlDyObj struct {
-	FiledsInfo map[string]*NMysqlDyObjFieldInfo
-	Data       any
+	DbNameFiledsMap map[string]*NMysqlDyObjFieldInfo
+	Data            any
 }
 
 func GetFiledVal[T sqlext.NdbBasicType](dyObj *NMysqlDyObj, structFieldName string) (rt *T, err error) {
@@ -55,7 +57,15 @@ func GetFiledVal[T sqlext.NdbBasicType](dyObj *NMysqlDyObj, structFieldName stri
 	}
 }
 
-func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NMysqlDyObjFieldInfo) {
+func DyObjList2Json(dyObjList []*NMysqlDyObj) (jsonStr string, err error) {
+	dataList := []any{}
+	for _, dyObj := range dyObjList {
+		dataList = append(dataList, dyObj.Data)
+	}
+	return njson.SonicObj2Str(dataList), nil
+}
+
+func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NMysqlDyObjFieldInfo) {
 	fields := []reflect.StructField{}
 	mysqlType2GoType := func(col *sql.ColumnType) reflect.Type {
 		nullable, ok := col.Nullable()
@@ -82,6 +92,7 @@ func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 		filedInfos[dbFname] = &NMysqlDyObjFieldInfo{
 			StructFieldName: structFname,
 			DbColName:       dbFname,
+			JsonColName:     jsonFname,
 			GoColType:       goType.String(),
 			DbColType:       v.DatabaseTypeName(),
 			DbColIsNull:     nullable,

@@ -7,12 +7,14 @@ import (
 
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 )
 
 type NGaussDyObjFieldInfo struct {
 	DbColName       string
 	StructFieldName string
+	JsonColName     string
 	GoColType       string
 	DbColType       string
 	DbColIsNull     bool
@@ -55,6 +57,14 @@ func GetFiledVal[T sqlext.NdbBasicType](dyObj *NGaussDyObj, structFieldName stri
 	}
 }
 
+func DyObjList2Json(dyObjList []*NGaussDyObj) (jsonStr string, err error) {
+	dataList := []any{}
+	for _, dyObj := range dyObjList {
+		dataList = append(dataList, dyObj.Data)
+	}
+	return njson.SonicObj2Str(dataList), nil
+}
+
 func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFiledsMap map[string]*NGaussDyObjFieldInfo) {
 	fields := []reflect.StructField{}
 	dbNameFiledsMap = make(map[string]*NGaussDyObjFieldInfo)
@@ -77,6 +87,7 @@ func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFil
 		dbNameFiledsMap[dbFname] = &NGaussDyObjFieldInfo{
 			StructFieldName: structFname,
 			DbColName:       dbFname,
+			JsonColName:     jsonFname,
 			GoColType:       goType.String(),
 			DbColType:       v.DatabaseTypeName(),
 			DbColIsNull:     nullable,

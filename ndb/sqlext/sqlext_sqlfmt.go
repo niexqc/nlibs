@@ -48,10 +48,13 @@ func SqlFmtSqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T
 	sqlStr = `SELECT t1.%s  
 FROM (%s) t1 
 LEFT JOIN (%s) t2 ON t1.%s=t2.%s 
-WHERE t2.%s IS NULL`
+WHERE t2.%s IS NULL ORDER BY t1.%s ASC`
 
 	t1SqlStr := ""
 	for idx := range args {
+		if nlibs.IsArrayOrSlice(args[idx]) {
+			return sqlStr, allArgs, nerror.NewRunTimeErrorFmt("参数【%v】不能为Array|Slice", args[idx])
+		}
 		if idx > 0 {
 			t1SqlStr += " UNION ALL "
 		}
@@ -68,7 +71,7 @@ WHERE t2.%s IS NULL`
 		args = append(args, v.(T))
 	}
 
-	sqlStr = fmt.Sprintf(sqlStr, dbFieldName, t1SqlStr, t2SqlStr, dbFieldName, dbFieldName, dbFieldName)
+	sqlStr = fmt.Sprintf(sqlStr, dbFieldName, t1SqlStr, t2SqlStr, dbFieldName, dbFieldName, dbFieldName, dbFieldName)
 	return sqlStr, args, nil
 }
 

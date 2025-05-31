@@ -22,8 +22,7 @@ type columnSchemaDo struct {
 
 func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) string {
 	tcSql := "SELECT TABLE_COMMENT FROM INFORMATION_SCHEMA.`TABLES` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
-	tableComment := ""
-	dbw.SelectOne(&tableComment, tcSql, tableSchema, tableName)
+	tableComment, _, _ := SelectOne[string](dbw, tcSql, tableSchema, tableName)
 
 	sqlStr := `
 	SELECT TABLE_SCHEMA ,TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
@@ -34,7 +33,8 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 	dbw.SelectList(&dos, sqlStr, tableSchema, tableName)
 
 	NsStr := &ntools.NString{S: tableName}
-	resultStr := fmt.Sprintf("// %s `%s`.%s\n", tableComment, tableSchema, tableName)
+
+	resultStr := fmt.Sprintf("// %s %s.%s\n", *tableComment, tableSchema, tableName)
 	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.Under2Camel(true))
 
 	for _, v := range dos {

@@ -193,7 +193,7 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NMysq
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, fieldsInfo := CreateDyStruct(cols)
+	dyStructType, fieldsInfo := createDyStruct(cols)
 	if rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -205,7 +205,7 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NMysq
 		if rows.Next() {
 			return nil, nerror.NewRunTimeError("查询结果中包含多个值")
 		}
-		return &NMysqlDyObj{Data: instance, FiledsInfo: fieldsInfo}, err
+		return &NMysqlDyObj{Data: instance, DbNameFiledsMap: fieldsInfo}, err
 		// return instance, err
 	} else {
 		return nil, nerror.NewRunTimeError("未查询到结果")
@@ -231,7 +231,7 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, fieldsInfo := CreateDyStruct(cols)
+	dyStructType, fieldsInfo := createDyStruct(cols)
 	objValList = make([]*NMysqlDyObj, 0)
 	for rows.Next() {
 		// 创建动态Struct的实例
@@ -241,7 +241,7 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		if nil != err {
 			return nil, err
 		}
-		objValList = append(objValList, &NMysqlDyObj{Data: instance, FiledsInfo: fieldsInfo})
+		objValList = append(objValList, &NMysqlDyObj{Data: instance, DbNameFiledsMap: fieldsInfo})
 	}
 	return objValList, err
 }

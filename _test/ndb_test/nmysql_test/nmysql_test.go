@@ -2,12 +2,17 @@ package nmysql_test
 
 import (
 	"fmt"
+	"log/slog"
 	"strings"
 	"testing"
 
+	"github.com/niexqc/nlibs"
 	"github.com/niexqc/nlibs/ndb/nmysql"
+	"github.com/niexqc/nlibs/ndb/sqlext"
+	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
+	"github.com/shopspring/decimal"
 )
 
 var tableName = "tb01"
@@ -68,5 +73,215 @@ func TestCrateTable(t *testing.T) {
 		ntools.TestErrPanicMsg(t, "TestCrateTable SELECT tableComment 未获取到注释 ")
 	}
 	ntools.TestEq(t, "TestCrateTable SELECT tableComment ", "测试表", *comment)
+
+}
+
+func TestGenStruct(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	str := dbWrapper.GetStructDoByTableStr(schameName, tableName)
+	slog.Info(str)
+	if !strings.Contains(str, "T04Text sqlext.NullString") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T04Text sqlext.NullString")
+	}
+	if !strings.Contains(str, "T06Decimal decimal.NullDecimal") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T06Decimal decimal.NullDecimal")
+	}
+	if !strings.Contains(str, "T08Double sqlext.NullFloat64") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T08Double sqlext.NullFloat64")
+	}
+	if !strings.Contains(str, "测试表 ndb_test.tb01") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "Test `niexq01`.test01")
+	}
+	t.Log("TestGenStruct 执行成功")
+}
+
+func TestInsert(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(t03_varchar) VALUES('aaa1')", schameName, tableName))
+	lasetId, _ := dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(t03_varchar) VALUES('aaa2')", schameName, tableName))
+	if lasetId != 2 {
+		t.Error("InsertWithLastId 应该返回2")
+	}
+	rowEff, _ := dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(t03_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
+	if rowEff != 4 {
+		t.Error("InsertWithRowsAffected应该返回4")
+	}
+}
+
+func TestSelectOne(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(t03_varchar) VALUES('aaa1')", schameName, tableName))
+
+	querySql := fmt.Sprintf("SELECT t03_varchar FROM %s.%s WHERE id=1", schameName, tableName)
+	if res, _, err := nmysql.SelectOne[sqlext.NullString](dbWrapper, querySql); nil != err {
+		t.Error(err)
+	} else {
+		if res.NullString.String != "aaa1" {
+			t.Error("返回值不匹配")
+		}
+	}
+	querySql = fmt.Sprintf("SELECT id FROM %s.%s WHERE id=1", schameName, tableName)
+	if res, _, err := nmysql.SelectOne[int64](dbWrapper, querySql); nil != err {
+		t.Error(err)
+	} else {
+		if *res != 1 {
+			t.Error("返回值不匹配")
+		}
+	}
+}
+
+func TestSelectObj(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(t03_varchar) VALUES('aaa1')", schameName, tableName))
+
+	// 测试表 ndb_test.tb01
+	type Tb01Do struct {
+		Id          int64               `schm:"ndb_test" tbn:"tb01" db:"id" json:"id" zhdesc:"主键"`
+		T02Int      sqlext.NullInt      `schm:"ndb_test" tbn:"tb01" db:"t02_int" json:"t02Int" zhdesc:"NullInt"`
+		T03Varchar  sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t03_varchar" json:"t03Varchar" zhdesc:"NullVarchar"`
+		T04Text     sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t04_text" json:"t04Text" zhdesc:"NullText"`
+		T05Longtext sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t05_longtext" json:"t05Longtext" zhdesc:"NullLongText"`
+		T06Decimal  decimal.NullDecimal `schm:"ndb_test" tbn:"tb01" db:"t06_decimal" json:"t06Decimal" zhdesc:"NullDecimal"`
+		T07Float    sqlext.NullFloat64  `schm:"ndb_test" tbn:"tb01" db:"t07_float" json:"t07Float" zhdesc:"NullFloat"`
+		T08Double   sqlext.NullFloat64  `schm:"ndb_test" tbn:"tb01" db:"t08_double" json:"t08Double" zhdesc:"NullDouble"`
+		T09Datetime sqlext.NullTime     `schm:"ndb_test" tbn:"tb01" db:"t09_datetime" json:"t09Datetime" zhdesc:"NullDateTime"`
+		T10Bool     sqlext.NullBool     `schm:"ndb_test" tbn:"tb01" db:"t10_bool" json:"t10Bool" zhdesc:"NullBool"`
+	}
+
+	querySql := fmt.Sprintf("SELECT * FROM %s.%s WHERE id=1", schameName, tableName)
+
+	if obj, _, err := nmysql.SelectObj[Tb01Do](dbWrapper, querySql); nil != err {
+		println(err.Error())
+	} else {
+		if obj.Id != 1 || obj.T03Varchar.String != "aaa1" {
+			t.Error("返回值不匹配")
+		}
+	}
+}
+
+func TestSelectList(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(t03_varchar) VALUES('aaa1')", schameName, tableName))
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(t03_varchar) VALUES('aaa2')", schameName, tableName))
+
+	// 测试表 ndb_test.tb01
+	type Tb01Do struct {
+		Id          int64               `schm:"ndb_test" tbn:"tb01" db:"id" json:"id" zhdesc:"主键"`
+		T02Int      sqlext.NullInt      `schm:"ndb_test" tbn:"tb01" db:"t02_int" json:"t02Int" zhdesc:"NullInt"`
+		T03Varchar  sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t03_varchar" json:"t03Varchar" zhdesc:"NullVarchar"`
+		T04Text     sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t04_text" json:"t04Text" zhdesc:"NullText"`
+		T05Longtext sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t05_longtext" json:"t05Longtext" zhdesc:"NullLongText"`
+		T06Decimal  decimal.NullDecimal `schm:"ndb_test" tbn:"tb01" db:"t06_decimal" json:"t06Decimal" zhdesc:"NullDecimal"`
+		T07Float    sqlext.NullFloat64  `schm:"ndb_test" tbn:"tb01" db:"t07_float" json:"t07Float" zhdesc:"NullFloat"`
+		T08Double   sqlext.NullFloat64  `schm:"ndb_test" tbn:"tb01" db:"t08_double" json:"t08Double" zhdesc:"NullDouble"`
+		T09Datetime sqlext.NullTime     `schm:"ndb_test" tbn:"tb01" db:"t09_datetime" json:"t09Datetime" zhdesc:"NullDateTime"`
+		T10Bool     sqlext.NullBool     `schm:"ndb_test" tbn:"tb01" db:"t10_bool" json:"t10Bool" zhdesc:"NullBool"`
+	}
+
+	querySql := fmt.Sprintf("SELECT t03_varchar FROM %s.%s ORDER BY id ASC", schameName, tableName)
+
+	if list, err := nmysql.SelectList[sqlext.NullString](dbWrapper, querySql); nil != err {
+		println(err.Error())
+	} else {
+		if len(list) != 2 || list[0].String != "aaa1" || list[1].String != "aaa2" {
+			t.Error("返回值不匹配")
+		}
+	}
+
+	querySql = fmt.Sprintf("SELECT * FROM %s.%s ORDER BY id ASC", schameName, tableName)
+	if list, err := nmysql.SelectList[Tb01Do](dbWrapper, querySql); nil != err {
+		println(err.Error())
+	} else {
+		if len(list) != 2 || list[0].Id != 1 || list[1].Id != 2 {
+			t.Error("返回值不匹配")
+		}
+	}
+}
+
+func TestSqlInNotExist(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(1,'aaa1')", schameName, tableName))
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(2,'aaa1')", schameName, tableName))
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(3,'aaa1')", schameName, tableName))
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(4,'aaa1')", schameName, tableName))
+
+	ids := []int64{1, 2, 6, 7}
+	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(fmt.Sprintf("%s.%s", schameName, tableName), "id", ids)
+	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
+
+	notExistIdds, err := nmysql.SelectList[int64](dbWrapper, sqlStr, nlibs.Arr2ArrAny(allArgs)...)
+	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
+
+	acResult := njson.SonicObj2Str(notExistIdds)
+	ntools.TestEq(t, "TestSqlInNotExist ", "[6,7]", acResult)
+
+}
+
+func TestSelectDyObjAndList(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(1,'aaa1')", schameName, tableName))
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(2,'aaa2')", schameName, tableName))
+
+	dyObj, err := dbWrapper.SelectDyObj(fmt.Sprintf("SELECT * FROM %s.%s where id=1", schameName, tableName))
+	ntools.TestErrPainic(t, "TestSelectDyObj ", err)
+
+	val, err := nmysql.GetFiledVal[sqlext.NullString](dyObj, dyObj.DbNameFiledsMap["t03_varchar"].StructFieldName)
+	ntools.TestErrPainic(t, "TestSelectDyObj ", err)
+	ntools.TestEq(t, "TestSelectDyObj ", "aaa1", val.String)
+
+	// 列表
+	dyObjList, err := dbWrapper.SelectDyObjList(fmt.Sprintf("SELECT * FROM %s.%s ", schameName, tableName))
+	ntools.TestErrPainic(t, "TestSelectDyList ", err)
+	ntools.TestEq(t, "TestSelectDyList 列表数", 2, len(dyObjList))
+
+	jsonStr, err := nmysql.DyObjList2Json(dyObjList)
+	ntools.TestErrPainic(t, "TestSelectDyList 转Json失败 ", err)
+
+	expJson := `[{"id":1,"t02Int":null,"t03Varchar":"aaa1","t04Text":null,"t05Longtext":null,"t06Decimal":null,"t07Float":null,"t08Double":null,"t09Datetime":null,"t10Bool":null},{"id":2,"t02Int":null,"t03Varchar":"aaa2","t04Text":null,"t05Longtext":null,"t06Decimal":null,"t07Float":null,"t08Double":null,"t09Datetime":null,"t10Bool":null}]`
+	ntools.TestEq(t, "TestSelectDyList ", expJson, jsonStr)
+
+}
+
+func TestNdbTx(t *testing.T) {
+	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(1,'aaa1')", schameName, tableName))
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(2,'aaa2')", schameName, tableName))
+
+	ntools.SlogSetTraceId("TestNdbTx")
+
+	// time.Sleep(6 * time.Second)
+	txr, err := dbWrapper.NdbTxBgn(3)
+	ntools.TestErrPainic(t, "TestNdbTx", err)
+	defer txr.NdbTxCommit()
+
+	_, err = txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(3,'aaa1')", schameName, tableName))
+	ntools.TestErrPainic(t, "TestNdbTx", err)
+
+	_, err = txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(4,'aaa1')", schameName, tableName))
+	ntools.TestErrPainic(t, "TestNdbTx", err)
 
 }
