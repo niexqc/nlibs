@@ -30,7 +30,7 @@ func (service *MemCacheService) Int64Incr(key string, expireMillisecond int64) (
 			err = service.Cache.Replace(key, newv, time.Duration(expireMillisecond)*time.Second)
 			return newv, err
 		}
-		panic(nerror.NewRunTimeError("自增的值不是int64"))
+		return 0, nerror.NewRunTimeError("自增的值不是int64")
 	}
 }
 
