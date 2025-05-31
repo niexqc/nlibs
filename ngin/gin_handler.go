@@ -15,7 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/niexqc/nlibs/ncache"
+	mencache "github.com/niexqc/nlibs/ncache/mem_cache"
+	rediscache "github.com/niexqc/nlibs/ncache/redis_cache"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
@@ -87,12 +88,28 @@ func RecoveryHandlerFunc() gin.HandlerFunc {
 }
 
 // 日志跟踪ID生成
-func TraceIdGenHandlerFunc(traceIdPrefix string, incahce ncache.ICacheService) gin.HandlerFunc {
+func TraceIdGenHandlerFunc(traceIdPrefix string, redisService *rediscache.RedisService) gin.HandlerFunc {
 	slog.Debug("Add Middleware TraceIdGenHandlerFunc")
 	return func(c *gin.Context) {
 		timeStr := time.Now().Format("20060102T150405")
 		redisKeyStr := traceIdPrefix + timeStr
-		keySeqNo, err := incahce.Int64Incr(redisKeyStr, 1200)
+		keySeqNo, err := redisService.Int64Incr(redisKeyStr, 1200)
+		if err != nil {
+			panic(err)
+		}
+		traceId := fmt.Sprintf("%s%04d", redisKeyStr, keySeqNo)
+		ntools.SlogSetTraceId(traceId)
+		c.Next()
+	}
+}
+
+// 日志跟踪ID生成 - MemCacheService
+func TraceIdGenByMemCacheHandlerFunc(traceIdPrefix string, memCacheService *mencache.MemCacheService) gin.HandlerFunc {
+	slog.Debug("Add Middleware TraceIdGenHandlerFunc")
+	return func(c *gin.Context) {
+		timeStr := time.Now().Format("20060102T150405")
+		redisKeyStr := traceIdPrefix + timeStr
+		keySeqNo, err := memCacheService.Int64Incr(redisKeyStr, 1200)
 		if err != nil {
 			panic(err)
 		}

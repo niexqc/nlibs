@@ -3,7 +3,6 @@ package rediscache
 import (
 	"errors"
 	"fmt"
-	"log"
 	"log/slog"
 	"time"
 
@@ -131,8 +130,8 @@ func (service *RedisService) ClearByKeyPrefix(keyPrefix string) (int, error) {
 	//删除
 	if len(keys) > 0 {
 		var delKeys = make([]interface{}, len(keys))
-		for i := 0; i < len(keys); i++ {
-			delKeys[i] = keys[i]
+		for key := range keys {
+			delKeys[key] = keys[key]
 		}
 		return redis.Int(conn.Do("DEL", delKeys...))
 	}
@@ -183,24 +182,27 @@ func (service *RedisService) Producer(queueKey string, message string) error {
 	conn := service.RedisPool.Get()
 	defer conn.Close()
 	replay, err := conn.Do("RPUSH", queueKey, message) // 或 "RPUSH"
-	slog.Info(fmt.Sprintf("队列[%s]中目前有[%v]条数据", queueKey, replay))
+	slog.Debug(fmt.Sprintf("队列[%s]中目前有[%v]条数据,当前写入[%v]", queueKey, replay, message))
 	return err
 }
 
 // 队列消息读取
 func (service *RedisService) Consumer(queueKey string, msgch chan string) {
 	conn := service.RedisPool.Get()
-	defer conn.Close()
 	for {
 		// BLPOP 返回格式: [队列名, 元素值]
 		reply, err := redis.Strings(conn.Do("BLPOP", queueKey, 0)) // 0 表示无限阻塞
 		if err != nil {
-			log.Printf("消费失败: %v, 重试中...", err)
-			time.Sleep(1 * time.Second)
+			slog.Warn(fmt.Sprintf("消费失败: %v, 3秒后重试中", err))
+			//发生错误关闭
+			conn.Close()
+			time.Sleep(3 * time.Second)
+			//重新连接
+			conn = service.RedisPool.Get()
 			continue
+		} else {
+			message := reply[1]
+			msgch <- message
 		}
-		message := reply[1]
-		msgch <- message
 	}
-
 }

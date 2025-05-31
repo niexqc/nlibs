@@ -9,6 +9,7 @@ import (
 )
 
 func TestKeyGen(t *testing.T) {
+	ntools.SlogConf("test", "debug", 1, 2)
 	pri, pub := ndnen.Sm2GenKeyPair()
 	priHex, pubHex := ndnen.Sm2Key2Hex(pri, pub)
 	slog.Info("私钥 Hex:" + priHex)
