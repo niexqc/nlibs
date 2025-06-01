@@ -80,8 +80,9 @@ func SelectList[T any](ndbw *NMysqlWrapper, sqlStr string, args ...any) (tlist [
 
 // SqlLimitStr
 // pageNo 页码从1开始
-func (ndbw *NMysqlWrapper) SqlLimitStr(pageNo, pageSize int) (string, error) {
-	return ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
+func (ndbw *NMysqlWrapper) SqlLimitStr(pageNo, pageSize int) string {
+	result, _ := ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
+	return result
 }
 
 func (ndbw *NMysqlWrapper) Exec(sqlStr string, args ...any) (rowsAffected int64, err error) {
