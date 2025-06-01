@@ -2,30 +2,92 @@ package njson
 
 import (
 	"encoding/json"
+	"log/slog"
+	"reflect"
+
+	"github.com/bytedance/sonic"
+	"github.com/niexqc/nlibs/nerror"
 )
 
-// ToStrOk 对象转换为Str
-// t 任意对象，注意取地址传入
-func ToStrOk(t any) string {
-	result, _ := ToStr(t)
-	return result
+func Obj2StrWithPanicError(obj any) string {
+	bytes, err := Obj2JsonBytes(obj)
+	if nil != err {
+		panic(nerror.NewRunTimeErrorFmt("%s不能转换为JSON字符串", reflect.TypeOf(obj).Name()))
+	}
+	return string(bytes)
 }
 
-// ToStr 对象转换为Str
-//
-//	t 任意对象，注意取地址传入
-func ToStr(t any) (string, error) {
-	jsonBytes, err := ToJSONBytes(t)
+func Obj2JsonStr(obj any) (string, error) {
+	bytes, err := Obj2JsonBytes(obj)
+	return string(bytes), err
+}
+
+func Obj2JsonBytes(obj any) ([]byte, error) {
+	bytes, err := sonic.Marshal(obj)
+	return bytes, err
+}
+
+func Str2Obj[T any, STR string | *string](str STR) (*T, error) {
+	t := new(T)
+	acStr := ""
+	if reflect.TypeOf(str) == reflect.TypeOf("") {
+		acStr = reflect.ValueOf(str).String()
+	} else {
+		acStr = reflect.ValueOf(str).Elem().String()
+	}
+	err := sonic.UnmarshalString(acStr, t)
+	return t, err
+}
+
+func Str2ObjArr[T any, STR string | *string](str STR) (*[]T, error) {
+	tarr := new([]T)
+	acStr := ""
+	if reflect.TypeOf(str) == reflect.TypeOf("") {
+		acStr = reflect.ValueOf(str).String()
+	} else {
+		acStr = reflect.ValueOf(str).Elem().String()
+	}
+	err := sonic.UnmarshalString(acStr, tarr)
+	return tarr, err
+}
+
+func Str2ObjWithPanicError[T any](str *string) *T {
+	t, err := Str2Obj[T](str)
+	if nil != err {
+		slog.Warn("JSON转对象失败", "jsonStr", str, "err", err)
+		panic(nerror.NewRunTimeErrorWithError("JSON转对象失败", err))
+	}
+	return t
+}
+
+func Str2ObjArrWithPanicError[T any](str *string) *[]T {
+	t, err := Str2ObjArr[T](str)
+	if nil != err {
+		slog.Warn("JSON转对象数组失败", "jsonStr", str, "err", err)
+		panic(nerror.NewRunTimeErrorWithError("JSON转对象数组失败", err))
+	}
+	return t
+}
+
+// 以下为GO默认JSON转换
+func ObjToJsonStrByGoJson(t any) (string, error) {
+	jsonBytes, err := ObjToJSONBytesByGoJson(t)
 	if err != nil {
 		return "", err
 	}
 	return string(*jsonBytes), nil
 }
 
-//	 ToJSONBytes 对象转换为[]byte
-//
-//		t 任意对象，注意取地址传入
-func ToJSONBytes(t any) (*[]byte, error) {
+func ObjToJsonStrByGoJsonWithPanicError(t any) string {
+	result, err := ObjToJsonStrByGoJson(t)
+	if nil != err {
+		slog.Warn("对象JSON失败", "type", reflect.TypeOf(t).Name(), "err", err)
+		panic(nerror.NewRunTimeErrorFmt("%s类型转JSON失败", reflect.TypeOf(t).Name()))
+	}
+	return result
+}
+
+func ObjToJSONBytesByGoJson(t any) (*[]byte, error) {
 	jsonBytes, err := json.Marshal(&t)
 	if err != nil {
 		return nil, err
@@ -33,22 +95,32 @@ func ToJSONBytes(t any) (*[]byte, error) {
 	return &jsonBytes, nil
 }
 
-// ToObj Str转换为对象
-//
-//	str 字符串的引用
-//	t  需要转换到的对象的引用
-func ToObj(str *string, t any) error {
-	err := json.Unmarshal([]byte(*str), &t)
-	if err != nil {
-		return err
+func Str2ObjByGoJson[T any, STR string | *string](str STR) (*T, error) {
+	t := new(T)
+	acStr := ""
+	if reflect.TypeOf(str) == reflect.TypeOf("") {
+		acStr = reflect.ValueOf(str).String()
+	} else {
+		acStr = reflect.ValueOf(str).Elem().String()
 	}
-	return nil
+	err := json.Unmarshal([]byte(acStr), t)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 
-// ToMap 对象转换为map[string]interface{}
-// t 任意对象，注意取地址传入
-func ToMap(str *string) (r map[string]any, err error) {
-	jsonMap := make(map[string]any, 0)
-	err = json.Unmarshal([]byte(*str), &jsonMap)
-	return jsonMap, err
+func Str2ObjArrByGoJson[T any, STR string | *string](str STR) (*[]*T, error) {
+	t := new([]*T)
+	acStr := ""
+	if reflect.TypeOf(str) == reflect.TypeOf("") {
+		acStr = reflect.ValueOf(str).String()
+	} else {
+		acStr = reflect.ValueOf(str).Elem().String()
+	}
+	err := json.Unmarshal([]byte(acStr), t)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
 }

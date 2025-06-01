@@ -74,7 +74,8 @@ func (e *httpClientExt) PostJSON(url string, data interface{}, timeOut time.Dura
 func (e *httpClientExt) Post(url string, data interface{}, contentType string, timeOut time.Duration) (string, error) {
 	// 超时时间：5秒
 	client := &http.Client{Timeout: timeOut, Transport: &http.Transport{DisableKeepAlives: true, Proxy: localProxy}}
-	jsonStr, _ := njson.ToJSONBytes(data)
+	jsonStr, _ := njson.ObjToJSONBytesByGoJson(data)
+
 	resp, err := client.Post(url, contentType, bytes.NewBuffer(*jsonStr))
 	if err != nil {
 		return "", err

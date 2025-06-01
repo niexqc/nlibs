@@ -3,12 +3,15 @@ package sqlext
 import (
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"strconv"
 	"time"
 
 	"strings"
 
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
+	"github.com/shopspring/decimal"
 )
 
 type NullString struct{ sql.NullString }
@@ -19,6 +22,18 @@ type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
 
 // decimal.NullDecimal
+
+func NewNullDecimal(valid bool, str string) decimal.NullDecimal {
+	if !valid {
+		return decimal.NullDecimal{Valid: false, Decimal: decimal.Zero}
+	}
+	d, err := decimal.NewFromString(str)
+	if nil != err {
+		slog.Warn("字符串不能转为decimal", "str", str, "err", err)
+		panic(nerror.NewRunTimeErrorFmt("字符串[%s]不能转为decimal", str))
+	}
+	return decimal.NewNullDecimal(d)
+}
 
 func NewNullString(valid bool, str string) NullString {
 	if !valid {

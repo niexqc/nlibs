@@ -156,7 +156,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
 		heaerVo.UserIp = ctx.ClientIP()
 		heaerVo.VisitTar = ctx.Request.RequestURI
-		slog.Debug("Headers:", "json", njson.SonicObj2StrWithPanicError(heaerVo))
+		slog.Debug("Headers:", "json", njson.Obj2StrWithPanicError(heaerVo))
 		ctx.Set(reflect.TypeOf(heaerVo).Name(), &heaerVo)
 		ctx.Next()
 	}

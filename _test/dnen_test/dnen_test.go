@@ -8,8 +8,11 @@ import (
 	"github.com/niexqc/nlibs/ntools"
 )
 
-func TestKeyGen(t *testing.T) {
+func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
+}
+
+func TestKeyGen(t *testing.T) {
 	pri, pub := ndnen.Sm2GenKeyPair()
 	priHex, pubHex := ndnen.Sm2Key2Hex(pri, pub)
 	slog.Info("私钥 Hex:" + priHex)

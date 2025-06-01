@@ -62,7 +62,7 @@ func DyObjList2Json(dyObjList []*NMysqlDyObj) (jsonStr string, err error) {
 	for _, dyObj := range dyObjList {
 		dataList = append(dataList, dyObj.Data)
 	}
-	jsonStr, err = njson.SonicObj2Str(dataList)
+	jsonStr, err = njson.Obj2JsonStr(dataList)
 	return jsonStr, nil
 }
 

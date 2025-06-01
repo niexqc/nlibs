@@ -1,16 +1,25 @@
 package njson
 
 import (
-	"log/slog"
-	"reflect"
-
 	"github.com/bytedance/sonic"
 	"github.com/bytedance/sonic/ast"
-	"github.com/niexqc/nlibs/nerror"
 )
 
 type NwNode struct {
 	*ast.Node
+}
+
+func NewNwNodeByJsonStr(str string) (*NwNode, error) {
+	root, err := sonic.GetFromString(str)
+	return &NwNode{&root}, err
+}
+
+func NewNwNodeByMap(data map[string]any) (*NwNode, error) {
+	jsonStr, err := Obj2JsonStr(data)
+	if nil != err {
+		return nil, err
+	}
+	return NewNwNodeByJsonStr(jsonStr)
 }
 
 func (s *NwNode) GetString(key string) (string, error) {
@@ -55,92 +64,5 @@ func (s *NwNode) GetBoolByPath(paths []string) (bool, error) {
 }
 
 func (s *NwNode) ToString() (string, error) {
-	return SonicObj2Str(s)
-}
-
-func SonicObj2Str(obj any) (string, error) {
-	bytes, err := SonicObj2Bytes(obj)
-	return string(bytes), err
-}
-
-func SonicObj2Bytes(obj any) ([]byte, error) {
-	bytes, err := sonic.Marshal(obj)
-	return bytes, err
-}
-
-func SonicObj2StrWithPanicError(obj any) string {
-	bytes, err := SonicObj2Bytes(obj)
-	if nil != err {
-		panic(nerror.NewRunTimeErrorFmt("%s不能转换为JSON字符串", reflect.TypeOf(obj).Name()))
-	}
-	return string(bytes)
-}
-
-func SonicNode2Obj[T any](node *ast.Node) (*T, error) {
-	bytes, err := node.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	t := new(T)
-	err = sonic.Unmarshal(bytes, t)
-	if err != nil {
-		slog.Error(string(bytes))
-		return nil, err
-	}
-	return t, nil
-}
-
-func SonicStr2Obj[T any](str *string) (*T, error) {
-	t := new(T)
-	err := sonic.UnmarshalString(*str, t)
-	return t, err
-}
-
-func SonicStr2ObjArr[T any](str *string) (*[]T, error) {
-	tarr := new([]T)
-	err := sonic.UnmarshalString(*str, tarr)
-	return tarr, err
-}
-
-func SonicStr2ObjWithPanicError[T any](str *string) *T {
-	t, err := SonicStr2Obj[T](str)
-	if nil != err {
-		slog.Warn("JSON转对象失败", "jsonStr", str, "err", err)
-		panic(nerror.NewRunTimeErrorWithError("JSON转对象失败", err))
-	}
-	return t
-}
-
-func SonicStr2ObjArrWithPanicError[T any](str *string) *[]T {
-	t, err := SonicStr2ObjArr[T](str)
-	if nil != err {
-		slog.Warn("JSON转对象数组失败", "jsonStr", str, "err", err)
-		panic(nerror.NewRunTimeErrorWithError("JSON转对象数组失败", err))
-	}
-	return t
-}
-
-func SonicStr2NwNode(str string) (*NwNode, error) {
-	root, err := sonic.GetFromString(str)
-	if err != nil {
-		return nil, err
-	}
-	return &NwNode{&root}, nil
-}
-
-func SonicStr2NwNodeWithPanicError(str string) *NwNode {
-	root, err := sonic.GetFromString(str)
-	if err != nil {
-		slog.Warn("JSON转 SonicNode失败", "jsonStr", str, "err", err)
-		panic(nerror.NewRunTimeErrorWithError("JSON转 SonicNode失败", err))
-	}
-	return &NwNode{&root}
-}
-
-func SonicMap2NwNode(data map[string]any) (*NwNode, error) {
-	jsonStr, err := SonicObj2Str(data)
-	if nil != err {
-		return nil, err
-	}
-	return SonicStr2NwNode(jsonStr)
+	return Obj2JsonStr(s)
 }
