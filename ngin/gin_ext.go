@@ -57,7 +57,7 @@ func (nGin *NGin) RouterRedirect(redirectPath string, ctx *gin.Context) {
 	nGin.GinEngine.HandleContext(ctx)
 }
 
-func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context, nValider *NValider) *T {
+func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context, nValider *NValider) (*T, error) {
 	if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "application/json") {
 		return ShouldBindJSON[T](ctx, nValider)
 	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "	application/x-www-form-urlencoded") {
@@ -69,31 +69,28 @@ func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context, nVa
 	}
 }
 
-func ShouldBind[T any](ctx *gin.Context, nValider *NValider) *T {
+func ShouldBind[T any](ctx *gin.Context, nValider *NValider) (*T, error) {
 	obj := new(T)
 	if err := ctx.ShouldBind(obj); err != nil {
-		nValider.TransErr2Zh(err)
-		return obj
+		return nil, nValider.TransErr2ZhErr(err)
 	}
-	return obj
+	return obj, nil
 }
 
-func ShouldBindJSON[T any](ctx *gin.Context, nValider *NValider) *T {
+func ShouldBindJSON[T any](ctx *gin.Context, nValider *NValider) (*T, error) {
 	obj := new(T)
 	if err := ctx.ShouldBindJSON(obj); err != nil {
-		nValider.TransErr2Zh(err)
-		return obj
+		return nil, nValider.TransErr2ZhErr(err)
 	}
-	return obj
+	return obj, nil
 }
 
-func ReadHeader(ctx *gin.Context, nValider *NValider) *NiexqGinHeaderVo {
+func ReadHeader(ctx *gin.Context, nValider *NValider) (*NiexqGinHeaderVo, error) {
 	obj := &NiexqGinHeaderVo{}
 	if err := ctx.ShouldBindJSON(obj); err != nil {
-		nValider.TransErr2Zh(err)
-		return obj
+		return nil, nValider.TransErr2ZhErr(err)
 	}
-	return obj
+	return obj, nil
 }
 
 func (nGin *NGin) LogPrintAllRouterInfo() {

@@ -78,7 +78,7 @@ func MaxConcurrentHandlerFunc(max int) gin.HandlerFunc {
 	}
 }
 
-// Recovery recover掉项目可能出现的panic
+// Recovery recover掉项目可能出现的错误
 func RecoveryHandlerFunc() gin.HandlerFunc {
 	slog.Debug("Add Middleware RecoveryHandlerFunc")
 	return func(c *gin.Context) {
@@ -95,7 +95,8 @@ func TraceIdGenHandlerFunc(traceIdPrefix string, redisService *rediscache.RedisS
 		redisKeyStr := traceIdPrefix + timeStr
 		keySeqNo, err := redisService.Int64Incr(redisKeyStr, 1200)
 		if err != nil {
-			panic(err)
+			slog.Error("无法生成日志跟踪编号", "err", err)
+			panic(nerror.NewRunTimeErrorFmt("无法生成日志跟踪编号:%v", err.Error()))
 		}
 		traceId := fmt.Sprintf("%s%04d", redisKeyStr, keySeqNo)
 		ntools.SlogSetTraceId(traceId)
@@ -111,7 +112,8 @@ func TraceIdGenByMemCacheHandlerFunc(traceIdPrefix string, memCacheService *menc
 		redisKeyStr := traceIdPrefix + timeStr
 		keySeqNo, err := memCacheService.Int64Incr(redisKeyStr, 1200)
 		if err != nil {
-			panic(err)
+			slog.Error("无法生成日志跟踪编号", "err", err)
+			panic(nerror.NewRunTimeErrorFmt("无法生成日志跟踪编号:%v", err.Error()))
 		}
 		traceId := fmt.Sprintf("%s%04d", redisKeyStr, keySeqNo)
 		ntools.SlogSetTraceId(traceId)

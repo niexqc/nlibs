@@ -68,17 +68,6 @@ func registerNullFunc(validate *validator.Validate) {
 		sqlext.NullBool{})
 }
 
-func (nvld *NValider) TransErr2Zh(err error) {
-	if validationErrors, ok := err.(validator.ValidationErrors); ok {
-		validErr := &NiexqValidErr{}
-		// 遍历每个错误并翻译
-		for _, e := range validationErrors {
-			validErr.ErrDescList = append(validErr.ErrDescList, e.Translate(nvld.ZhTrans)+";")
-		}
-		panic(validErr)
-	}
-}
-
 func (nvld *NValider) TransErr2ZhErr(err error) error {
 	if validationErrors, ok := err.(validator.ValidationErrors); ok {
 		validErr := &NiexqValidErr{}
