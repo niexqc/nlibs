@@ -13,7 +13,7 @@ import (
 
 // Sql参数格式化.只支持?格式
 // 暂时只简单转换后续再处理或过滤其他字符
-func SqlFmt(str string, arg ...any) string {
+func SqlFmt(str string, arg ...any) (string, error) {
 	return sqlext.SqlFmt(str, arg...)
 }
 

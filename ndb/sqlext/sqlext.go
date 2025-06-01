@@ -38,9 +38,14 @@ func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr stri
 	if sqlPrintConf.DbSqlLogCompress {
 		sqlStr = string(blankRegexp.ReplaceAllString(sqlStr, " "))
 	}
-	sqlStr = SqlFmt(sqlStr, args...)
+
+	sqlStr, err := SqlFmt(sqlStr, args...)
 	//打印日志
-	slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+	if nil != err {
+		slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s:%v", costTime, "Sql格式化错误", err))
+	} else {
+		slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+	}
 }
 
 // insertField 需要用逗号分隔如【aaa,bbb,ccc】

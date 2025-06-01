@@ -80,7 +80,7 @@ func SelectList[T any](ndbw *NGaussWrapper, sqlStr string, args ...any) (tlist [
 
 // SqlLimitStr
 // pageNo 页码从1开始
-func (ndbw *NGaussWrapper) SqlLimitStr(pageNo, pageSize int) string {
+func (ndbw *NGaussWrapper) SqlLimitStr(pageNo, pageSize int) (string, error) {
 	return ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
 }
 

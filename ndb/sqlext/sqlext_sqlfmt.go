@@ -17,7 +17,7 @@ import (
 var SqlParamArgsRegexp = regexp.MustCompile(`\?`)
 
 // Sql参数格式化.只支持?格式
-func SqlFmt(sqlStr string, args ...any) string {
+func SqlFmt(sqlStr string, args ...any) (string, error) {
 	if len(args) > 0 {
 		splTexts := []string{}
 		argsRange := SqlParamArgsRegexp.FindAllStringIndex(sqlStr, -1)
@@ -30,12 +30,12 @@ func SqlFmt(sqlStr string, args ...any) string {
 		for idx, v := range args {
 			//判断args是否是数组
 			if nlibs.IsArrayOrSlice(v) {
-				panic(nerror.NewRunTimeErrorFmt("参数【%v】不能为Array|Slice", v))
+				return "", nerror.NewRunTimeErrorFmt("参数【%v】不能为Array|Slice", v)
 			}
 			sqlStr += sqlFmtSqlAnyArg(v) + splTexts[idx+1]
 		}
 	}
-	return sqlStr
+	return sqlStr, nil
 }
 
 // 使用In查询返回没有记录的 参数

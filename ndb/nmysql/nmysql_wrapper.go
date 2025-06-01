@@ -38,19 +38,19 @@ type NMysqlWrapper struct {
 	txMutx                  *sync.Mutex
 }
 
-func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *NMysqlWrapper {
+func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfSqlPrint) (*NMysqlWrapper, error) {
 	//开始连接数据库
 	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
 	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
 	slog.Debug(mysqlUrl)
 	db, err := sqlx.Open("mysql", mysqlUrl)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	db.SetConnMaxLifetime(time.Second * time.Duration(conf.ConnMaxLifetime))
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
-	return &NMysqlWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}
+	return &NMysqlWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}, nil
 }
 
 //	 查询单个字段单个值
@@ -80,7 +80,7 @@ func SelectList[T any](ndbw *NMysqlWrapper, sqlStr string, args ...any) (tlist [
 
 // SqlLimitStr
 // pageNo 页码从1开始
-func (ndbw *NMysqlWrapper) SqlLimitStr(pageNo, pageSize int) string {
+func (ndbw *NMysqlWrapper) SqlLimitStr(pageNo, pageSize int) (string, error) {
 	return ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
 }
 

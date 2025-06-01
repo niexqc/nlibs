@@ -58,7 +58,7 @@ func init() {
 }
 
 func TestCrateTable(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	_, err := dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	ntools.TestErrPainic(t, "TestCrateTable DROP TABLE ", err)
 
@@ -77,7 +77,7 @@ func TestCrateTable(t *testing.T) {
 }
 
 func TestGenStruct(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -100,7 +100,7 @@ func TestGenStruct(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -116,7 +116,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestSelectOne(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -141,7 +141,7 @@ func TestSelectOne(t *testing.T) {
 }
 
 func TestSelectObj(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -173,7 +173,7 @@ func TestSelectObj(t *testing.T) {
 }
 
 func TestSelectList(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -215,7 +215,7 @@ func TestSelectList(t *testing.T) {
 }
 
 func TestSqlInNotExist(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -237,7 +237,7 @@ func TestSqlInNotExist(t *testing.T) {
 }
 
 func TestSelectDyObjAndList(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
@@ -265,7 +265,7 @@ func TestSelectDyObjAndList(t *testing.T) {
 }
 
 func TestNdbTx(t *testing.T) {
-	dbWrapper := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
