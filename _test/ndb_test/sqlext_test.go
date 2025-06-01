@@ -17,35 +17,35 @@ func init() {
 }
 func TestSqlFmt(t *testing.T) {
 
-	sqlFmtStr := sqlext.SqlFmt(" WHERE name='nixq'")
+	sqlFmtStr, err := sqlext.SqlFmt(" WHERE name='nixq'")
+	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='nixq'`, sqlFmtStr)
 
-	sqlFmtStr = sqlext.SqlFmt("? WHERE name=? ORDER BY id desc", "aaa", "niexq2")
+	sqlFmtStr, err = sqlext.SqlFmt("? WHERE name=? ORDER BY id desc", "aaa", "niexq2")
+	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", `'aaa' WHERE name='niexq2' ORDER BY id desc`, sqlFmtStr)
 
-	sqlFmtStr = sqlext.SqlFmt(" WHERE name=? AND id=?", "niexq", 1)
+	sqlFmtStr, err = sqlext.SqlFmt(" WHERE name=? AND id=?", "niexq", 1)
+	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='niexq' AND id=1`, sqlFmtStr)
 
-	sqlFmtStr = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=?", "niexq", 1, int64(2))
+	sqlFmtStr, err = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=?", "niexq", 1, int64(2))
+	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='niexq' AND id=1 AND no=2`, sqlFmtStr)
 
-	sqlFmtStr = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), ntools.TimeStr2TimeByLayout("20250501", "20060102"))
+	sqlFmtStr, err = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), ntools.TimeStr2TimeByLayout("20250501", "20060102"))
+	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='niexq' AND id=1 AND no=2 AND time>'2025-05-01 00:00:00'`, sqlFmtStr)
 
-	sqlFmtStr = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), true, false)
+	sqlFmtStr, err = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=? AND bool_true=? AND bool_false=?", "niexq", 1, int64(2), true, false)
+	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='niexq' AND id=1 AND no=2 AND bool_true=true AND bool_false=false`, sqlFmtStr)
 }
 
 func TestSqlFmtPainc(t *testing.T) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			ntools.TestErrPanicMsg(t, "sqlext.SqlFmt 参数为数组时必须抛出异常")
-		}
-		slog.Info("TestSqlFmtPainc", "err", err)
-	}()
 	params := []int{1, 2, 3}
-	sqlext.SqlFmt(" WHERE name=?", params)
+	_, err := sqlext.SqlFmt(" WHERE name=?", params)
+	ntools.TestEq(t, "TestSqlFmtPainc", "参数【[1 2 3]】不能为Array|Slice", err.Error())
 }
 
 func TestInserSqlVals(t *testing.T) {

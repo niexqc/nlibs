@@ -14,6 +14,7 @@ import (
 
 	"time"
 
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/timandy/routine"
 )
 
@@ -81,14 +82,14 @@ func (h *nwDayLogWriter) Write(p []byte) (n int, err error) {
 	curDateStr := TimeTo20060102(time.Now())
 	if h.curDateStr != curDateStr {
 		//重新初始化fileWriter
-		h.syncLockReInitFile(curDateStr)
+		return 0, h.syncLockReInitFile(curDateStr)
 	}
 	n, err = h.fileWriter.Write(p)
 	h.fileWriter.Flush()
 	return n, err
 }
 
-func (h *nwDayLogWriter) syncLockReInitFile(curDateStr string) {
+func (h *nwDayLogWriter) syncLockReInitFile(curDateStr string) error {
 	syncLock.Lock()
 	defer syncLock.Unlock()
 	if h.curDateStr != curDateStr {
@@ -102,11 +103,12 @@ func (h *nwDayLogWriter) syncLockReInitFile(curDateStr string) {
 		flag := os.O_RDWR | os.O_CREATE | os.O_APPEND
 		curFile, err := os.OpenFile(fmt.Sprintf("logs/%s%s.log", h.FileNamePrefix, h.curDateStr), flag, 0755)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		h.curFile = curFile
 		h.fileWriter = bufio.NewWriter(h.curFile)
 	}
+	return nil
 }
 
 func (h *NwLogHandler) Enabled(ctx context.Context, level slog.Level) bool {
@@ -114,11 +116,11 @@ func (h *NwLogHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 func (h *NwLogHandler) WithGroup(name string) slog.Handler {
-	panic("未实现 WithGroup")
+	panic(nerror.NewRunTimeError("未实现 WithGroup"))
 }
 
 func (h *NwLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	panic("未实现 WithAttrs")
+	panic(nerror.NewRunTimeError("未实现 WithAttrs"))
 }
 
 func (h *NwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
