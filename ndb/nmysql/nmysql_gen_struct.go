@@ -20,7 +20,7 @@ type columnSchemaDo struct {
 	AllowNull     string `db:"IS_NULLABLE"`
 }
 
-func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) string {
+func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) (string, error) {
 	tcSql := "SELECT TABLE_COMMENT FROM INFORMATION_SCHEMA.`TABLES` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
 	tableComment, _, _ := SelectOne[string](dbw, tcSql, tableSchema, tableName)
 
@@ -42,7 +42,11 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 		NsCStr := &ntools.NString{S: v.ColumnName}
 		// String() 返回 sqlext.NullString
 		// Name() 返回 NullString
-		goType := mysqlTypeToGoType(v.DataType, isNull).String()
+		goTypeRef, err := mysqlTypeToGoType(v.DataType, isNull)
+		if nil != err {
+			return "", err
+		}
+		goType := goTypeRef.String()
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
 		resultStr += fmt.Sprintf(" `%s:\"%s\" %s:\"%s\" %s:\"%s\" json:\"%s\" zhdesc:\"%s\"`",
 			sqlext.NdbTags.TableSchema, v.TableSchema,
@@ -51,29 +55,29 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 			NsCStr.Under2Camel(false), v.ColumnComment)
 	}
 	resultStr += "\n}"
-	return resultStr
+	return resultStr, nil
 }
 
-func mysqlTypeToGoType(mysqlType string, isNull bool) reflect.Type {
-	goType := func(mtype string) reflect.Type {
+func mysqlTypeToGoType(mysqlType string, isNull bool) (reflect.Type, error) {
+	goType, err := func(mtype string) (reflect.Type, error) {
 		switch mtype {
 		case "VARCHAR", "TEXT", "LONGTEXT":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf(""))
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf("")), nil
 		case "BIT":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true))
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true)), nil
 		case "INT", "SMALLINT", "TINYINT":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1)))
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1))), nil
 		case "BIGINT":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1))), nil
 		case "DATETIME", "DATE":
-			return reflect.TypeOf(sqlext.NullTime{})
+			return reflect.TypeOf(sqlext.NullTime{}), nil
 		case "DOUBLE", "FLOAT":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00))), nil
 		case "DECIMAL":
-			return ntools.If3(isNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{}))
+			return ntools.If3(isNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{})), nil
 		default:
-			panic(nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mtype)))
+			return nil, nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mtype))
 		}
 	}(strings.ToUpper(mysqlType))
-	return goType
+	return goType, err
 }

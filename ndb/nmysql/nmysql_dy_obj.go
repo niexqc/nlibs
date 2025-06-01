@@ -65,9 +65,9 @@ func DyObjList2Json(dyObjList []*NMysqlDyObj) (jsonStr string, err error) {
 	return njson.SonicObj2Str(dataList), nil
 }
 
-func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NMysqlDyObjFieldInfo) {
+func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NMysqlDyObjFieldInfo, err error) {
 	fields := []reflect.StructField{}
-	mysqlType2GoType := func(col *sql.ColumnType) reflect.Type {
+	mysqlType2GoType := func(col *sql.ColumnType) (reflect.Type, error) {
 		nullable, ok := col.Nullable()
 		if !ok {
 			nullable = false
@@ -80,7 +80,10 @@ func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 		dbFname := DbNameNstr.S
 		structFname := DbNameNstr.Under2Camel(true)
 		jsonFname := DbNameNstr.Under2Camel(false)
-		goType := mysqlType2GoType(v)
+		goType, err := mysqlType2GoType(v)
+		if nil != err {
+			return nil, nil, err
+		}
 		tag := reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, dbFname, jsonFname))
 
 		fields = append(fields, reflect.StructField{Name: structFname, Type: goType, Tag: tag})
@@ -99,5 +102,5 @@ func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfo
 		}
 	}
 	// 创建动态结构体类型
-	return reflect.StructOf(fields), filedInfos
+	return reflect.StructOf(fields), filedInfos, nil
 }

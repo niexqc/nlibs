@@ -193,7 +193,10 @@ func (ndbw *NMysqlWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NMysq
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, fieldsInfo := createDyStruct(cols)
+	dyStructType, fieldsInfo, err := createDyStruct(cols)
+	if nil != err {
+		return nil, err
+	}
 	if rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -231,7 +234,10 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, fieldsInfo := createDyStruct(cols)
+	dyStructType, fieldsInfo, err := createDyStruct(cols)
+	if nil != err {
+		return nil, err
+	}
 	objValList = make([]*NMysqlDyObj, 0)
 	for rows.Next() {
 		// 创建动态Struct的实例

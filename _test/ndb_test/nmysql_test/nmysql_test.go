@@ -81,7 +81,8 @@ func TestGenStruct(t *testing.T) {
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(mysqlCreateTableStr)
 
-	str := dbWrapper.GetStructDoByTableStr(schameName, tableName)
+	str, err := dbWrapper.GetStructDoByTableStr(schameName, tableName)
+	ntools.TestErrPainic(t, "TestGenStruct ", err)
 	slog.Info(str)
 	if !strings.Contains(str, "T04Text sqlext.NullString") {
 		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T04Text sqlext.NullString")

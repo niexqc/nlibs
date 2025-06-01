@@ -22,15 +22,15 @@ type columnSchemaDo struct {
 	VarcharMaxLen sqlext.NullInt    `db:"varchar_max_len"`
 }
 
-func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) string {
+func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) (string, error) {
 	tcSql := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass) tableComment", tableSchema, tableName)
 	tableComment := ""
 	findOk, err := dbw.SelectOne(&tableComment, tcSql)
 	if nil != err {
-		panic(nerror.NewRunTimeErrorFmt("查询表[%s.%s]注释异常:%v", tableSchema, tableName, err))
+		return "", nerror.NewRunTimeErrorFmt("查询表[%s.%s]注释异常:%v", tableSchema, tableName, err)
 	}
 	if !findOk {
-		panic(nerror.NewRunTimeErrorFmt("未获取到表[%s.%s]注释", tableSchema, tableName))
+		return "", nerror.NewRunTimeErrorFmt("未获取到表[%s.%s]注释", tableSchema, tableName)
 	}
 
 	colStr := `
@@ -44,7 +44,7 @@ func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 	dos := []columnSchemaDo{}
 	err = dbw.SelectList(&dos, colStr, tableSchema, tableName)
 	if nil != err {
-		panic(nerror.NewRunTimeErrorFmt("查询表[%s.%s]字段异常:%v", tableSchema, tableName, err))
+		return "", nerror.NewRunTimeErrorFmt("查询表[%s.%s]字段异常:%v", tableSchema, tableName, err)
 	}
 
 	NsStr := &ntools.NString{S: tableName}
@@ -56,7 +56,11 @@ func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 		NsCStr := &ntools.NString{S: v.ColumnName}
 		// String() 返回 sqlext.NullString
 		// Name() 返回 NullString
-		goType := gaussDbUdtNameToGoType(v.UdtName, isNull).String()
+		goTypeRef, err := gaussDbUdtNameToGoType(v.UdtName, isNull)
+		if nil != err {
+			return "", err
+		}
+		goType := goTypeRef.String()
 		resultStr += fmt.Sprintf("\n  %s %s", NsCStr.Under2Camel(true), goType)
 		// resultStr += fmt.Sprintf(" `schm:\"%s\" tbn:\"%s\" db:\"%s\" json:\"%s\" zhdesc:\"%s\"`", v.TableSchema, v.TableName, v.ColumnName, NsCStr.Under2Camel(false), v.ColumnComment.String)
 		resultStr += fmt.Sprintf(" `%s:\"%s\" %s:\"%s\" %s:\"%s\" json:\"%s\" zhdesc:\"%s\"`",
@@ -66,31 +70,29 @@ func (dbw *NGaussWrapper) GetStructDoByTableStr(tableSchema, tableName string) s
 			NsCStr.Under2Camel(false), v.ColumnComment.String)
 	}
 	resultStr += "\n}"
-	return resultStr
+	return resultStr, nil
 }
 
-func gaussDbUdtNameToGoType(gaussUdtName string, allowNull bool) reflect.Type {
-	goType := func(gaussUdtName string) reflect.Type {
+func gaussDbUdtNameToGoType(gaussUdtName string, allowNull bool) (reflect.Type, error) {
+	goType, err := func(gaussUdtName string) (reflect.Type, error) {
 		switch gaussUdtName {
 		case "bool":
-			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true))
+			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true)), nil
 		case "varchar", "text":
-			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf(""))
+			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf("")), nil
 		case "int1", "int2", "int4":
-			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1)))
+			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1))), nil
 		case "int8":
-			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1)))
+			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullInt64{}), reflect.TypeOf(int64(1))), nil
 		case "date", "time", "timestamp", "timestamptz":
-			return reflect.TypeOf(sqlext.NullTime{})
+			return reflect.TypeOf(sqlext.NullTime{}), nil
 		case "float4", "float8":
-			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00)))
+			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00))), nil
 		case "numeric":
-			return ntools.If3(allowNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{}))
+			return ntools.If3(allowNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{})), nil
 		default:
-			panic(nerror.NewRunTimeError(fmt.Sprintf("GaussDb字段【%s】还没有做具体解析,需要对应处理", gaussUdtName)))
+			return nil, nerror.NewRunTimeError(fmt.Sprintf("GaussDb字段【%s】还没有做具体解析,需要对应处理", gaussUdtName))
 		}
 	}(strings.ToLower(gaussUdtName))
-
-	return goType
-
+	return goType, err
 }

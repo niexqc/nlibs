@@ -35,9 +35,11 @@ func init() {
 	if aliOssConf.OssKey == "" || aliOssConf.OssKeySecret == "" {
 		panic(nerror.NewRunTimeError("请在环境变量配置:WTS_TEST_OSS_Key,WTS_TEST_OSS_Secret"))
 	}
-
-	aliOssClient = nalioss.NewNAliOssClient(aliOssConf)
-
+	var err error
+	aliOssClient, err = nalioss.NewNAliOssClient(aliOssConf)
+	if nil != err {
+		panic(err)
+	}
 }
 
 func TestListObjects(t *testing.T) {

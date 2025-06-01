@@ -65,7 +65,7 @@ func DyObjList2Json(dyObjList []*NGaussDyObj) (jsonStr string, err error) {
 	return njson.SonicObj2Str(dataList), nil
 }
 
-func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFiledsMap map[string]*NGaussDyObjFieldInfo) {
+func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFiledsMap map[string]*NGaussDyObjFieldInfo, err error) {
 	fields := []reflect.StructField{}
 	dbNameFiledsMap = make(map[string]*NGaussDyObjFieldInfo)
 	for _, v := range cols {
@@ -74,7 +74,10 @@ func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFil
 		structFname := DbNameNstr.Under2Camel(true)
 		jsonFname := DbNameNstr.Under2Camel(false)
 		//高斯驱动在查询是否不返回字段是否允许为空，所以固定为空
-		goType := gaussDbUdtNameToGoType(v.DatabaseTypeName(), true)
+		goType, err := gaussDbUdtNameToGoType(v.DatabaseTypeName(), true)
+		if nil != err {
+			return nil, nil, err
+		}
 
 		tag := reflect.StructTag(fmt.Sprintf(`db:"%s" json:"%s"`, dbFname, jsonFname))
 
@@ -94,5 +97,5 @@ func CreateDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, dbNameFil
 		}
 	}
 	// 创建动态结构体类型
-	return reflect.StructOf(fields), dbNameFiledsMap
+	return reflect.StructOf(fields), dbNameFiledsMap, nil
 }

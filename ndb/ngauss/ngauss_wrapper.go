@@ -39,18 +39,18 @@ type NGaussWrapper struct {
 	txMutx                  *sync.Mutex
 }
 
-func NewNGaussWrapper(conf *nyaml.YamlConfGaussDb, sqlPrintConf *nyaml.YamlConfSqlPrint) *NGaussWrapper {
+func NewNGaussWrapper(conf *nyaml.YamlConfGaussDb, sqlPrintConf *nyaml.YamlConfSqlPrint) (*NGaussWrapper, error) {
 	connStr := "host=%s port=%d user=%s password=%s dbname=%s sslmode=disable "
 	connStr = fmt.Sprintf(connStr, conf.DbHost, conf.DbPort, conf.DbUser, conf.DbPwd, conf.DbName)
 	slog.Debug(connStr)
 	db, err := sqlx.Open("opengauss", connStr)
 	if err != nil {
-		panic(nerror.NewRunTimeErrorWithError("连接到Gauss失败", err))
+		return nil, nerror.NewRunTimeErrorWithError("连接到Gauss失败", err)
 	}
 	db.SetConnMaxLifetime(time.Second * time.Duration(conf.ConnMaxLifetime))
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)
-	return &NGaussWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}
+	return &NGaussWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}, nil
 }
 
 //	 查询单个字段单个值
@@ -222,7 +222,10 @@ func (ndbw *NGaussWrapper) SelectDyObj(sqlStr string, args ...any) (dyObj *NGaus
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, dbNameFieldsMap := CreateDyStruct(cols)
+	dyStructType, dbNameFieldsMap, err := CreateDyStruct(cols)
+	if nil != err {
+		return nil, err
+	}
 	if rows.Next() {
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
@@ -261,7 +264,10 @@ func (ndbw *NGaussWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		return nil, err
 	}
 	// 创建动态Struct
-	dyStructType, dbNameFieldsMap := CreateDyStruct(cols)
+	dyStructType, dbNameFieldsMap, err := CreateDyStruct(cols)
+	if nil != err {
+		return nil, err
+	}
 	objValList = make([]*NGaussDyObj, 0)
 	for rows.Next() {
 		// 创建动态Struct的实例

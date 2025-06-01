@@ -17,43 +17,44 @@ func SqlFmt(str string, arg ...any) string {
 	return sqlext.SqlFmt(str, arg...)
 }
 
-func StructDoTableSchema(doType reflect.Type) string {
+func StructDoTableSchema(doType reflect.Type) (string, error) {
 	if doType.Kind() == reflect.Pointer {
 		doType = doType.Elem() //解引用
 	}
 	if doType.NumField() <= 0 {
-		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
+		return "", nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name())
+
 	}
 	dbtbTag := doType.Field(0).Tag
 	tbname := dbtbTag.Get(sqlext.NdbTags.TableSchema)
 	if tbname == "" {
-		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableSchema))
+		return "", nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableSchema)
 	}
-	return tbname
+	return tbname, nil
 }
 
-func StructDoTableName(doType reflect.Type) string {
+func StructDoTableName(doType reflect.Type) (string, error) {
 	if doType.Kind() == reflect.Pointer {
 		doType = doType.Elem() //解引用
 	}
 	if doType.NumField() <= 0 {
-		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
+		return "", nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name())
 	}
 	dbtbTag := doType.Field(0).Tag
 	tbname := dbtbTag.Get(sqlext.NdbTags.TableName)
 	if tbname == "" {
-		panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableName))
+		return "", nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableName)
 	}
-	return tbname
+	return tbname, nil
 }
 
-func StructDoDbColList(doType reflect.Type, tableAlias string, excludeCols ...string) []string {
+func StructDoDbColList(doType reflect.Type, tableAlias string, excludeCols ...string) ([]string, error) {
 	if doType.Kind() == reflect.Pointer {
 		doType = doType.Elem() //解引用
 	}
 
 	if doType.NumField() <= 0 {
-		panic(nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name()))
+		return nil, nerror.NewRunTimeErrorFmt("%s没有字段", doType.Name())
 	}
 	result := []string{}
 	//字段
@@ -61,7 +62,7 @@ func StructDoDbColList(doType reflect.Type, tableAlias string, excludeCols ...st
 		dbTag := doType.Field(idx).Tag
 		dbcol := dbTag.Get(sqlext.NdbTags.TableColumn)
 		if dbcol == "" {
-			panic(nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableColumn))
+			return nil, nerror.NewRunTimeErrorFmt("%s字段的Tag没有标识[%s]", doType.Name(), sqlext.NdbTags.TableColumn)
 		}
 
 		if slices.Contains(excludeCols, dbcol) {
@@ -74,15 +75,18 @@ func StructDoDbColList(doType reflect.Type, tableAlias string, excludeCols ...st
 			result = append(result, fmt.Sprintf("%s.%s", tableAlias, dbcol))
 		}
 	}
-	return result
+	return result, nil
 }
 
-func StructDoDbColStr(doType reflect.Type, tableAlias string, excludeCols ...string) string {
+func StructDoDbColStr(doType reflect.Type, tableAlias string, excludeCols ...string) (string, error) {
 	if doType.Kind() == reflect.Pointer {
 		doType = doType.Elem() //解引用
 	}
 	sb := &strings.Builder{}
-	cols := StructDoDbColList(doType, tableAlias)
+	cols, err := StructDoDbColList(doType, tableAlias)
+	if nil != err {
+		return "", err
+	}
 	for _, v := range cols {
 		if slices.Contains(excludeCols, v) {
 			continue
@@ -92,5 +96,5 @@ func StructDoDbColStr(doType reflect.Type, tableAlias string, excludeCols ...str
 		}
 		sb.WriteString(v)
 	}
-	return sb.String()
+	return sb.String(), nil
 }

@@ -22,20 +22,20 @@ type NAliOssClient struct {
 	MultipartUploadWorkPool *ants.Pool
 }
 
-func NewNAliOssClient(cnf *nyaml.YamlConfNAliOssConf) *NAliOssClient {
+func NewNAliOssClient(cnf *nyaml.YamlConfNAliOssConf) (*NAliOssClient, error) {
 	var cfg = oss.LoadDefaultConfig().
 		WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cnf.OssKey, cnf.OssKeySecret)).
 		WithRegion("cn-chengdu").
 		WithUseInternalEndpoint(cnf.InternalEndpoint)
 	if cnf.ProxyEnabel {
-		slog.Info(fmt.Sprintf("OSS当前为代理模式，通过代理【%v】访问", cnf.ProxyHttpUrl))
+		slog.Info(fmt.Sprintf("OSS当前为代理模式,通过代理【%v】访问", cnf.ProxyHttpUrl))
 		cfg.WithProxyHost(cnf.ProxyHttpUrl)
 	}
 	wpool, err := ants.NewPool(cnf.MultipartUploadWorkNum, ants.WithNonblocking(false))
 	if nil != err {
-		panic("创建分片上传工作协程池失败")
+		return nil, nerror.NewRunTimeError("创建分片上传工作协程池失败")
 	}
-	return &NAliOssClient{Cnf: cnf, OssClient: oss.NewClient(cfg), MultipartUploadWorkPool: wpool}
+	return &NAliOssClient{Cnf: cnf, OssClient: oss.NewClient(cfg), MultipartUploadWorkPool: wpool}, nil
 }
 
 // ListObjects

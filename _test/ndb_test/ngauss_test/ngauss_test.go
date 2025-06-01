@@ -76,7 +76,8 @@ COMMENT ON TABLE "tb01" IS '测试表';`
 
 func TestSqlFmtSqlStr2Gauss(t *testing.T) {
 
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+
 	sqlFmtStr := dbWrapper.SqlFmtSqlStr2Gauss(" WHERE name='nixq'")
 	ntools.TestEq(t, "TestSqlFmt dbWrapper.SqlFmtSqlStr2Gauss", ` WHERE name='nixq'`, sqlFmtStr)
 
@@ -95,7 +96,7 @@ func TestSqlFmtSqlStr2Gauss(t *testing.T) {
 }
 
 func TestCrateTable(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	_, err := dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	ntools.TestErrPainic(t, "TestCrateTable DROP TABLE ", err)
 
@@ -114,11 +115,12 @@ func TestCrateTable(t *testing.T) {
 }
 
 func TestGenStruct(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
-	str := dbWrapper.GetStructDoByTableStr(schameName, tableName)
+	str, err := dbWrapper.GetStructDoByTableStr(schameName, tableName)
+	ntools.TestErrPainic(t, "TestGenStruct ", err)
 	slog.Info(str)
 	if !strings.Contains(str, "Id int64") {
 		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "Id int64")
@@ -139,7 +141,7 @@ func TestGenStruct(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
@@ -155,7 +157,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestSelectOne(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
@@ -180,7 +182,7 @@ func TestSelectOne(t *testing.T) {
 }
 
 func TestSelectObj(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
@@ -215,7 +217,7 @@ func TestSelectObj(t *testing.T) {
 }
 
 func TestSelectList(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
@@ -260,7 +262,7 @@ func TestSelectList(t *testing.T) {
 }
 
 func TestSqlInNotExist(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
@@ -282,7 +284,7 @@ func TestSqlInNotExist(t *testing.T) {
 }
 
 func TestSelectDyObjAndList(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 
@@ -310,7 +312,7 @@ func TestSelectDyObjAndList(t *testing.T) {
 }
 
 func TestNdbTx(t *testing.T) {
-	dbWrapper := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
 	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
 	dbWrapper.Exec(caussdbCreateTableStr)
 

@@ -12,6 +12,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func init() {
+	ntools.SlogConf("test", "debug", 1, 2)
+}
 func TestSqlFmt(t *testing.T) {
 
 	sqlFmtStr := sqlext.SqlFmt(" WHERE name='nixq'")
@@ -59,7 +62,8 @@ func TestInserSqlVals(t *testing.T) {
 
 	strcVo := &TestVo{TaskId: "111", BizCode: sqlext.NewNullString(false, ""), CtTime: sqlext.NewNullTime(true, colTime)}
 
-	dyColStr := ndb.StructDoDbColStr(reflect.TypeOf(TestVo{}), "", "task_id", "rmq_msg_id", "biz_code")
+	dyColStr, err := ndb.StructDoDbColStr(reflect.TypeOf(TestVo{}), "", "task_id", "rmq_msg_id", "biz_code")
+	ntools.TestErrPainic(t, "通过ndb.StructDoDbColStr获取动态列失败", err)
 	slog.Info("dyColStr:" + dyColStr)
 	ntools.TestEq(t, "通过ndb.StructDoDbColStr获取动态列失败", "task_status,ct_time", dyColStr)
 

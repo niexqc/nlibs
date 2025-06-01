@@ -52,7 +52,7 @@ func (service *MemCacheService) PutExStr(key string, val string, sencond int) er
 
 // 仅在【key​不存在】​​时成功（​​原子性操作​​）
 func (service *MemCacheService) PutNxExStr(key string, val string, sencond int) error {
-	panic("未实现PutNxExStr")
+	panic(nerror.NewRunTimeError("未实现 PutNxExStr"))
 }
 
 // GetStr ...
@@ -110,15 +110,15 @@ func (service *MemCacheService) ClearKey(key string) error {
 }
 
 func (service *MemCacheService) LockRun(key, value string, expiry int, tries, delay int, lockFun func() any) (result any, err error) {
-	panic("未实现 LockRun")
+	panic(nerror.NewRunTimeError("未实现 LockRun"))
 }
 
 // 队列消息写入
 func (service *MemCacheService) Producer(queueKey string, message string) error {
-	panic("Producer")
+	panic(nerror.NewRunTimeError("未实现 Producer"))
 }
 
 // 队列消息读取
 func (service *MemCacheService) Consumer(queueKey string, message string) {
-	panic("Consumer")
+	panic(nerror.NewRunTimeError("未实现 Consumer"))
 }
