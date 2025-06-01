@@ -62,7 +62,8 @@ func DyObjList2Json(dyObjList []*NMysqlDyObj) (jsonStr string, err error) {
 	for _, dyObj := range dyObjList {
 		dataList = append(dataList, dyObj.Data)
 	}
-	return njson.SonicObj2Str(dataList), nil
+	jsonStr, err = njson.SonicObj2Str(dataList)
+	return jsonStr, nil
 }
 
 func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NMysqlDyObjFieldInfo, err error) {
