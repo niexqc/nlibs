@@ -37,7 +37,7 @@ func NewNMqConsumer(nameSvrAddr, topic, groupName string, broadCastingMode bool)
 }
 
 // 订阅消息,tag可以为空
-func (mq *NMqConsumer) Subscribe(tag string, onMsg func(ctx context.Context, msg *primitive.MessageExt) (consumer.ConsumeResult, error)) {
+func (mq *NMqConsumer) Subscribe(tag string, onMsg func(ctx context.Context, msg *primitive.MessageExt) (consumer.ConsumeResult, error)) error {
 	msgSelector := consumer.MessageSelector{}
 	if tag != "" {
 		msgSelector = consumer.MessageSelector{Type: consumer.TAG, Expression: tag}
@@ -46,10 +46,11 @@ func (mq *NMqConsumer) Subscribe(tag string, onMsg func(ctx context.Context, msg
 		return onMsg(ctx, imsgs[0])
 	})
 	if nil != err {
-		panic(err)
+		return err
 	}
 	if err := mq.Consumer.Start(); err != nil {
-		panic("消费者启动失败: " + err.Error())
+		return err
 	}
-	slog.Info("消费者订阅成功")
+	slog.Debug("消费者订阅成功")
+	return nil
 }

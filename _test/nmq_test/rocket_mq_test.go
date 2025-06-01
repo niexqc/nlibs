@@ -18,7 +18,7 @@ func init() {
 
 func TestNmqProducerAndConsumer(t *testing.T) {
 	//如果测试未通过，先检查NameServer是否正确
-	var Topic = "t002"
+	var Topic = "t003"
 	var NameServer = "192.168.0.253:9876"
 
 	producer, err := nmq.NewNMqProduer(NameServer, Topic, "p01")
@@ -36,7 +36,8 @@ func TestNmqProducerAndConsumer(t *testing.T) {
 		return consumer.ConsumeSuccess, nil
 	}
 	c01 := nmq.NewNMqConsumer(NameServer, Topic, "cc02", false)
-	c01.Subscribe("*", onReciveMsg)
+	err = c01.Subscribe("*", onReciveMsg)
+	ntools.TestErrPainic(t, "NMqConsumer 订阅失败", err)
 	recvMsgId := <-recv
-	ntools.TestStrContains(t, "NMqConsumer接收刚发送的消息", msgId, recvMsgId)
+	ntools.TestStrContains(t, "NMqConsumer 接收刚发送的消息", msgId, recvMsgId)
 }
