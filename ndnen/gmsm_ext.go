@@ -42,10 +42,10 @@ func Sm2Key2Hex(pri *sm2.PrivateKey, pub *sm2.PublicKey) (priDerb64, pubDerb64 s
 	return privateKeyHex, publicKeyHex
 }
 
-func Sm2LoadPriKeyFromHex(priHex string) *sm2.PrivateKey {
+func Sm2LoadPriKeyFromHex(priHex string) (*sm2.PrivateKey, error) {
 	privateKeyBytes, err := hex.DecodeString(priHex)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// 将字节转换为 big.Int（私钥的 D 值）
 	d := new(big.Int).SetBytes(privateKeyBytes)
@@ -60,18 +60,18 @@ func Sm2LoadPriKeyFromHex(priHex string) *sm2.PrivateKey {
 
 	// 计算公钥坐标（X,Y）
 	privateKey.PublicKey.X, privateKey.PublicKey.Y = sm2.P256Sm2().ScalarBaseMult(d.Bytes())
-	return privateKey
+	return privateKey, nil
 }
 
-func Sm2LoadPubKeyFromHex(pubHex string) *sm2.PublicKey {
+func Sm2LoadPubKeyFromHex(pubHex string) (*sm2.PublicKey, error) {
 	// Hex 解码
 	publicKeyBytes, err := hex.DecodeString(pubHex)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	// 检查格式是否为未压缩公钥（0x04 开头）
 	if len(publicKeyBytes) != 65 || publicKeyBytes[0] != 0x04 {
-		panic("invalid public key format")
+		return nil, nerror.NewRunTimeError("invalid public key format")
 	}
 	// 提取 X 和 Y 坐标（各 32 字节）
 	x := new(big.Int).SetBytes(publicKeyBytes[1:33])
@@ -83,7 +83,7 @@ func Sm2LoadPubKeyFromHex(pubHex string) *sm2.PublicKey {
 		X:     x,
 		Y:     y,
 	}
-	return publicKey
+	return publicKey, nil
 }
 
 func Sm2Key2Der2B64(pri *sm2.PrivateKey, pub *sm2.PublicKey) (priDerb64, pubDerb64 string) {
@@ -110,52 +110,52 @@ func Sm2Key2Pem(pri *sm2.PrivateKey, pub *sm2.PublicKey) (priPemStr, pubPemStr s
 	return string(privatePEM), string(publicPEM)
 }
 
-func Sm2LoadPubKeyFromDerB64(pubDerb64 string) *sm2.PublicKey {
+func Sm2LoadPubKeyFromDerB64(pubDerb64 string) (*sm2.PublicKey, error) {
 	derPublic, err := base64.StdEncoding.DecodeString(pubDerb64)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	publicKey, err := x509.ParseSm2PublicKey(derPublic)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return publicKey
+	return publicKey, nil
 }
 
-func Sm2LoadPriKeyFromDerB64(priDerb64 string) *sm2.PrivateKey {
+func Sm2LoadPriKeyFromDerB64(priDerb64 string) (*sm2.PrivateKey, error) {
 	derPrivate, err := base64.StdEncoding.DecodeString(priDerb64)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	privateKey, err := x509.ParsePKCS8UnecryptedPrivateKey(derPrivate)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return privateKey
+	return privateKey, nil
 }
 
-func Sm2LoadPubKeyFromPem(pubPemStr string) *sm2.PublicKey {
+func Sm2LoadPubKeyFromPem(pubPemStr string) (*sm2.PublicKey, error) {
 	block, _ := pem.Decode([]byte(pubPemStr))
 	if block == nil {
-		panic(nerror.NewRunTimeError("PEM 解码失败"))
+		return nil, nerror.NewRunTimeError("PEM 解码失败")
 	}
 	privateKey, err := x509.ParseSm2PublicKey(block.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return privateKey
+	return privateKey, nil
 }
 
-func Sm2LoadPriKeyFromPem(priPemStr string) *sm2.PrivateKey {
+func Sm2LoadPriKeyFromPem(priPemStr string) (*sm2.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(priPemStr))
 	if block == nil {
-		panic(nerror.NewRunTimeError("PEM 解码失败"))
+		return nil, nerror.NewRunTimeError("PEM 解码失败")
 	}
 	privateKey, err := x509.ParsePKCS8UnecryptedPrivateKey(block.Bytes)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return privateKey
+	return privateKey, nil
 }
 
 // SM2 公钥加密
@@ -178,13 +178,13 @@ func Sm2Decrypt(privKey *sm2.PrivateKey, ciphertext []byte) (bool, []byte) {
 	return true, plaintext
 }
 
-func Sm2DecryptBase64(privKey *sm2.PrivateKey, base64Str string) (bool, string) {
+func Sm2DecryptBase64(privKey *sm2.PrivateKey, base64Str string) (bool, string, error) {
 	data, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
-		panic(nerror.NewRunTimeError("SM2解密,密文不是base64数据"))
+		return false, "", nerror.NewRunTimeError("SM2解密,密文不是base64数据")
 	}
 	ok, plaintext := Sm2Decrypt(privKey, data)
-	return ok, ntools.If3(ok, string(plaintext), "")
+	return ok, ntools.If3(ok, string(plaintext), ""), nil
 }
 
 // SM2 私钥签名 (签名方式 :sm3hash userId=1234567812345678 asn.1 der)
@@ -211,73 +211,81 @@ func Sm2VerifyB64SrcByPubKey(pubKey *sm2.PublicKey, b64SrcStr, b64DerSign string
 	return sm2.Sm2Verify(pubKey, strBytes, signUserId, sm2Sign.R, sm2Sign.S)
 }
 
-func Sm4CbcEnData(key, iv, plaintext string) []byte {
+func Sm4CbcEnData(key, iv, plaintext string) ([]byte, error) {
 	// Pkcs7Pad 明文填充
 	pkcs7PadData := Pkcs7Pad([]byte(plaintext), sm4.BlockSize)
 	return innerSm4CbcEnData(key, iv, pkcs7PadData)
 }
 
-func Sm4CbcEnBytes(key, iv string, data []byte) []byte {
+func Sm4CbcEnBytes(key, iv string, data []byte) ([]byte, error) {
 	// Pkcs7Pad 明文填充
 	pkcs7PadData := PKCS5Padding(data)
 	return innerSm4CbcEnData(key, iv, pkcs7PadData)
 }
 
-func Sm4CbcEnDataWithPkcs5(key, iv, plaintext string) []byte {
+func Sm4CbcEnDataWithPkcs5(key, iv, plaintext string) ([]byte, error) {
 	// PKCS5Padding 明文填充
 	PKCS5PaddingPadData := PKCS5Padding([]byte(plaintext))
 	return innerSm4CbcEnData(key, iv, PKCS5PaddingPadData)
 }
 
-func innerSm4CbcEnData(key, iv string, padData []byte) []byte {
+func innerSm4CbcEnData(key, iv string, padData []byte) ([]byte, error) {
 	block, err := sm4.NewCipher([]byte(key))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	mode := cipher.NewCBCEncrypter(block, []byte(iv))
 
 	resultData := make([]byte, len(padData))
 	mode.CryptBlocks(resultData, padData)
-	return resultData
+	return resultData, err
 }
 
-func Sm4CbcEnDataToBase64(key, iv, plaintext string) string {
-	encryptData := Sm4CbcEnData(key, iv, plaintext)
-	return base64.StdEncoding.EncodeToString(encryptData)
+func Sm4CbcEnDataToBase64(key, iv, plaintext string) (string, error) {
+	encryptData, err := Sm4CbcEnData(key, iv, plaintext)
+	if nil != err {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(encryptData), nil
 }
 
 func Sm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
-	resultData := innerSm4CbcDnData(key, iv, entryedData)
+	resultData, err := innerSm4CbcDnData(key, iv, entryedData)
+	if nil != err {
+		return nil, err
+	}
 	unpadded, err := Pkcs7Unpad(resultData)
 	return unpadded, err
 }
 
-func innerSm4CbcDnData(key, iv, entryedData string) []byte {
+func innerSm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	if len(entryedData)%sm4.BlockSize != 0 {
-		panic(nerror.NewRunTimeError("密文长度无效"))
+		return nil, nerror.NewRunTimeError("密文长度无效")
 	}
-
 	block, err := sm4.NewCipher([]byte(key))
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	mode := cipher.NewCBCDecrypter(block, []byte(iv))
 
 	resultData := make([]byte, len(entryedData))
 	mode.CryptBlocks(resultData, []byte(entryedData))
-	return resultData
+	return resultData, nil
 }
 
-func Sm4CbcDnDataWithPkcs5(key, iv, entryedData string) []byte {
-	resultData := innerSm4CbcDnData(key, iv, entryedData)
+func Sm4CbcDnDataWithPkcs5(key, iv, entryedData string) ([]byte, error) {
+	resultData, err := innerSm4CbcDnData(key, iv, entryedData)
+	if nil != err {
+		return nil, err
+	}
 	unpadded := PKCS5UnPadding(resultData)
-	return unpadded
+	return unpadded, nil
 }
 
 func Sm4CbcDnBase64Data(key, iv, encryptBase64Data string) (string, error) {
 	encryedData, err := base64.StdEncoding.DecodeString(encryptBase64Data)
 	if err != nil {
-		panic(nerror.NewRunTimeError("SM2解密,密文不是base64数据"))
+		return "", nerror.NewRunTimeError("SM2解密,密文不是base64数据")
 	}
 	result, err := Sm4CbcDnData(key, iv, string(encryedData))
 	return string(result), err
@@ -295,35 +303,35 @@ func Sm3hash(data []byte) []byte {
 	return h.Sum(nil)
 }
 
-func Sm4EcbPkcs5EnData2HexStr(hexKey, plaintext string) string {
+func Sm4EcbPkcs5EnData2HexStr(hexKey, plaintext string) (string, error) {
 	hexKeyData, _ := hex.DecodeString(hexKey)
 	// 检查密钥长度
 	if len(hexKeyData) != 16 {
-		panic(nerror.NewRunTimeError("SM4加密,key必须为16位"))
+		return "", nerror.NewRunTimeError("SM4加密,key必须为16位")
 	}
 	padData := PKCS5Padding([]byte(plaintext))
 	//
 	block, err := sm4.NewCipher(hexKeyData)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	// ECB 模式分块加密（无 IV）
 	enData := make([]byte, len(padData))
 	for start := 0; start < len(padData); start += 16 { // 16 字节分组
 		block.Encrypt(enData[start:], padData[start:start+16])
 	}
-	return hex.EncodeToString(enData)
+	return hex.EncodeToString(enData), nil
 }
 
-func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) string {
+func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) (string, error) {
 	hexKeyData, _ := hex.DecodeString(hexKey)
 	// 检查密钥长度
 	if len(hexKeyData) != 16 {
-		panic(nerror.NewRunTimeError("SM4加密,key必须为16位"))
+		return "", nerror.NewRunTimeError("SM4加密,key必须为16位")
 	}
 	block, err := sm4.NewCipher(hexKeyData)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	data, _ := hex.DecodeString(enedStr)
 	plaintext := make([]byte, len(data))
@@ -331,5 +339,5 @@ func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) string {
 		block.Decrypt(plaintext[start:], data[start:start+16])
 	}
 	unPadData := PKCS5UnPadding([]byte(plaintext))
-	return string(unPadData)
+	return string(unPadData), nil
 }

@@ -37,11 +37,13 @@ func TestLoadFromHex(t *testing.T) {
 	priHexStr := "af4ec3c4f851fa875a7064be5bc8b7b42dc0c24f30fdc42036a4aa52f8a9670b"
 	pubHexStr := "0414242d444ae79fcf1942bc3e490066100c60bae0f17c47c6199d83bc963433e334d84b929539d07f4d073d75d837b456b6dce34f9488049e632a44905f4361f5"
 
-	priKeyLoadFromHex := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
+	priKeyLoadFromHex, err := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
+	ntools.TestErrPainic(t, "从Hex加载私钥", err)
 	if keyXText != priKeyLoadFromHex.X.Text(10) || keyYText != priKeyLoadFromHex.Y.Text(10) || keyDText != priKeyLoadFromHex.D.Text(10) {
 		ntools.TestErrPanicMsg(t, "从Hex加载私钥后,X,Y,D不匹配")
 	}
-	pubKeyLoadFromHex := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
+	pubKeyLoadFromHex, err := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
+	ntools.TestErrPainic(t, "从Hex加载公钥", err)
 	if keyXText != pubKeyLoadFromHex.X.Text(10) || keyYText != pubKeyLoadFromHex.Y.Text(10) {
 		ntools.TestErrPanicMsg(t, "从Hex加载公钥后,X,Y不匹配")
 	}
@@ -54,11 +56,13 @@ func TestLoadFromDerB64(t *testing.T) {
 	keyDText := "10575470501061192161446575300722225078608851643319307194990556739345271688258"
 	priDerB64Str := "MIGTAgEAMBMGByqGSM49AgEGCCqBHM9VAYItBHkwdwIBAQQgF2GBEkocYjmxhaSS28+4KfTfM2h6cx4KDjuxqhBfDEKgCgYIKoEcz1UBgi2hRANCAARkk2ft6Js9wKQwGKEHtrUyb3aMfqBiTNW6l+b4tAOtdRrMz1VOLxrBwWzN3z/upT29N5TVowpPVNiW3XjgR8bN"
 	pubDerB64Str := "MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAEZJNn7eibPcCkMBihB7a1Mm92jH6gYkzVupfm+LQDrXUazM9VTi8awcFszd8/7qU9vTeU1aMKT1TYlt144EfGzQ=="
-	priKeyLoadFromDerB64 := ndnen.Sm2LoadPriKeyFromDerB64(priDerB64Str)
+	priKeyLoadFromDerB64, err := ndnen.Sm2LoadPriKeyFromDerB64(priDerB64Str)
+	ntools.TestErrPainic(t, "从Der2B64加载私钥", err)
 	if keyXText != priKeyLoadFromDerB64.X.Text(10) || keyYText != priKeyLoadFromDerB64.Y.Text(10) || keyDText != priKeyLoadFromDerB64.D.Text(10) {
 		ntools.TestErrPanicMsg(t, "从Der2B64加载私钥后,X,Y,D不匹配")
 	}
-	pubKeyLoadFromDerB64 := ndnen.Sm2LoadPubKeyFromDerB64(pubDerB64Str)
+	pubKeyLoadFromDerB64, err := ndnen.Sm2LoadPubKeyFromDerB64(pubDerB64Str)
+	ntools.TestErrPainic(t, "从Der2B64加载公钥", err)
 	if keyXText != pubKeyLoadFromDerB64.X.Text(10) || keyYText != pubKeyLoadFromDerB64.Y.Text(10) {
 		ntools.TestErrPanicMsg(t, "从Der2B64加载公钥后,X,Y不匹配")
 	}
@@ -79,11 +83,13 @@ MFkwEwYHKoZIzj0CAQYIKoEcz1UBgi0DQgAErFzP5elagYVRH0QFo0oe7Q9z35a2
 amnmOfsRz1kASJyt2D73zQgT+qKipIsA1gCZh74vcAJwo9kwmpR6tLBYKA==
 -----END PUBLIC KEY-----`
 
-	priKeyLoadFromPem := ndnen.Sm2LoadPriKeyFromPem(priPemStr)
+	priKeyLoadFromPem, err := ndnen.Sm2LoadPriKeyFromPem(priPemStr)
+	ntools.TestErrPainic(t, "从DerPem加载私钥", err)
 	if keyXText != priKeyLoadFromPem.X.Text(10) || keyYText != priKeyLoadFromPem.Y.Text(10) || keyDText != priKeyLoadFromPem.D.Text(10) {
 		ntools.TestErrPanicMsg(t, "从DerPem加载私钥后,X,Y,D不匹配")
 	}
-	pubKeyLoadFromPem := ndnen.Sm2LoadPubKeyFromPem(pubPemStr)
+	pubKeyLoadFromPem, err := ndnen.Sm2LoadPubKeyFromPem(pubPemStr)
+	ntools.TestErrPainic(t, "从DerPem加载公钥", err)
 	if keyXText != pubKeyLoadFromPem.X.Text(10) || keyYText != pubKeyLoadFromPem.Y.Text(10) {
 		ntools.TestErrPanicMsg(t, "从DerPem加载公钥后,X,Y不匹配")
 	}
@@ -92,18 +98,20 @@ amnmOfsRz1kASJyt2D73zQgT+qKipIsA1gCZh74vcAJwo9kwmpR6tLBYKA==
 func TestSm2EnDn(t *testing.T) {
 	pubHexStr := "04bdedf93932233a806a424efeb13b868bb50c3ba45860334b75342602743e39ee0d5d9f9a189ded81b2772fe229d7e992b1bb19f4fbcb541ff9d150a5e1da7806"
 	priHexStr := "626d2ea7d29769e3c89a1944c53b4fa35cff8db32300718a5885f0fa426d56f2"
-	pri := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
-	pub := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
+	pri, _ := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
+	pub, _ := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
 	orginText := "123"
 	sm2EnedStr := ndnen.Sm2EncryptToBase64(pub, orginText)
-	dnok, sm2DnedStr := ndnen.Sm2DecryptBase64(pri, sm2EnedStr)
+	dnok, sm2DnedStr, err := ndnen.Sm2DecryptBase64(pri, sm2EnedStr)
+	ntools.TestErrPainic(t, "TestSm2EnDn 加密解密", err)
 	if !dnok {
 		ntools.TestErrPanicMsg(t, "SM2加解密失败")
 	}
 	ntools.TestEq(t, "测试 TestSm2EnDn 加密解密", orginText, sm2DnedStr)
 	//密文
 	sm2EnedStr = "BMKUnLTSPEFjTyYQsdnJetfWcieodAphSsfbrNeWuN3JGLCcBQ9q/w7rr81cA6KL5PMX1Oxw3fmANPDWzCmJtI2nNDY9WIGEHeWLejDIq8gU+jb0TOlda/N6EcEaD7tmAhR5tw=="
-	dnok, sm2DnedStr = ndnen.Sm2DecryptBase64(pri, sm2EnedStr)
+	dnok, sm2DnedStr, err = ndnen.Sm2DecryptBase64(pri, sm2EnedStr)
+	ntools.TestErrPainic(t, "TestSm2EnDn 加密解密", err)
 	if !dnok {
 		ntools.TestErrPanicMsg(t, "SM2加解密失败")
 	}
@@ -114,8 +122,8 @@ func TestSm2EnDn(t *testing.T) {
 func TestSm2Verify(t *testing.T) {
 	pubHexStr := "04bdedf93932233a806a424efeb13b868bb50c3ba45860334b75342602743e39ee0d5d9f9a189ded81b2772fe229d7e992b1bb19f4fbcb541ff9d150a5e1da7806"
 	priHexStr := "626d2ea7d29769e3c89a1944c53b4fa35cff8db32300718a5885f0fa426d56f2"
-	pri := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
-	pub := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
+	pri, _ := ndnen.Sm2LoadPriKeyFromHex(priHexStr)
+	pub, _ := ndnen.Sm2LoadPubKeyFromHex(pubHexStr)
 
 	sourceStr := "123"
 	jsGenB64DerSignStr := "MEUCIQCLVsjVmGMAjVUAg3tuQEniyEYcIlFeSF0ninfNfl7P5AIgC1zD5WedSJlU/8ZQVQeaEvz9XWrrKxO6kBvw7wZNb/A="
@@ -142,12 +150,14 @@ func TestSm4CbcEnDn(t *testing.T) {
 
 	sm4EndStr := "a8Vdi0+57ngGosjiiglIhA=="
 
-	endStr := ndnen.Sm4CbcEnDataToBase64(sm4Key, sm4KeyIv, sourceStr)
+	endStr, err := ndnen.Sm4CbcEnDataToBase64(sm4Key, sm4KeyIv, sourceStr)
+	ntools.TestErrPainic(t, "Sm4CbcEnDn 加密", err)
 	slog.Info("Sm4CbcEnDn 加密", "原文", sourceStr, "秘钥", sm4Key, "向量", sm4KeyIv, "期望结果", sm4EndStr, "加密结果", endStr)
 	ntools.TestEq(t, "测试 Sm4CbcEnDn 加密解密", sm4EndStr, endStr)
 
 	dndStr, err := ndnen.Sm4CbcDnBase64Data(sm4Key, sm4KeyIv, sm4EndStr)
 	ntools.TestErrPainic(t, "Sm4CbcEnDn 解密", err)
+
 	slog.Info("Sm4CbcEnDn 解密", "原文", sourceStr, "秘钥", sm4Key, "向量", sm4KeyIv, "期望结果", sourceStr, "解密结果", dndStr)
 	ntools.TestEq(t, "测试 Sm4CbcEnDn 加密解密", sourceStr, dndStr)
 
@@ -159,12 +169,14 @@ func TestSm4EcbEnDn(t *testing.T) {
 
 	sm4EndStr := "f49734fccc350dedcd45b1886adb239c"
 
-	endStr := ndnen.Sm4EcbPkcs5EnData2HexStr(sm4Key, sourceStr)
-	slog.Info("Sm4CbcEnDn 加密", "原文", sourceStr, "Hex秘钥", sm4Key, "期望结果", sm4EndStr, "加密结果", endStr)
-	ntools.TestEq(t, "测试 Sm4CbcEnDn 加密解密", sm4EndStr, endStr)
+	endStr, err := ndnen.Sm4EcbPkcs5EnData2HexStr(sm4Key, sourceStr)
+	ntools.TestErrPainic(t, "Sm4EcbEnDn 加密", err)
+	slog.Info("Sm4EcbEnDn 加密", "原文", sourceStr, "Hex秘钥", sm4Key, "期望结果", sm4EndStr, "加密结果", endStr)
+	ntools.TestEq(t, "测试 Sm4EcbEnDn 加密解密", sm4EndStr, endStr)
 
-	dndStr := ndnen.Sm4EcbPkcs5DnHexStr(sm4Key, sm4EndStr)
-	slog.Info("Sm4CbcEnDn 解密", "原文", sourceStr, "Hex秘钥", sm4Key, "期望结果", sourceStr, "解密结果", dndStr)
-	ntools.TestEq(t, "测试 Sm4CbcEnDn 加密解密", sourceStr, dndStr)
+	dndStr, err := ndnen.Sm4EcbPkcs5DnHexStr(sm4Key, sm4EndStr)
+	ntools.TestErrPainic(t, "Sm4EcbEnDn 解密", err)
+	slog.Info("Sm4EcbEnDn 解密", "原文", sourceStr, "Hex秘钥", sm4Key, "期望结果", sourceStr, "解密结果", dndStr)
+	ntools.TestEq(t, "测试 Sm4EcbEnDn 加密解密", sourceStr, dndStr)
 
 }
