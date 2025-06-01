@@ -7,11 +7,14 @@ import (
 	"log/slog"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
 // 执行命令，命令执行完成后,函数内部主动关闭（cmdOut）
 func CmdRunAndPrintLog(windows bool, command, workDir string, args ...string) error {
+	str, _ := filepath.Abs(workDir)
+	slog.Debug("当前工作目录:" + str)
 	cmdOut := make(chan string, 10)
 	go func() {
 		for v := range cmdOut {
@@ -23,6 +26,8 @@ func CmdRunAndPrintLog(windows bool, command, workDir string, args ...string) er
 
 // 执行命令，命令执行完成后,函数内部主动关闭（cmdOut）
 func CmdRunWithStdOut(windows bool, command, workDir string, cmdOut chan string, arg ...string) error {
+	str, _ := filepath.Abs(workDir)
+	slog.Debug("当前工作目录:" + str)
 	defer close(cmdOut)
 	cmd := exec.Command(command, arg...)
 	stdout, err := cmd.StdoutPipe()
