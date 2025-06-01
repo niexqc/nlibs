@@ -63,9 +63,9 @@ func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context, nVa
 	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "	application/x-www-form-urlencoded") {
 		return ShouldBind[T](ctx, nValider)
 	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "multipart/form-data") {
-		panic(nerror.NewRunTimeError("ContentType:multipart/form-data 还未处理"))
+		return nil, nerror.NewRunTimeError("ContentType:multipart/form-data 还未处理")
 	} else {
-		panic(nerror.NewRunTimeError("错误的[ContentType]"))
+		return nil, nerror.NewRunTimeError("错误的[ContentType]")
 	}
 }
 
