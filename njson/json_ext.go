@@ -51,7 +51,7 @@ func Str2ObjArr[T any, STR string | *string](str STR) (*[]T, error) {
 	return tarr, err
 }
 
-func Str2ObjWithPanicError[T any](str *string) *T {
+func Str2ObjWithPanicError[T any, STR string | *string](str STR) *T {
 	t, err := Str2Obj[T](str)
 	if nil != err {
 		slog.Warn("JSON转对象失败", "jsonStr", str, "err", err)
@@ -60,7 +60,7 @@ func Str2ObjWithPanicError[T any](str *string) *T {
 	return t
 }
 
-func Str2ObjArrWithPanicError[T any](str *string) *[]T {
+func Str2ObjArrWithPanicError[T any, STR string | *string](str STR) *[]T {
 	t, err := Str2ObjArr[T](str)
 	if nil != err {
 		slog.Warn("JSON转对象数组失败", "jsonStr", str, "err", err)
