@@ -246,10 +246,10 @@ func Sm4CbcEnDataToBase64(key, iv, plaintext string) string {
 	return base64.StdEncoding.EncodeToString(encryptData)
 }
 
-func Sm4CbcDnData(key, iv, entryedData string) []byte {
+func Sm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	resultData := innerSm4CbcDnData(key, iv, entryedData)
-	unpadded := Pkcs7Unpad(resultData)
-	return unpadded
+	unpadded, err := Pkcs7Unpad(resultData)
+	return unpadded, err
 }
 
 func innerSm4CbcDnData(key, iv, entryedData string) []byte {
@@ -274,13 +274,13 @@ func Sm4CbcDnDataWithPkcs5(key, iv, entryedData string) []byte {
 	return unpadded
 }
 
-func Sm4CbcDnBase64Data(key, iv, encryptBase64Data string) string {
+func Sm4CbcDnBase64Data(key, iv, encryptBase64Data string) (string, error) {
 	encryedData, err := base64.StdEncoding.DecodeString(encryptBase64Data)
 	if err != nil {
 		panic(nerror.NewRunTimeError("SM2解密,密文不是base64数据"))
 	}
-	result := Sm4CbcDnData(key, iv, string(encryedData))
-	return string(result)
+	result, err := Sm4CbcDnData(key, iv, string(encryedData))
+	return string(result), err
 }
 
 func GetSm2PubKeyHexFromPriKey(privateKey *sm2.PrivateKey) string {

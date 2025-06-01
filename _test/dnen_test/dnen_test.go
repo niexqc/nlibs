@@ -146,7 +146,8 @@ func TestSm4CbcEnDn(t *testing.T) {
 	slog.Info("Sm4CbcEnDn 加密", "原文", sourceStr, "秘钥", sm4Key, "向量", sm4KeyIv, "期望结果", sm4EndStr, "加密结果", endStr)
 	ntools.TestEq(t, "测试 Sm4CbcEnDn 加密解密", sm4EndStr, endStr)
 
-	dndStr := ndnen.Sm4CbcDnBase64Data(sm4Key, sm4KeyIv, sm4EndStr)
+	dndStr, err := ndnen.Sm4CbcDnBase64Data(sm4Key, sm4KeyIv, sm4EndStr)
+	ntools.TestErrPainic(t, "Sm4CbcEnDn 解密", err)
 	slog.Info("Sm4CbcEnDn 解密", "原文", sourceStr, "秘钥", sm4Key, "向量", sm4KeyIv, "期望结果", sourceStr, "解密结果", dndStr)
 	ntools.TestEq(t, "测试 Sm4CbcEnDn 加密解密", sourceStr, dndStr)
 

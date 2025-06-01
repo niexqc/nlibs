@@ -16,16 +16,16 @@ func Pkcs7Pad(data []byte, blockSize int) []byte {
 }
 
 // PKCS#7 去除填充
-func Pkcs7Unpad(data []byte) []byte {
+func Pkcs7Unpad(data []byte) ([]byte, error) {
 	if len(data) == 0 {
-		panic(nerror.NewRunTimeError("空数据"))
+		return nil, nerror.NewRunTimeError("空数据")
 	}
 	// 最后一个字节是填充长度
 	padding := int(data[len(data)-1])
 	if padding < 1 || padding > len(data) {
-		panic(nerror.NewRunTimeError("Pkcs7填充长度无效"))
+		return nil, nerror.NewRunTimeError("Pkcs7填充长度无效")
 	}
-	return data[:len(data)-padding]
+	return data[:len(data)-padding], nil
 }
 
 func PKCS5UnPadding(origData []byte) []byte {
