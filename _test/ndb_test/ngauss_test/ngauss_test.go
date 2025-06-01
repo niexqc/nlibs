@@ -278,7 +278,7 @@ func TestSqlInNotExist(t *testing.T) {
 	notExistIdds, err := ngauss.SelectList[int64](dbWrapper, sqlStr, nlibs.Arr2ArrAny(allArgs)...)
 	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
 
-	acResult := njson.SonicObj2Str(notExistIdds)
+	acResult := njson.SonicObj2StrWithPanicError(notExistIdds)
 	ntools.TestEq(t, "TestSqlInNotExist ", "[6,7]", acResult)
 
 }

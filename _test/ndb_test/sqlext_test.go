@@ -70,7 +70,7 @@ func TestInserSqlVals(t *testing.T) {
 
 	zwf, vals, _ := sqlext.InserSqlVals(dyColStr, strcVo)
 	ntools.TestEq(t, "通过sqlext.InserSqlVals获取占位符失败", "?,?", zwf)
-	ntools.TestEq(t, "通过sqlext.InserSqlVals获取值列表失败", `[0,"2025-05-01 00:00:00"]`, njson.SonicObj2Str(vals))
+	ntools.TestEq(t, "通过sqlext.InserSqlVals获取值列表失败", `[0,"2025-05-01 00:00:00"]`, njson.SonicObj2StrWithPanicError(vals))
 
 }
 
@@ -85,7 +85,7 @@ FROM ( SELECT ? AS id UNION ALL  SELECT ? AS id UNION ALL  SELECT ? AS id UNION 
 LEFT JOIN ( SELECT id FROM  test01 WHERE id IN (?, ?, ?, ?)) t2 ON t1.id=t2.id 
 WHERE t2.id IS NULL ORDER BY t1.id ASC`, sqlStr)
 
-	ntools.TestEq(t, "通过sqlext.SqlFmtSqlInNotExist 获取值列表失败", "[1,2,6,7,1,2,6,7]", njson.SonicObj2Str(allArgs))
+	ntools.TestEq(t, "通过sqlext.SqlFmtSqlInNotExist 获取值列表失败", "[1,2,6,7,1,2,6,7]", njson.SonicObj2StrWithPanicError(allArgs))
 }
 
 func TestNNullVo(t *testing.T) {
@@ -99,42 +99,42 @@ func TestNNullVo(t *testing.T) {
 		T07 decimal.NullDecimal `json:"t07"`
 	}
 	testVo := &TestNullVo{}
-	ntools.TestEq(t, "TestNNullVo 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 
 	testVo = &TestNullVo{
 		T01: sqlext.NewNullString(true, "1"),
 	}
-	ntools.TestEq(t, "TestNNullVo NullString 失败", `{"t01":"1","t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullString 失败", `{"t01":"1","t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 	str2Time, _ := ntools.TimeStr2TimeByLayout("2025-05-01", "2006-01-02")
 	testVo = &TestNullVo{
 		T02: sqlext.NewNullTime(true, str2Time),
 	}
-	ntools.TestEq(t, "TestNNullVo NullTime 失败", `{"t01":null,"t02":"2025-05-01 00:00:00","t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullTime 失败", `{"t01":null,"t02":"2025-05-01 00:00:00","t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 
 	testVo = &TestNullVo{
 		T03: sqlext.NewNullInt(true, 1),
 	}
-	ntools.TestEq(t, "TestNNullVo NullInt 失败", `{"t01":null,"t02":null,"t03":1,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullInt 失败", `{"t01":null,"t02":null,"t03":1,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 
 	testVo = &TestNullVo{
 		T04: sqlext.NewNullInt64(true, 1),
 	}
-	ntools.TestEq(t, "TestNNullVo NullInt64 失败", `{"t01":null,"t02":null,"t03":null,"t04":1,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullInt64 失败", `{"t01":null,"t02":null,"t03":null,"t04":1,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 
 	testVo = &TestNullVo{
 		T05: sqlext.NewNullFloat64(true, 1.1),
 	}
-	ntools.TestEq(t, "TestNNullVo NullFloat64 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":1.1,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullFloat64 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":1.1,"t06":null,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 
 	testVo = &TestNullVo{
 		T06: sqlext.NewNullBool(true, false),
 	}
-	ntools.TestEq(t, "TestNNullVo NullBool 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":null,"t06":false,"t07":null}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullBool 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":null,"t06":false,"t07":null}`, njson.SonicObj2StrWithPanicError(testVo))
 
 	decimalVal, _ := decimal.NewFromString("1.47000")
 	testVo = &TestNullVo{
 		T07: decimal.NewNullDecimal(decimalVal),
 	}
-	ntools.TestEq(t, "TestNNullVo NullDecimal 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":"1.47"}`, njson.SonicObj2Str(testVo))
+	ntools.TestEq(t, "TestNNullVo NullDecimal 失败", `{"t01":null,"t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":"1.47"}`, njson.SonicObj2StrWithPanicError(testVo))
 
 }

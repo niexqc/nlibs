@@ -90,10 +90,34 @@ func SonicNode2Obj[T any](node *ast.Node) (*T, error) {
 	return t, nil
 }
 
-func SonicStr2T[T any](str *string) (*T, error) {
+func SonicStr2Obj[T any](str *string) (*T, error) {
 	t := new(T)
 	err := sonic.UnmarshalString(*str, t)
 	return t, err
+}
+
+func SonicStr2ObjArr[T any](str *string) (*[]T, error) {
+	tarr := new([]T)
+	err := sonic.UnmarshalString(*str, tarr)
+	return tarr, err
+}
+
+func SonicStr2ObjWithPanicError[T any](str *string) *T {
+	t, err := SonicStr2Obj[T](str)
+	if nil != err {
+		slog.Warn("JSON转对象失败", "jsonStr", str, "err", err)
+		panic(nerror.NewRunTimeErrorWithError("JSON转对象失败", err))
+	}
+	return t
+}
+
+func SonicStr2ObjArrWithPanicError[T any](str *string) *[]T {
+	t, err := SonicStr2ObjArr[T](str)
+	if nil != err {
+		slog.Warn("JSON转对象数组失败", "jsonStr", str, "err", err)
+		panic(nerror.NewRunTimeErrorWithError("JSON转对象数组失败", err))
+	}
+	return t
 }
 
 func SonicStr2NwNode(str string) (*NwNode, error) {
@@ -102,6 +126,15 @@ func SonicStr2NwNode(str string) (*NwNode, error) {
 		return nil, err
 	}
 	return &NwNode{&root}, nil
+}
+
+func SonicStr2NwNodeWithPanicError(str string) *NwNode {
+	root, err := sonic.GetFromString(str)
+	if err != nil {
+		slog.Warn("JSON转 SonicNode失败", "jsonStr", str, "err", err)
+		panic(nerror.NewRunTimeErrorWithError("JSON转 SonicNode失败", err))
+	}
+	return &NwNode{&root}
 }
 
 func SonicMap2NwNode(data map[string]any) (*NwNode, error) {
