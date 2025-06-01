@@ -33,7 +33,8 @@ func TestSqlFmt(t *testing.T) {
 	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='niexq' AND id=1 AND no=2`, sqlFmtStr)
 
-	sqlFmtStr, err = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), ntools.TimeStr2TimeByLayout("20250501", "20060102"))
+	str2Time, _ := ntools.TimeStr2TimeByLayout("20250501", "20060102")
+	sqlFmtStr, err = sqlext.SqlFmt(" WHERE name=? AND id=? AND no=? AND time>?", "niexq", 1, int64(2), str2Time)
 	ntools.TestErrPainic(t, "TestSqlFmt", err)
 	ntools.TestEq(t, "TestSqlFmt sqlext.SqlFmt", ` WHERE name='niexq' AND id=1 AND no=2 AND time>'2025-05-01 00:00:00'`, sqlFmtStr)
 
@@ -58,7 +59,7 @@ func TestInserSqlVals(t *testing.T) {
 
 	colsStr := "task_id,biz_code,task_status,ct_time"
 	slog.Info("ColStr:" + colsStr)
-	colTime := ntools.TimeStr2TimeByLayout("2025-05-01", "2006-01-02")
+	colTime, _ := ntools.TimeStr2TimeByLayout("2025-05-01", "2006-01-02")
 
 	strcVo := &TestVo{TaskId: "111", BizCode: sqlext.NewNullString(false, ""), CtTime: sqlext.NewNullTime(true, colTime)}
 
@@ -104,9 +105,9 @@ func TestNNullVo(t *testing.T) {
 		T01: sqlext.NewNullString(true, "1"),
 	}
 	ntools.TestEq(t, "TestNNullVo NullString 失败", `{"t01":"1","t02":null,"t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
-
+	str2Time, _ := ntools.TimeStr2TimeByLayout("2025-05-01", "2006-01-02")
 	testVo = &TestNullVo{
-		T02: sqlext.NewNullTime(true, ntools.TimeStr2TimeByLayout("2025-05-01", "2006-01-02")),
+		T02: sqlext.NewNullTime(true, str2Time),
 	}
 	ntools.TestEq(t, "TestNNullVo NullTime 失败", `{"t01":null,"t02":"2025-05-01 00:00:00","t03":null,"t04":null,"t05":null,"t06":null,"t07":null}`, njson.SonicObj2Str(testVo))
 

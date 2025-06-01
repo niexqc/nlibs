@@ -15,12 +15,3 @@ func StructCopy2New[T any](src any) (t *T, err error) {
 	err = copier.Copy(nt, src)
 	return nt, err
 }
-
-// 字段类型不匹配时，赋0值
-func StructCopy2NewPanicErr[T any](src any) *T {
-	nt, err := StructCopy2New[T](src)
-	if nil != err {
-		panic(err)
-	}
-	return nt
-}

@@ -109,7 +109,11 @@ func (ns *NullTime) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	ns.Valid = true
-	ns.Time = ntools.TimeStr2Time(valStr)
+	str2Time, err := ntools.TimeStr2Time(valStr)
+	if nil != err {
+		return err
+	}
+	ns.Time = str2Time
 	return nil
 }
 

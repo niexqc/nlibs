@@ -22,14 +22,14 @@ func Time2StrByLayout(ptime time.Time, layout string) string {
 	return ptime.Format(layout)
 }
 
-func TimeStr2Time(timeStr string) time.Time {
+func TimeStr2Time(timeStr string) (time.Time, error) {
 	return TimeStr2TimeByLayout(timeStr, "2006-01-02 15:04:05")
 }
 
-func TimeStr2TimeByLayout(timeStr, layout string) time.Time {
-	time, err := time.Parse(layout, timeStr)
+func TimeStr2TimeByLayout(timeStr, layout string) (time.Time, error) {
+	timeObj, err := time.Parse(layout, timeStr)
 	if err != nil {
-		panic(nerror.NewRunTimeErrorWithError("时间解析错误", err))
+		return time.Time{}, nerror.NewRunTimeErrorWithError("时间解析错误", err)
 	}
-	return time
+	return timeObj, nil
 }
