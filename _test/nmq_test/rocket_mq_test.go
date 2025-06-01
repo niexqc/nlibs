@@ -32,7 +32,9 @@ func TestNmqProducerAndConsumer(t *testing.T) {
 
 	onReciveMsg := func(ctx context.Context, msg *primitive.MessageExt) (consumer.ConsumeResult, error) {
 		slog.Info(string(msg.Body) + " tag:" + msg.GetTags() + " Type:" + msg.GetProperty("type"))
-		recv <- msg.MsgId
+		if msg.MsgId == msgId {
+			recv <- msg.MsgId
+		}
 		return consumer.ConsumeSuccess, nil
 	}
 	c01 := nmq.NewNMqConsumer(NameServer, Topic, "cc02", false)
