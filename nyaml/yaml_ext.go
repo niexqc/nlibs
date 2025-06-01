@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/maruel/natural"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 
 	"gopkg.in/yaml.v3"
@@ -22,31 +23,45 @@ const (
 
 var fileDirExt = ntools.GetFileDirExt()
 
-func LoadYamlConf[T any](confName string) *T {
+func LoadYamlConf[T any](confName string) (*T, error) {
 	t := new(T)
-	ReadYaml(t, confName)
-	WriteYaml(t, confName)
-	return t
+	err := ReadYaml(t, confName)
+	if nil != err {
+		return nil, err
+	}
+	err = WriteYaml(t, confName)
+	if nil != err {
+		return nil, err
+	}
+	return t, nil
 }
 
-func ReadYaml(t any, confFileName string) {
+func ReadYaml(t any, confFileName string) error {
 	fileByte, err := fileDirExt.ReadFileByte(confFileName)
 	if nil != err {
-		panic(err)
+		return err
 	}
 
 	err = yaml.Unmarshal(fileByte, t)
 	if nil != err {
-		panic(err)
+		return err
 	}
+	return nil
 }
 
-func WriteYaml(t any, confFileName string) {
+func WriteYaml(t any, confFileName string) error {
 	mrashData, err := Marshal(t)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fileDirExt.WriteFile(confFileName, &mrashData, false)
+	ok, err := fileDirExt.WriteFile(confFileName, &mrashData, false)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return nerror.NewRunTimeError("写入文件异常")
+	}
+	return nil
 }
 
 func Marshal(v any) ([]byte, error) {

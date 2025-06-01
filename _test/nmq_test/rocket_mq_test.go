@@ -18,10 +18,12 @@ func init() {
 
 func TestNmqProducerAndConsumer(t *testing.T) {
 	//如果测试未通过，先检查NameServer是否正确
-	var Topic = "t001"
+	var Topic = "t002"
 	var NameServer = "192.168.0.253:9876"
 
-	producer := nmq.NewNMqProduer(NameServer, Topic, "p01")
+	producer, err := nmq.NewNMqProduer(NameServer, Topic, "p01")
+	ntools.TestErrPainic(t, "NMqProduer 创建", err)
+
 	msgId, err := producer.SendOrderMsg("p01-test01"+ntools.Time2Str(time.Now()), "o", "tA", nmq.NMqProperty{Key: "type", Val: "AAA"})
 	ntools.TestErrPainic(t, "NMqProduer发送测试", err)
 	slog.Info("NMqProduer SendOrderMsg ", "msgId", msgId)

@@ -8,6 +8,7 @@ import (
 	"github.com/apache/rocketmq-client-go/v2/primitive"
 	"github.com/apache/rocketmq-client-go/v2/producer"
 	"github.com/apache/rocketmq-client-go/v2/rlog"
+	"github.com/niexqc/nlibs/nerror"
 )
 
 type NMqProduer struct {
@@ -22,7 +23,7 @@ type NMqProperty struct {
 	Val string
 }
 
-func NewNMqProduer(nameSvrAddr, topic, groupName string) *NMqProduer {
+func NewNMqProduer(nameSvrAddr, topic, groupName string) (*NMqProduer, error) {
 	rlog.SetLogLevel("warn")
 	myProducer, err := rocketmq.NewProducer(
 		producer.WithNameServer([]string{nameSvrAddr}), // NameServer地址
@@ -30,17 +31,13 @@ func NewNMqProduer(nameSvrAddr, topic, groupName string) *NMqProduer {
 		producer.WithGroupName(groupName),
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	if err := myProducer.Start(); err != nil {
-		panic("生产者启动失败: " + err.Error())
+		return nil, nerror.NewRunTimeErrorWithError("生产者启动失败", err)
 	}
-	slog.Info("生产者已启动")
-	return &NMqProduer{
-		GroupName: groupName,
-		Topic:     topic,
-		Producer:  myProducer,
-	}
+	slog.Debug("生产者已启动")
+	return &NMqProduer{GroupName: groupName, Topic: topic, Producer: myProducer}, nil
 }
 
 // 发送顺序消息，tag可以为空
