@@ -341,3 +341,13 @@ func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) (string, error) {
 	unPadData := PKCS5UnPadding([]byte(plaintext))
 	return string(unPadData), nil
 }
+
+func Sm4GenHexKey() string {
+	data := make([]byte, 16) // SM4 IV必须为16字节
+	rand.Read(data)
+	return hex.EncodeToString(data)
+}
+
+func Sm4GenHexIv() string {
+	return Sm4GenHexKey()
+}

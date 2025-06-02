@@ -183,3 +183,9 @@ func TestSm4EcbEnDn(t *testing.T) {
 	ntools.TestEq(t, "测试 Sm4EcbEnDn 加密解密", sourceStr, dndStr)
 
 }
+
+func TestSm4GenHexIv(t *testing.T) {
+	result := ndnen.Sm4GenHexIv()
+	slog.Info("TestSm4GenHexIv ", "iv", result)
+	ntools.TestEq(t, "TestSm4GenHexIv", 32, len(result))
+}
