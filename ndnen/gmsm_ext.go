@@ -258,6 +258,22 @@ func Sm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	return unpadded, err
 }
 
+func Sm4CbcDnBytes(key, iv string, entryedData []byte) ([]byte, error) {
+	if len(entryedData)%sm4.BlockSize != 0 {
+		return nil, nerror.NewRunTimeError("密文长度无效")
+	}
+	block, err := sm4.NewCipher([]byte(key))
+	if err != nil {
+		return nil, err
+	}
+	mode := cipher.NewCBCDecrypter(block, []byte(iv))
+	resultData := make([]byte, len(entryedData))
+	mode.CryptBlocks(resultData, []byte(entryedData))
+
+	unpadded, err := Pkcs7Unpad(resultData)
+	return unpadded, err
+}
+
 func innerSm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	if len(entryedData)%sm4.BlockSize != 0 {
 		return nil, nerror.NewRunTimeError("密文长度无效")
