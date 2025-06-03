@@ -5,10 +5,12 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/niexqc/nlibs"
 	"github.com/niexqc/nlibs/ndb/ngauss"
 	"github.com/niexqc/nlibs/ndb/sqlext"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
@@ -324,7 +326,7 @@ func TestNdbTx(t *testing.T) {
 	// time.Sleep(6 * time.Second)
 	txr, err := dbWrapper.NdbTxBgn(3)
 	ntools.TestErrPainic(t, "TestNdbTx", err)
-	defer txr.NdbTxCommit()
+	defer txr.NdbTxCommit(recover())
 
 	lasetId, _ := txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa2') RETURNING id", schameName, tableName))
 	if lasetId != 3 {
@@ -335,4 +337,55 @@ func TestNdbTx(t *testing.T) {
 		t.Error("InsertWithRowsAffected应该返回4")
 	}
 
+}
+
+func TestNdbTxTimeOut(t *testing.T) {
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(caussdbCreateTableStr)
+
+	rowCount, err := dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa1')", schameName, tableName))
+	slog.Info("写入数据", "rowCount", rowCount, "err", err)
+	ntools.SlogSetTraceId("TestNdbTxTimeOut")
+
+	txr, err := dbWrapper.NdbTxBgn(1)
+	ntools.TestErrPainic(t, "TestNdbTxTimeOut", err)
+	defer func() {
+		err := txr.NdbTxCommit(recover())
+		ntools.TestErrNotNil(t, "此时应该捕获到事务超时", err)
+		ntools.TestStrContains(t, "此时应该捕获到事务超时", "transaction has already been committed or rolled back", err.Error())
+		//SQL验证数据未被写入
+		count, _, _ := ngauss.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+		ntools.TestEq(t, "此时应该捕获到事务超时-数据未被写入", int64(1), *count)
+	}()
+
+	txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa2') RETURNING id", schameName, tableName))
+	time.Sleep(1200 * time.Millisecond)
+	txr.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(col_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
+
+}
+
+func TestNdbTxErrRollback(t *testing.T) {
+	dbWrapper, _ := ngauss.NewNGaussWrapper(gaussConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(caussdbCreateTableStr)
+
+	rowCount, err := dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa1')", schameName, tableName))
+	slog.Info("写入数据", "rowCount", rowCount, "err", err)
+	ntools.SlogSetTraceId("TestNdbTxErrRollback")
+
+	txr, err := dbWrapper.NdbTxBgn(30)
+	ntools.TestErrPainic(t, "TestNdbTxErrRollback", err)
+	defer func() {
+		// 执行提交的时候检查是否有异常， 如果有异常就直接回滚
+		err = txr.NdbTxCommit(recover())
+		ntools.TestErrPainic(t, "TestNdbTxErrRollback", err)
+		// //SQL验证数据未被写入
+		count, _, _ := ngauss.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+		ntools.TestEq(t, "此时应该捕获到事务超时-数据未被写入", int64(1), *count)
+	}()
+
+	txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa2') RETURNING id", schameName, tableName))
+	txr.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(col_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
+	panic(nerror.NewRunTimeError("主动回滚事务"))
 }

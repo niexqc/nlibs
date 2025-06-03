@@ -5,10 +5,12 @@ import (
 	"log/slog"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/niexqc/nlibs"
 	"github.com/niexqc/nlibs/ndb/nmysql"
 	"github.com/niexqc/nlibs/ndb/sqlext"
+	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
@@ -277,7 +279,7 @@ func TestNdbTx(t *testing.T) {
 	// time.Sleep(6 * time.Second)
 	txr, err := dbWrapper.NdbTxBgn(3)
 	ntools.TestErrPainic(t, "TestNdbTx", err)
-	defer txr.NdbTxCommit()
+	defer txr.NdbTxCommit(recover())
 
 	_, err = txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(3,'aaa1')", schameName, tableName))
 	ntools.TestErrPainic(t, "TestNdbTx", err)
@@ -285,4 +287,55 @@ func TestNdbTx(t *testing.T) {
 	_, err = txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(4,'aaa1')", schameName, tableName))
 	ntools.TestErrPainic(t, "TestNdbTx", err)
 
+}
+
+func TestNdbTxTimeOut(t *testing.T) {
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(1,'aaa1')", schameName, tableName))
+
+	ntools.SlogSetTraceId("TestNdbTxTimeOut")
+
+	txr, err := dbWrapper.NdbTxBgn(1)
+	ntools.TestErrPainic(t, "TestNdbTxTimeOut", err)
+	defer func() {
+		err := txr.NdbTxCommit(recover())
+		ntools.TestErrNotNil(t, "此时应该捕获到事务超时", err)
+		ntools.TestStrContains(t, "此时应该捕获到事务超时", "transaction has already been committed or rolled back", err.Error())
+		//SQL验证数据未被写入
+		count, _, _ := nmysql.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+		ntools.TestEq(t, "此时应该捕获到事务超时-数据未被写入", int64(1), *count)
+	}()
+
+	txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(2,'aaa2')", schameName, tableName))
+	time.Sleep(1200 * time.Millisecond)
+	txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(3,'aaa3')", schameName, tableName))
+
+}
+
+func TestNdbTxErrRollback(t *testing.T) {
+	dbWrapper, _ := nmysql.NewNMysqlWrapper(mysqlConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(mysqlCreateTableStr)
+
+	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(1,'aaa1')", schameName, tableName))
+
+	ntools.SlogSetTraceId("TestNdbTxErrRollback")
+
+	txr, err := dbWrapper.NdbTxBgn(30)
+	ntools.TestErrPainic(t, "TestNdbTxErrRollback", err)
+	defer func() {
+		// 执行提交的时候检查是否有异常， 如果有异常就直接回滚
+		err = txr.NdbTxCommit(recover())
+		ntools.TestErrPainic(t, "TestNdbTxErrRollback", err)
+		//SQL验证数据未被写入
+		count, _, _ := nmysql.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+		ntools.TestEq(t, "此时应该捕获到事务超时-数据未被写入", int64(1), *count)
+	}()
+
+	txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(2,'aaa2')", schameName, tableName))
+	txr.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(3,'aaa3')", schameName, tableName))
+	panic(nerror.NewRunTimeError("主动回滚事务"))
 }

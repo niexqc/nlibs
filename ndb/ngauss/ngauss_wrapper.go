@@ -339,13 +339,15 @@ func (ndbw *NGaussWrapper) NdbTxBgn(timeoutSecond int) (txWrper *NGaussWrapper, 
 	}
 }
 
-func (ndbw *NGaussWrapper) NdbTxCommit() error {
+// 错误回滚使用  defer txr.NdbTxCommit(recover())
+// 不捕获错误使用   txr.NdbTxCommit(nil)
+func (ndbw *NGaussWrapper) NdbTxCommit(recoveResult any) error {
 	ndbw.txMutx.Lock()
 	defer ndbw.txMutx.Unlock()
 	defer ndbw.sqlxTxContextCancelFunc()
 	// 执行提交的时候检查是否有异常， 如果有异常就直接回滚
-	if rerr := recover(); rerr != nil {
-		err := rerr.(error)
+	if recoveResult != nil {
+		err := recoveResult.(error)
 		slog.Error(fmt.Sprintf("提交事务前,捕获到异常【%v】,执行回滚", err))
 		ndbw.NdbTxRollBack(err)
 		return err
