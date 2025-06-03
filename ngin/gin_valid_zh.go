@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/locales/zh"
@@ -21,15 +22,16 @@ type NValider struct {
 }
 
 func NewNValider(tagJsonName, tagZhdescName string) *NValider {
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+	if validate, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		slog.Debug("InithZhTranslator")
 		// 创建中文翻译器
 		localZh := zh.New()
+		//
 		zhTrans, _ := ut.New(localZh, localZh).GetTranslator("zh")
 		// 注册中文翻译
-		zh_translations.RegisterDefaultTranslations(v, zhTrans)
+		zh_translations.RegisterDefaultTranslations(validate, zhTrans)
 		// 注册自定义字段名映射_通过tag[zhdesc]将中文字段标准出来
-		v.RegisterTagNameFunc(func(fld reflect.StructField) string {
+		validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 			tagJson := fld.Tag.Get(tagJsonName)
 			tagZhdesc := fld.Tag.Get(tagZhdescName)
 			if tagJson != "" && tagZhdesc != "" {
@@ -42,11 +44,32 @@ func NewNValider(tagJsonName, tagZhdescName string) *NValider {
 			return fld.Name
 		})
 		// 注册自定义类型
-		registerNullFunc(v)
+		registerNullFunc(validate)
 
-		return &NValider{Validate: v, ZhTrans: zhTrans}
+		// 覆盖所有数值规则的翻译逻辑：移除千位分隔符
+		registerCustomFormat(validate, zhTrans)
+
+		return &NValider{Validate: validate, ZhTrans: zhTrans}
 	} else {
 		panic(nerror.NewRunTimeError("检查binding.Validator.Engine()是否是*validator.Validate"))
+	}
+
+}
+func registerCustomFormat(validate *validator.Validate, trans ut.Translator) {
+	// 覆盖所有数值规则的翻译逻辑
+	numberTagMap := map[string]string{
+		"min": "大于等于", "max": "小于等于", "gte": "大于等于", "lte": "小于等于", "eq": "等于", "ne": "不等于", "gt": "大于", "lt": "小于",
+	}
+	// numericTags := []string{"min", "max", "gte", "lte", "eq", "ne", "gt", "lt"}
+	for tag, tip := range numberTagMap {
+		_ = validate.RegisterTranslation(tag, trans, func(ut ut.Translator) error {
+			return ut.Add(tag, fmt.Sprintf("{0}必须满足条件,%s[{1}]", tip), true) // 保持原始模板
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			// 关键：移除参数中的千位分隔符
+			param := strings.ReplaceAll(fe.Param(), ",", "")
+			t, _ := ut.T(tag, fe.Field(), param)
+			return t
+		})
 	}
 
 }
