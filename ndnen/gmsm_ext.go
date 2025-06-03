@@ -223,6 +223,12 @@ func Sm4CbcEnBytes(key, iv string, data []byte) ([]byte, error) {
 	return innerSm4CbcEnData(key, iv, pkcs7PadData)
 }
 
+func Sm4CbcEnBytesByHexKey(hexkey, hexIv string, data []byte) ([]byte, error) {
+	key, _ := hex.DecodeString(hexkey)
+	iv, _ := hex.DecodeString(hexIv)
+	return Sm4CbcEnBytes(string(key), string(iv), data)
+}
+
 func Sm4CbcEnDataWithPkcs5(key, iv, plaintext string) ([]byte, error) {
 	// PKCS5Padding 明文填充
 	PKCS5PaddingPadData := PKCS5Padding([]byte(plaintext))
@@ -256,6 +262,12 @@ func Sm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	}
 	unpadded, err := Pkcs7Unpad(resultData)
 	return unpadded, err
+}
+
+func Sm4CbcDnBytesByHexKey(hexKey, hexIv string, entryedData []byte) ([]byte, error) {
+	key, _ := hex.DecodeString(hexKey)
+	iv, _ := hex.DecodeString(hexIv)
+	return Sm4CbcDnBytes(string(key), string(iv), entryedData)
 }
 
 func Sm4CbcDnBytes(key, iv string, entryedData []byte) ([]byte, error) {
