@@ -39,6 +39,12 @@ func Str2Obj[T any, STR string | *string](str STR) (*T, error) {
 	return t, err
 }
 
+func Bytes2Obj[T any](bytes []byte) (*T, error) {
+	t := new(T)
+	err := sonic.Unmarshal(bytes, t)
+	return t, err
+}
+
 func Str2ObjArr[T any, STR string | *string](str STR) (*[]T, error) {
 	tarr := new([]T)
 	acStr := ""
