@@ -1,6 +1,7 @@
 package ntools
 
 import (
+	"crypto/tls"
 	"net/http"
 	"sync"
 	"time"
@@ -22,6 +23,7 @@ func NewNHttpClientPool(maxConcurrent, maxIdleConns int, httpTimeout, idleConnTi
 					MaxIdleConns:    maxIdleConns,
 					MaxConnsPerHost: maxConcurrent,
 					IdleConnTimeout: idleConnTimeout,
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //全国平台的自签证书，没法儿认证
 				},
 			}
 		},

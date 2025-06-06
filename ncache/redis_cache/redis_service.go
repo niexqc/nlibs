@@ -206,3 +206,10 @@ func (service *RedisService) Consumer(queueKey string, msgch chan string) {
 		}
 	}
 }
+
+func (service *RedisService) NewMutex(k, v string, expiry, tries, delay int) *RedisMutex {
+	op1 := RedisMutexSetExpiry(time.Duration(expiry) * time.Second)
+	op2 := RedisMutexSetDelay(time.Duration(delay) * time.Millisecond)
+	op3 := RedisMutexSetTries(tries)
+	return RedisNewMutex(k, v, service, op1, op2, op3)
+}
