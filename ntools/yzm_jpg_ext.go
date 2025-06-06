@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image/color"
-	"image/color/palette"
 	"image/jpeg"
 	"log/slog"
 
@@ -22,10 +21,13 @@ func YzmJpgGenCode(w, h, yzmLen int) (txt string, imgBytes []byte) {
 		options.CharPreset = "1234567890"
 		options.CurveNumber = 4
 		options.TextLength = yzmLen
-		options.FontDPI = 72.0
+		options.FontDPI = float64(float64(w) * float64(0.99))
 		options.FontScale = 1.0
-		options.Noise = 1.0
-		options.Palette = palette.WebSafe
+		options.Noise = 0.01
+
+		options.Palette = []color.Color{
+			color.RGBA{0x00, 0x00, 0x00, 0xFF},
+		}
 	})
 
 	buffer := bytes.NewBuffer(nil)
