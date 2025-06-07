@@ -349,7 +349,8 @@ func (ndbw *NGaussWrapper) NdbTxCommit(recoveResult any) error {
 	if recoveResult != nil {
 		err := recoveResult.(error)
 		slog.Error(fmt.Sprintf("提交事务前,捕获到异常【%v】,执行回滚", err))
-		ndbw.NdbTxRollBack(err)
+		// 回滚事务
+		ndbw.sqlxTx.Rollback()
 		return err
 	}
 	// 提交时原子检查状态
