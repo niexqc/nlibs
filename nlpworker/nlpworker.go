@@ -133,7 +133,7 @@ func (wrk *nlpWorker[T]) Start() {
 	slog.Debug("NewNlpWorker start working", "grpWrkName", wrk.grpWrkName)
 	taskRunCount := 0
 	for {
-		if taskRunCount > wrk.workGroup.maxGrpWorkDoTaskNum {
+		if taskRunCount >= wrk.workGroup.maxGrpWorkDoTaskNum {
 			slog.Debug("NewNlpWorker dotask times over,giveup wait next run ", "maxGrpWorkDoTaskNum", wrk.workGroup.maxGrpWorkDoTaskNum)
 			break
 		}

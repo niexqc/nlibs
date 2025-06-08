@@ -20,19 +20,20 @@ type NullInt struct{ sql.NullInt32 }
 type NullInt64 struct{ sql.NullInt64 }
 type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
+type NullDecimal struct{ decimal.NullDecimal }
 
 // decimal.NullDecimal
 
-func NewNullDecimal(valid bool, str string) decimal.NullDecimal {
+func NewNullDecimal(valid bool, str string) NullDecimal {
 	if !valid {
-		return decimal.NullDecimal{Valid: false, Decimal: decimal.Zero}
+		return NullDecimal{decimal.NullDecimal{Valid: false, Decimal: decimal.Zero}}
 	}
 	d, err := decimal.NewFromString(str)
 	if nil != err {
 		slog.Warn("字符串不能转为decimal", "str", str, "err", err)
 		panic(nerror.NewRunTimeErrorFmt("字符串[%s]不能转为decimal", str))
 	}
-	return decimal.NewNullDecimal(d)
+	return NullDecimal{decimal.NewNullDecimal(d)}
 }
 
 func NewNullString(valid bool, str string) NullString {
@@ -238,4 +239,25 @@ func (ns *NullBool) UnmarshalJSON(data []byte) error {
 	ns.Valid = true
 	ns.Bool = cv
 	return nil
+}
+
+func (ns NullDecimal) MarshalJSON() ([]byte, error) {
+	if !ns.Valid {
+		return []byte("null"), nil // 输出为 JSON 的 null
+	}
+	return ns.NullDecimal.MarshalJSON()
+}
+
+func (ns *NullDecimal) UnmarshalJSON(data []byte) error {
+	if len(data) <= 0 {
+		ns.Valid = false
+		return nil
+	}
+	valStr := valueStrTrim(data)
+	if strings.ToLower(valStr) == "null" || valStr == "" {
+		ns.Valid = false
+		return nil
+	}
+	ns.Valid = true
+	return ns.NullDecimal.UnmarshalJSON(data)
 }
