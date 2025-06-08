@@ -18,13 +18,13 @@ type NlpWorkGroup[T any] struct {
 	nextTimeout         int64 //空数据时候，下次执行的时间,秒
 	waitNotifyer        chan struct{}
 	workPool            *ants.Pool
-	findGrpFun          func(maxResult int) []string //获取分组
-	nextTaskFun         func(grpName string) *T      // 获取分组任务
-	taskDoFun           func(task *T)                //执行任务
+	findGrpFun          func(maxResult int) []string               //获取分组
+	nextTaskFun         func(grpName string, childRunCount int) *T // 获取分组任务
+	taskDoFun           func(task *T, childRunCount int)           //执行任务
 }
 
 func NewNlpWorkGroup[T any](workGroupName string, maxGrpNum, maxGrpWorkDoTaskNum int, nextTimeout int64,
-	findGrpFun func(maxResult int) []string, nextTaskFun func(grpName string) *T, taskDoFun func(task *T),
+	findGrpFun func(maxResult int) []string, nextTaskFun func(grpName string, childRunCount int) *T, taskDoFun func(task *T, childRunCount int),
 ) *NlpWorkGroup[T] {
 	// 不需要关心ants.NewPool返回的err
 	// 必须使用ants.WithNonblocking(false)的阻塞提交模式,保证任务的顺序执行
@@ -134,14 +134,14 @@ func (wrk *nlpWorker[T]) Start() {
 	taskRunCount := 0
 	for {
 		if taskRunCount > wrk.workGroup.maxGrpWorkDoTaskNum {
-			slog.Warn("NewNlpWorker dotask times over,giveup wait next run ", "maxGrpWorkDoTaskNum", wrk.workGroup.maxGrpWorkDoTaskNum)
+			slog.Debug("NewNlpWorker dotask times over,giveup wait next run ", "maxGrpWorkDoTaskNum", wrk.workGroup.maxGrpWorkDoTaskNum)
 			break
 		}
 		ntools.SlogSetTraceId("GRPN_" + wrk.grpWrkName)
 		// 这里需要读取任务直到所有任务完成--
-		task := wrk.workGroup.nextTaskFun(wrk.grpWrkName)
+		task := wrk.workGroup.nextTaskFun(wrk.grpWrkName, taskRunCount)
 		if task != nil {
-			wrk.workGroup.taskDoFun(task)
+			wrk.workGroup.taskDoFun(task, taskRunCount)
 		} else {
 			break
 		}
