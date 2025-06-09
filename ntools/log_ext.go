@@ -38,9 +38,9 @@ func SlogGetTraceId() string {
 
 // printMethod int 方法打印 0-不打印 ，1-详情,2-仅方法名称
 // outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
-func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
+func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slogLevel := SlogLevelStr2Level(confLevel)
-	logWriter, err := NewDailyRotatingLogger("logs", logFilePrefix, 10240, 200*time.Millisecond)
+	logWriter, err := NewDailyRotatingLogger(logDir, logFilePrefix, 10240, 200*time.Millisecond)
 	if nil != err {
 		panic(err)
 	}
@@ -48,6 +48,12 @@ func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slogger := slog.New(nwLogHandler)
 	slog.SetDefault(slogger)
 	slog.Info(fmt.Sprintf("SLog Level:%v", confLevel))
+}
+
+// printMethod int 方法打印 0-不打印 ，1-详情,2-仅方法名称
+// outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
+func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
+	SlogConfWithDir("logs", logFilePrefix, confLevel, outMode, printMethod)
 }
 
 func SlogConf4Test() {
