@@ -9,9 +9,9 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/niexqc/nlibs"
+
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
-	"github.com/shopspring/decimal"
 )
 
 var SqlParamArgsRegexp = regexp.MustCompile(`\?`)
@@ -151,14 +151,13 @@ func sqlFmtNNullTypeResult(arg any, rt reflect.Type) (bool, string) {
 		} else {
 			return true, "NULL"
 		}
-	} else if rt == reflect.TypeOf(decimal.NullDecimal{}) {
-		nullv := arg.(decimal.NullDecimal)
+	} else if rt == reflect.TypeOf(NullDecimal{}) {
+		nullv := arg.(NullDecimal)
 		if nullv.Valid {
 			return true, fmt.Sprintf("%v", nullv.Decimal)
 		} else {
 			return true, "NULL"
 		}
 	}
-
 	return false, ""
 }

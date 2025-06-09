@@ -89,7 +89,7 @@ func gaussDbUdtNameToGoType(gaussUdtName string, allowNull bool) (reflect.Type, 
 		case "float4", "float8":
 			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00))), nil
 		case "numeric":
-			return ntools.If3(allowNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{})), nil
+			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullDecimal{}), reflect.TypeOf(decimal.Decimal{})), nil
 		default:
 			return nil, nerror.NewRunTimeError(fmt.Sprintf("GaussDb字段【%s】还没有做具体解析,需要对应处理", gaussUdtName))
 		}

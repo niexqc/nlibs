@@ -74,7 +74,7 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) (reflect.Type, error) {
 		case "DOUBLE", "FLOAT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullFloat64{}), reflect.TypeOf(float64(0.00))), nil
 		case "DECIMAL":
-			return ntools.If3(isNull, reflect.TypeOf(decimal.NullDecimal{}), reflect.TypeOf(decimal.Decimal{})), nil
+			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullDecimal{}), reflect.TypeOf(decimal.Decimal{})), nil
 		default:
 			return nil, nerror.NewRunTimeError(fmt.Sprintf("Mysql字段【%s】还没有做具体解析,需要对应处理", mtype))
 		}

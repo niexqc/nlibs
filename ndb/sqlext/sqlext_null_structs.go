@@ -22,7 +22,6 @@ type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
 type NullDecimal struct{ decimal.NullDecimal }
 
-// decimal.NullDecimal
 
 func NewNullDecimal(valid bool, str string) NullDecimal {
 	if !valid {
