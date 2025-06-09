@@ -32,7 +32,7 @@ func LoggerHandlerFunc(showReqBody bool) gin.HandlerFunc {
 		start := time.Now()
 		nGinPrintReqLog(ctx, showReqBody)
 		ctx.Next()
-		slog.Info(fmt.Sprintf("Resp:%s\t%v\t%dms", ctx.Request.RequestURI, ctx.Writer.Status(), time.Since(start).Milliseconds()))
+		slog.Debug(fmt.Sprintf("Resp:%s\t%v\t%dms", ctx.Request.RequestURI, ctx.Writer.Status(), time.Since(start).Milliseconds()))
 	}
 }
 
@@ -49,7 +49,7 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 	agentStr = ntools.If3(agentStr == "", "Nil_UnSetUserAgent", agentStr)
 
 	logStr := fmt.Sprintf("Req:%s\t%s\t%s\t%s\t%s\t%s\t%s", visitTar, rawQuery, reqMethod, contentType, visitSrc, clientIp, agentStr)
-	slog.Info(logStr)
+	slog.Debug(logStr)
 	// 打印原始请求参数
 	if showReqBody {
 		reqBodyStr := ""
@@ -58,7 +58,7 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 		} else {
 			reqBodyStr = "Nil_ParseBody"
 		}
-		slog.Info(fmt.Sprintf("ReqBody:%s", reqBodyStr))
+		slog.Debug(fmt.Sprintf("ReqBody:%s", reqBodyStr))
 	}
 }
 
