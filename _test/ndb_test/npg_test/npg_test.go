@@ -275,6 +275,7 @@ func TestSqlInNotExist(t *testing.T) {
 	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(fmt.Sprintf("%s.%s", schameName, tableName), "id", ids)
 	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
 
+	//类型问题， 测试没通过
 	notExistIdds, err := npg.SelectList[int64](dbWrapper, sqlStr, nlibs.Arr2ArrAny(allArgs)...)
 	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
 
