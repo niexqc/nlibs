@@ -272,7 +272,7 @@ func TestSqlInNotExist(t *testing.T) {
 	dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa4')", schameName, tableName))
 
 	ids := []int64{1, 2, 6, 7}
-	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(fmt.Sprintf("%s.%s", schameName, tableName), "id", ids)
+	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(2, fmt.Sprintf("%s.%s", schameName, tableName), "id", ids)
 	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
 
 	//类型问题， 测试没通过

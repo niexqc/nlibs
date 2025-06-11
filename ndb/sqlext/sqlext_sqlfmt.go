@@ -40,9 +40,13 @@ func SqlFmt(sqlStr string, args ...any) (string, error) {
 
 // 使用In查询返回没有记录的 参数
 // 例如,数据库中存在1,2,3两条记录,如果参数传入[1,5,6],则结果为[5,6]
-func SqlFmtSqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T) (sqlStr string, allArgs []T, err error) {
+// DBTYPE 1=mysql,2=pgsql
+func SqlFmtSqlInNotExist[T string | int64 | int](dbType int, tableName, dbFieldName string, args []T) (sqlStr string, allArgs []T, err error) {
 	if len(args) < 1 {
 		return sqlStr, allArgs, nerror.NewRunTimeError("参数个数必须大于0")
+	}
+	if dbType > 2 {
+		return sqlStr, allArgs, nerror.NewRunTimeError("目前仅支持mysql=1和pgsql=2")
 	}
 
 	sqlStr = `SELECT t1.%s 
@@ -58,7 +62,17 @@ WHERE t2.%s IS NULL ORDER BY t1.%s ASC`
 		if idx > 0 {
 			t1SqlStr += " UNION ALL "
 		}
-		t1SqlStr += fmt.Sprintf(" SELECT ? AS %s", dbFieldName)
+		if dbType == 1 {
+			t1SqlStr += fmt.Sprintf(" SELECT ? AS %s", dbFieldName)
+		} else if dbType == 2 {
+			if reflect.TypeOf(*new(T)) == reflect.TypeOf("") {
+				t1SqlStr += fmt.Sprintf(" SELECT ?::text AS %s", dbFieldName)
+			} else if reflect.TypeOf(*new(T)) == reflect.TypeOf(int64(1)) {
+				t1SqlStr += fmt.Sprintf(" SELECT ?::int8 AS %s", dbFieldName)
+			} else {
+				t1SqlStr += fmt.Sprintf(" SELECT ?::int4 AS %s", dbFieldName)
+			}
+		}
 	}
 
 	t2SqlStr := fmt.Sprintf(" SELECT %s FROM  %s WHERE %s IN (?)", dbFieldName, tableName, dbFieldName)

@@ -227,7 +227,7 @@ func TestSqlInNotExist(t *testing.T) {
 	dbWrapper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(id,t03_varchar) VALUES(4,'aaa1')", schameName, tableName))
 
 	ids := []int64{1, 2, 6, 7}
-	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(fmt.Sprintf("%s.%s", schameName, tableName), "id", ids)
+	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(1, fmt.Sprintf("%s.%s", schameName, tableName), "id", ids)
 	ntools.TestErrPainic(t, "TestSqlInNotExist ", err)
 
 	notExistIdds, err := nmysql.SelectList[int64](dbWrapper, sqlStr, nlibs.Arr2ArrAny(allArgs)...)
