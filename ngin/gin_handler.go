@@ -18,7 +18,6 @@ import (
 	mencache "github.com/niexqc/nlibs/ncache/mem_cache"
 	rediscache "github.com/niexqc/nlibs/ncache/redis_cache"
 	"github.com/niexqc/nlibs/nerror"
-	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 
 	"github.com/gin-gonic/gin"
@@ -32,7 +31,7 @@ func LoggerHandlerFunc(showReqBody bool) gin.HandlerFunc {
 		start := time.Now()
 		nGinPrintReqLog(ctx, showReqBody)
 		ctx.Next()
-		slog.Debug(fmt.Sprintf("Resp:%s\t%v\t%dms", ctx.Request.RequestURI, ctx.Writer.Status(), time.Since(start).Milliseconds()))
+		slog.Info(fmt.Sprintf("Resp:%s\t%v\t%dms", ctx.Request.RequestURI, ctx.Writer.Status(), time.Since(start).Milliseconds()))
 	}
 }
 
@@ -58,7 +57,7 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 		} else {
 			reqBodyStr = "Nil_ParseBody"
 		}
-		slog.Debug(fmt.Sprintf("ReqBody:%s", reqBodyStr))
+		slog.Info(fmt.Sprintf("Url:%s ReqBody:%s", headerVo.VisitTar, reqBodyStr))
 	}
 }
 
@@ -156,7 +155,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
 		heaerVo.UserIp = ctx.ClientIP()
 		heaerVo.VisitTar = ctx.Request.RequestURI
-		slog.Debug("Headers:", "json", njson.Obj2StrWithPanicError(heaerVo))
+		// slog.Debug("Headers:", "json", njson.Obj2StrWithPanicError(heaerVo))
 		ctx.Set(reflect.TypeOf(heaerVo).Name(), &heaerVo)
 		ctx.Next()
 	}
