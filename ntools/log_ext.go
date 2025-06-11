@@ -25,7 +25,7 @@ type NwLogHandler struct {
 	Level      slog.Leveler
 	PrintMehod int // 0-不打印 ，1-详情,2-仅方法名称
 	OutMode    int // 0-不打印,1-控制台,2-文件,3-都打印
-	out        io.Writer
+	fileWriter io.Writer
 }
 
 func SlogSetTraceId(traceId string) {
@@ -40,11 +40,16 @@ func SlogGetTraceId() string {
 // outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
 func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, printMethod int) {
 	slogLevel := SlogLevelStr2Level(confLevel)
-	logWriter, err := NewDailyRotatingLogger(logDir, logFilePrefix, 10240, 200*time.Millisecond)
-	if nil != err {
-		panic(err)
+	var nwLogHandler *NwLogHandler
+	if outMode == 3 || outMode == 2 {
+		fileWriter, err := NewDailyRotatingLogger(logDir, logFilePrefix, 10240, 200*time.Millisecond)
+		if nil != err {
+			panic(err)
+		}
+		nwLogHandler = NewNwLogHandlerForSlog(fileWriter, slogLevel, outMode, printMethod)
+	} else {
+		nwLogHandler = NewNwLogHandlerForSlog(nil, slogLevel, outMode, printMethod)
 	}
-	nwLogHandler := NewNwLogHandlerForSlog(logWriter, slogLevel, outMode, printMethod)
 	slogger := slog.New(nwLogHandler)
 	slog.SetDefault(slogger)
 	slog.Info(fmt.Sprintf("SLog Level:%v", confLevel))
@@ -75,8 +80,8 @@ func SlogLevelStr2Level(confLevel string) slog.Level {
 	return slogLevel
 }
 
-func NewNwLogHandlerForSlog(out io.Writer, level slog.Leveler, outMode int, printMethod int) *NwLogHandler {
-	h := &NwLogHandler{Level: level, out: out, OutMode: outMode, PrintMehod: printMethod}
+func NewNwLogHandlerForSlog(fileWriter io.Writer, level slog.Leveler, outMode int, printMethod int) *NwLogHandler {
+	h := &NwLogHandler{Level: level, fileWriter: fileWriter, OutMode: outMode, PrintMehod: printMethod}
 	return h
 }
 
@@ -124,10 +129,10 @@ func (h *NwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 	if h.OutMode == 1 {
 		os.Stdout.Write(printData)
 	} else if h.OutMode == 2 {
-		_, err = h.out.Write(printData)
+		_, err = h.fileWriter.Write(printData)
 	} else {
 		os.Stdout.Write(printData)
-		_, err = h.out.Write(printData)
+		_, err = h.fileWriter.Write(printData)
 	}
 	return err
 }
