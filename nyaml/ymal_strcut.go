@@ -38,7 +38,7 @@ type YamlConfMysqlDb struct {
 	MaxIdleConns    int    `yaml:"maxIdleConns" hc:"MaxIdleConns"`
 }
 
-type YamlConfGaussDb struct {
+type YamlConfPgDb struct {
 	DbHost          string `yaml:"dbHost" hc:"dbHost"`
 	DbPort          int64  `yaml:"dbPort" hc:"dbPort"`
 	DbUser          string `yaml:"dbUser" hc:"dbUser"`

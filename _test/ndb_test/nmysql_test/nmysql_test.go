@@ -329,7 +329,7 @@ func TestNdbTxErrRollback(t *testing.T) {
 	defer func() {
 		// 执行提交的时候检查是否有异常， 如果有异常就直接回滚
 		err = txr.NdbTxCommit(recover())
-		ntools.TestErrPainic(t, "TestNdbTxErrRollback", err)
+		ntools.TestErrNotNil(t, "TestNdbTxErrRollback", err)
 		//SQL验证数据未被写入
 		count, _, _ := nmysql.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
 		ntools.TestEq(t, "此时应该捕获到事务超时-数据未被写入", int64(1), *count)
