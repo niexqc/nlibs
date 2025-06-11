@@ -89,8 +89,8 @@ func TestGenStruct(t *testing.T) {
 	if !strings.Contains(str, "T04Text sqlext.NullString") {
 		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T04Text sqlext.NullString")
 	}
-	if !strings.Contains(str, "T06Decimal decimal.NullDecimal") {
-		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T06Decimal decimal.NullDecimal")
+	if !strings.Contains(str, "T06Decimal sqlext.NullDecimal") {
+		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T06Decimal sqlext.NullDecimal")
 	}
 	if !strings.Contains(str, "T08Double sqlext.NullFloat64") {
 		t.Errorf("TestGenStruct 生成的结果中，没有包含:%s", "T08Double sqlext.NullFloat64")

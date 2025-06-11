@@ -45,7 +45,7 @@ func SqlFmtSqlInNotExist[T NdbBasicType](tableName, dbFieldName string, args []T
 		return sqlStr, allArgs, nerror.NewRunTimeError("参数个数必须大于0")
 	}
 
-	sqlStr = `SELECT t1.%s
+	sqlStr = `SELECT t1.%s 
 FROM (%s) t1 
 LEFT JOIN (%s) t2 ON t1.%s=t2.%s 
 WHERE t2.%s IS NULL ORDER BY t1.%s ASC`

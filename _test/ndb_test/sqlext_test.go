@@ -80,10 +80,10 @@ func TestSqlFmtSqlInNotExist(t *testing.T) {
 
 	ntools.TestErrPainic(t, "TestSqlFmtSqlInNotExist", err)
 
-	ntools.TestEq(t, "通过sqlext.SqlFmtSqlInNotExist 获取SQL失败", `SELECT t1.id
-        FROM ( SELECT ? AS id UNION ALL  SELECT ? AS id UNION ALL  SELECT ? AS id UNION ALL  SELECT ? AS id) t1 
-        LEFT JOIN ( SELECT id FROM  test01 WHERE id IN (?, ?, ?, ?)) t2 ON t1.id=t2.id 
-        WHERE t2.id IS NULL ORDER BY t1.id ASC`, sqlStr)
+	ntools.TestEq(t, "通过sqlext.SqlFmtSqlInNotExist 获取SQL失败", `SELECT t1.id 
+FROM ( SELECT ? AS id UNION ALL  SELECT ? AS id UNION ALL  SELECT ? AS id UNION ALL  SELECT ? AS id) t1 
+LEFT JOIN ( SELECT id FROM  test01 WHERE id IN (?, ?, ?, ?)) t2 ON t1.id=t2.id 
+WHERE t2.id IS NULL ORDER BY t1.id ASC`, sqlStr)
 
 	ntools.TestEq(t, "通过sqlext.SqlFmtSqlInNotExist 获取值列表失败", "[1,2,6,7,1,2,6,7]", njson.Obj2StrWithPanicError(allArgs))
 }
