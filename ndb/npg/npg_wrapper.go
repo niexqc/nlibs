@@ -81,7 +81,7 @@ func SelectList[T any](ndbw *NPgWrapper, sqlStr string, args ...any) (tlist []*T
 // SqlLimitStr
 // pageNo 页码从1开始
 func (ndbw *NPgWrapper) SqlLimitStr(pageNo, pageSize int) string {
-	result, _ := ndb.SqlFmt(" LIMIT ?,? ", (pageNo-1)*pageSize, pageSize)
+	result, _ := ndb.SqlFmt(" LIMIT ? OFFSET ? ", pageSize, (pageNo-1)*pageSize)
 	return result
 }
 
