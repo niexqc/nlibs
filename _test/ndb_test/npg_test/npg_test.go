@@ -33,6 +33,13 @@ func init() {
 		DbPwd:  "Wts_2025",
 		DbName: "test",
 	}
+	// pgConf = &nyaml.YamlConfPgDb{
+	// 	DbHost: "8.137.54.220",
+	// 	DbPort: 15432,
+	// 	DbUser: "niexq",
+	// 	DbPwd:  "niexq",
+	// 	DbName: "ndb_test",
+	// }
 	sqlPrintConf = &nyaml.YamlConfSqlPrint{
 		DbSqlLogPrint:    true,
 		DbSqlLogLevel:    "debug",
