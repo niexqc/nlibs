@@ -40,13 +40,17 @@ type NPgWrapper struct {
 }
 
 func NewNPgWrapper(conf *nyaml.YamlConfPgDb, sqlPrintConf *nyaml.YamlConfSqlPrint) (*NPgWrapper, error) {
-	connStr := "host=%s port=%d user=%s password=%s dbname=%s sslmode=disable "
-	connStr = fmt.Sprintf(connStr, conf.DbHost, conf.DbPort, conf.DbUser, conf.DbPwd, conf.DbName)
+	connStr := `host=%s port=%d user=%s password=%s dbname=%s sslmode=%s sslrootcert=%s  sslkey=%s  sslcert=%s`
+
+	connStr = fmt.Sprintf(connStr, conf.DbHost, conf.DbPort, conf.DbUser, conf.DbPwd, conf.DbName,
+		conf.SslMode, conf.CertCa, conf.CertClientKey, conf.CertClientCa)
 	slog.Debug(connStr)
+
 	db, err := sqlx.Open("postgres", connStr)
 	if err != nil {
 		return nil, nerror.NewRunTimeErrorWithError("连接到Pg失败", err)
 	}
+
 	db.SetConnMaxLifetime(time.Second * time.Duration(conf.ConnMaxLifetime))
 	db.SetMaxOpenConns(conf.MaxOpenConns)
 	db.SetMaxIdleConns(conf.MaxIdleConns)

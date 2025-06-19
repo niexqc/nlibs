@@ -47,6 +47,10 @@ type YamlConfPgDb struct {
 	ConnMaxLifetime int    `yaml:"connMaxLifetime" hc:"连接最大时长-秒"`
 	MaxOpenConns    int    `yaml:"maxOpenConns" hc:"MaxOpenConns"`
 	MaxIdleConns    int    `yaml:"maxIdleConns" hc:"MaxIdleConns"`
+	SslMode         string `yaml:"sslMode" hc:"SSL模式,disable|require|verify-ca|verify-full,自签证书使用verify-ca"`
+	CertCa          string `yaml:"certCa" hc:"根证书文件"`
+	CertClientKey   string `yaml:"certClientKey" hc:"客户端私钥文件"`
+	CertClientCa    string `yaml:"certClientCa" hc:"客户端证书文件"`
 }
 
 type YamlConfEndnKey struct {
