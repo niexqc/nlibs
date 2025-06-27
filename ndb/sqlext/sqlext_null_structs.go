@@ -22,7 +22,6 @@ type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
 type NullDecimal struct{ decimal.NullDecimal }
 
-
 func NewNullDecimal(valid bool, str string) NullDecimal {
 	if !valid {
 		return NullDecimal{decimal.NullDecimal{Valid: false, Decimal: decimal.Zero}}
@@ -123,13 +122,26 @@ func (ns *NullTime) UnmarshalJSON(data []byte) error {
 		ns.Valid = false
 		return nil
 	}
-	ns.Valid = true
-	str2Time, err := ntools.TimeStr2Time(valStr)
-	if nil != err {
-		return err
+	valStr = strings.TrimSpace(valStr)
+	if len(valStr) == 10 {
+		str2Time, err := ntools.TimeStr2TimeByLayout(valStr, "2006-01-02")
+		if nil != err {
+			return err
+		}
+		ns.Valid = true
+		ns.Time = str2Time
+		return nil
 	}
-	ns.Time = str2Time
-	return nil
+	if len(valStr) == 19 {
+		str2Time, err := ntools.TimeStr2TimeByLayout(valStr, "2006-01-02 15:04:05")
+		if nil != err {
+			return err
+		}
+		ns.Valid = true
+		ns.Time = str2Time
+		return nil
+	}
+	return nerror.NewRunTimeErrorFmt("【%s】格式不是yyyy-MM-dd或yyyy-MM-dd HH:mm:ss", valStr)
 }
 
 func (ns NullInt) MarshalJSON() ([]byte, error) {
