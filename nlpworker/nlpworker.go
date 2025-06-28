@@ -69,7 +69,7 @@ func (nlp *NlpWorkGroup[T]) printNlpWorkGroupStatus() {
 	defer ticker.Stop()
 	ntools.SlogSetTraceId("printNlpWorkGroupStatus")
 	for range ticker.C {
-		slog.Info("NlpWorkGroup Status", " workGroupName", nlp.workGroupName, " maxGrpNum", nlp.maxGrpNum, " maxGrpWorkDoTaskNum", nlp.maxGrpWorkDoTaskNum, " RuningGrpWorker", nlp.workPool.Running())
+		slog.Debug("NlpWorkGroup Status", " workGroupName", nlp.workGroupName, " maxGrpNum", nlp.maxGrpNum, " maxGrpWorkDoTaskNum", nlp.maxGrpWorkDoTaskNum, " RuningGrpWorker", nlp.workPool.Running())
 	}
 }
 
