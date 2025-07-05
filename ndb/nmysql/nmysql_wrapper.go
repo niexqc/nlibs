@@ -2,6 +2,7 @@ package nmysql
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/go-sql-driver/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/niexqc/nlibs/ndb"
@@ -41,7 +43,25 @@ type NMysqlWrapper struct {
 func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfSqlPrint) (*NMysqlWrapper, error) {
 	//开始连接数据库
 	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
-	mysqlUrl = mysqlUrl + fmt.Sprintf("?loc=Local&parseTime=true&charset=utf8mb4&tls=%t", conf.UseSsl)
+	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
+	if conf.UseSsl {
+		tlsConfig := &tls.Config{
+			MinVersion:         tls.VersionTLS12, //最低1.2
+			InsecureSkipVerify: true,             // 跳过验证（与skip-verify行为一致）
+			CipherSuites: []uint16{
+				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // 现代浏览器支持
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			},
+		}
+		mysql.RegisterTLSConfig("nssl", tlsConfig)
+		mysqlUrl += "&tls=nssl"
+	}
 	slog.Debug(mysqlUrl)
 	db, err := sqlx.Open("mysql", mysqlUrl)
 	if err != nil {
