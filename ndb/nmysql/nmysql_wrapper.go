@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/go-sql-driver/mysql"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
@@ -59,8 +58,8 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfS
 				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
 			},
 		}
-		mysql.RegisterTLSConfig("nssl", tlsConfig)
-		mysqlUrl += "&tls=nssl"
+		mysql.RegisterTLSConfig("nmysql_ssl", tlsConfig)
+		mysqlUrl += "&tls=nmysql_ssl"
 	}
 	slog.Debug(mysqlUrl)
 	db, err := sqlx.Open("mysql", mysqlUrl)
