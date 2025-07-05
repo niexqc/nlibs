@@ -41,7 +41,7 @@ type NMysqlWrapper struct {
 func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfSqlPrint) (*NMysqlWrapper, error) {
 	//开始连接数据库
 	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
-	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
+	mysqlUrl = mysqlUrl + fmt.Sprintf("?loc=Local&parseTime=true&charset=utf8mb4&tls=%t", conf.UseSsl)
 	slog.Debug(mysqlUrl)
 	db, err := sqlx.Open("mysql", mysqlUrl)
 	if err != nil {

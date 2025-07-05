@@ -33,6 +33,7 @@ type YamlConfMysqlDb struct {
 	DbUser          string `yaml:"dbUser" hc:"dbUser"`
 	DbPwd           string `yaml:"dbPwd" hc:"dbPwd"`
 	DbName          string `yaml:"dbName" hc:"DbName"`
+	UseSsl          bool   `yaml:"useSsl" hc:"是否启用SSL"`
 	ConnMaxLifetime int    `yaml:"connMaxLifetime" hc:"连接最大时长-秒"`
 	MaxOpenConns    int    `yaml:"maxOpenConns" hc:"MaxOpenConns"`
 	MaxIdleConns    int    `yaml:"maxIdleConns" hc:"MaxIdleConns"`
