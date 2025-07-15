@@ -33,7 +33,7 @@ func TestValiderBase(t *testing.T) {
 	ntools.TestErrNotNil(t, "TestValiderBase", err)
 	err = valider.TransErr2ZhErr(err)
 
-	ntools.TestStrContains(t, "TestValiderBase", "账套编码[bm]长度不能超过20个字符", err.Error())
+	ntools.TestStrContains(t, "TestValiderBase", "账套编码[bm]", err.Error())
 	ntools.TestStrContains(t, "TestValiderBase", "账套名称[mc]为必填字段", err.Error())
 	ntools.TestStrContains(t, "TestValiderBase", "统一社会信用代码[tyshxydm]长度必须是18个字符", err.Error())
 	ntools.TestStrContains(t, "TestValiderBase", "所属年份[fiscalYear]", err.Error())

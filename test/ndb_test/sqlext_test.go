@@ -76,7 +76,7 @@ func TestInserSqlVals(t *testing.T) {
 
 func TestSqlFmtSqlInNotExist(t *testing.T) {
 	ids := []int64{1, 2, 6, 7}
-	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist("test01", "id", ids)
+	sqlStr, allArgs, err := sqlext.SqlFmtSqlInNotExist(1, "test01", "id", ids)
 
 	ntools.TestErrPainic(t, "TestSqlFmtSqlInNotExist", err)
 

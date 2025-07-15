@@ -7,20 +7,19 @@ import (
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
-	"github.com/shopspring/decimal"
 )
 
 type TestVoDo struct {
-	Id          int64               `schm:"ndb_test" tbn:"tb01" db:"id" json:"id" zhdesc:"主键"`
-	T02Int      sqlext.NullInt      `schm:"ndb_test" tbn:"tb01" db:"t02_int" json:"t02Int" zhdesc:"NullInt"`
-	T03Varchar  sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t03_varchar" json:"t03Varchar" zhdesc:"NullVarchar"`
-	T04Text     sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t04_text" json:"t04Text" zhdesc:"NullText"`
-	T05Longtext sqlext.NullString   `schm:"ndb_test" tbn:"tb01" db:"t05_longtext" json:"t05Longtext" zhdesc:"NullLongText"`
-	T06Decimal  decimal.NullDecimal `schm:"ndb_test" tbn:"tb01" db:"t06_decimal" json:"t06Decimal" zhdesc:"NullDecimal"`
-	T07Float    sqlext.NullFloat64  `schm:"ndb_test" tbn:"tb01" db:"t07_float" json:"t07Float" zhdesc:"NullFloat"`
-	T08Double   sqlext.NullFloat64  `schm:"ndb_test" tbn:"tb01" db:"t08_double" json:"t08Double" zhdesc:"NullDouble"`
-	T09Datetime sqlext.NullTime     `schm:"ndb_test" tbn:"tb01" db:"t09_datetime" json:"t09Datetime" zhdesc:"NullDateTime"`
-	T10Bool     sqlext.NullBool     `schm:"ndb_test" tbn:"tb01" db:"t10_bool" json:"t10Bool" zhdesc:"NullBool"`
+	Id          int64              `schm:"ndb_test" tbn:"tb01" db:"id" json:"id" zhdesc:"主键"`
+	T02Int      sqlext.NullInt     `schm:"ndb_test" tbn:"tb01" db:"t02_int" json:"t02Int" zhdesc:"NullInt"`
+	T03Varchar  sqlext.NullString  `schm:"ndb_test" tbn:"tb01" db:"t03_varchar" json:"t03Varchar" zhdesc:"NullVarchar"`
+	T04Text     sqlext.NullString  `schm:"ndb_test" tbn:"tb01" db:"t04_text" json:"t04Text" zhdesc:"NullText"`
+	T05Longtext sqlext.NullString  `schm:"ndb_test" tbn:"tb01" db:"t05_longtext" json:"t05Longtext" zhdesc:"NullLongText"`
+	T06Decimal  sqlext.NullDecimal `schm:"ndb_test" tbn:"tb01" db:"t06_decimal" json:"t06Decimal" zhdesc:"NullDecimal"`
+	T07Float    sqlext.NullFloat64 `schm:"ndb_test" tbn:"tb01" db:"t07_float" json:"t07Float" zhdesc:"NullFloat"`
+	T08Double   sqlext.NullFloat64 `schm:"ndb_test" tbn:"tb01" db:"t08_double" json:"t08Double" zhdesc:"NullDouble"`
+	T09Datetime sqlext.NullTime    `schm:"ndb_test" tbn:"tb01" db:"t09_datetime" json:"t09Datetime" zhdesc:"NullDateTime"`
+	T10Bool     sqlext.NullBool    `schm:"ndb_test" tbn:"tb01" db:"t10_bool" json:"t10Bool" zhdesc:"NullBool"`
 }
 
 func init() {

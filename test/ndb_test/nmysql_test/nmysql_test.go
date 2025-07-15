@@ -3,6 +3,7 @@ package nmysql_test
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -28,11 +29,18 @@ func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 
 	mysqlConf = &nyaml.YamlConfMysqlDb{
-		DbHost: "8.137.54.220",
+		DbHost: "",
 		DbPort: 3306,
 		DbUser: "root",
-		DbPwd:  "Nxq@198943",
+		DbPwd:  "",
+		UseSsl: false,
 		DbName: "niexq01",
+	}
+
+	mysqlConf.DbHost = os.Getenv("Niexq_Test_Host")
+	mysqlConf.DbPwd = os.Getenv("Niexq_Test_Mysql_Pwd")
+	if mysqlConf.DbHost == "" || mysqlConf.DbPwd == "" {
+		panic(nerror.NewRunTimeError("请在环境变量配置:Niexq_Test_Host,Niexq_Test_Mysql_Pwd"))
 	}
 
 	sqlPrintConf = &nyaml.YamlConfSqlPrint{

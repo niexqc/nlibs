@@ -3,6 +3,7 @@ package npg_test
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -27,19 +28,20 @@ var sqlPrintConf *nyaml.YamlConfSqlPrint
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
 	pgConf = &nyaml.YamlConfPgDb{
-		DbHost: "192.168.0.253",
-		DbPort: 4322,
-		DbUser: "kingbase",
-		DbPwd:  "Wts_2025",
-		DbName: "test",
+		DbHost:  "",
+		DbPort:  15432,
+		DbUser:  "niexq",
+		DbPwd:   "",
+		DbName:  "ndb_test",
+		SslMode: "disable",
 	}
-	// pgConf = &nyaml.YamlConfPgDb{
-	// 	DbHost: "8.137.54.220",
-	// 	DbPort: 15432,
-	// 	DbUser: "niexq",
-	// 	DbPwd:  "niexq",
-	// 	DbName: "ndb_test",
-	// }
+
+	pgConf.DbHost = os.Getenv("Niexq_Test_Host")
+	pgConf.DbPwd = os.Getenv("Niexq_Test_Pgsql_Pwd")
+	if pgConf.DbHost == "" || pgConf.DbPwd == "" {
+		panic(nerror.NewRunTimeError("请在环境变量配置:Niexq_Test_Host,Niexq_Test_Pgsql_Pwd"))
+	}
+
 	sqlPrintConf = &nyaml.YamlConfSqlPrint{
 		DbSqlLogPrint:    true,
 		DbSqlLogLevel:    "debug",
