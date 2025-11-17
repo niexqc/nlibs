@@ -16,6 +16,7 @@ func main() {
 	cpu := 40.0
 	mem := 60.0
 	chktm := int64(3)
+
 	cpuavgtm := int64(1)
 
 	flag.Float64Var(&cpu, "cpu", cpu, fmt.Sprintf("Cpu目标负载:%f", cpu))
@@ -27,5 +28,5 @@ func main() {
 	slog.Info(fmt.Sprintf("Cpu目标负载:%.2f,Mem目标负载:%.2f,检查间隔时间:%d秒,Cpu平均值计算时间:%d秒", cpu, mem, chktm, cpuavgtm))
 
 	go cpulaoder.NewCpuLoader(cpu, chktm, cpuavgtm).Start()
-	memloader.NewMemLoader(mem, chktm, cpuavgtm).Start()
+	memloader.NewMemLoader(mem, chktm).Start()
 }

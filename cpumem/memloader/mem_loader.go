@@ -1,13 +1,14 @@
 package memloader
 
 import (
+	"fmt"
 	"log/slog"
 	"math"
 	"runtime"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
-	"unsafe"
 
 	"github.com/shirou/gopsutil/mem"
 )
@@ -15,7 +16,6 @@ import (
 type MemLoader struct {
 	TargetPercent    float64       // 目标内存占用百分比
 	CheckInterval    int64         // 检查间隔（秒）
-	CpuAvgTime       int64         // CPU平均时间（保留参数）
 	active           int32         // 负载激活状态
 	stopChan         chan struct{} // 停止信号
 	allocatedBytes   uint64        // 已分配字节数
@@ -25,34 +25,35 @@ type MemLoader struct {
 	smoothingFactor  float64       // 平滑因子
 	allocationRate   float64       // 当前分配速率
 	protectionFactor float64       // 内存保护因子
+	blocksMutex      sync.Mutex
+	blocks           [][]byte // 保持分配的内存块引用
 }
 
-func NewMemLoader(targetPercent float64, checkInterval, cpuAvgTime int64) *MemLoader {
+func NewMemLoader(targetPercent float64, checkInterval int64) *MemLoader {
 	const (
 		defaultMinBlockSize = 32 * 1024 * 1024  // 32MB
-		defaultMaxBlockSize = 256 * 1024 * 1024 // 256MB
+		defaultMaxBlockSize = 128 * 1024 * 1024 // 128MB
 	)
 
 	vloader := &MemLoader{
 		TargetPercent:    targetPercent,
-		CheckInterval:    checkInterval,
-		CpuAvgTime:       cpuAvgTime,
 		stopChan:         make(chan struct{}),
+		CheckInterval:    checkInterval,
 		minBlockSize:     defaultMinBlockSize,
 		maxBlockSize:     defaultMaxBlockSize,
 		smoothingFactor:  0.7,
-		protectionFactor: 0.95, // 保护阈值（默认95%）
+		protectionFactor: 0.90, // 保护阈值（默认95%）
 	}
 
 	// 根据系统内存自动调整块大小
 	totalMem := getTotalMemory()
 	if totalMem > 0 {
-		vloader.minBlockSize = totalMem / 100 // 1%总内存
+		vloader.minBlockSize = totalMem / 200 // 0.5%总内存
 		if vloader.minBlockSize < defaultMinBlockSize {
 			vloader.minBlockSize = defaultMinBlockSize
 		}
 
-		vloader.maxBlockSize = totalMem / 20 // 5%总内存
+		vloader.maxBlockSize = totalMem / 40 // 2.5%总内存
 		if vloader.maxBlockSize < defaultMaxBlockSize {
 			vloader.maxBlockSize = defaultMaxBlockSize
 		}
@@ -82,7 +83,8 @@ func (loader *MemLoader) Start() {
 		select {
 		case <-ticker.C:
 			currentPercent := MenPercent()
-			slog.Info("内存状态", "当前", currentPercent, "目标", loader.TargetPercent)
+			loaderMb := atomic.LoadUint64(&loader.allocatedBytes) / (1024 * 1024)
+			slog.Info(fmt.Sprintf("内存状态,当前:%02f,目标:%02f,分配(Mb):%d,块数量:%d", currentPercent, loader.TargetPercent, loaderMb, len(loader.blocks)))
 
 			// 内存保护机制
 			if currentPercent > loader.protectionFactor*100 {
@@ -111,6 +113,7 @@ func (loader *MemLoader) Start() {
 
 // memoryAdjuster 内存调整协程
 func (loader *MemLoader) memoryAdjuster() {
+
 	const adjustmentInterval = 1 * time.Second
 	ticker := time.NewTicker(adjustmentInterval)
 	defer ticker.Stop()
@@ -121,6 +124,8 @@ func (loader *MemLoader) memoryAdjuster() {
 	for {
 		select {
 		case <-ticker.C:
+			runtime.GC()
+
 			if atomic.LoadInt32(&loader.active) == 0 {
 				continue
 			}
@@ -134,9 +139,9 @@ func (loader *MemLoader) memoryAdjuster() {
 			diff := target - currentPercent
 
 			// PID控制器参数 (比例、积分、微分)
-			Kp := 0.5
-			Ki := 0.05
-			Kd := 0.01
+			Kp := 1.2  // 增加比例系数
+			Ki := 0.08 // 适度积分
+			Kd := 0.02 // 适度微分
 
 			// 防积分饱和
 			if math.Abs(diff) < 10 {
@@ -175,70 +180,80 @@ func (loader *MemLoader) memoryAdjuster() {
 
 // allocateMemory 分配指定大小的内存
 func (loader *MemLoader) allocateMemory(size uint64) {
-	if size == 0 {
-		return
-	}
-
 	data := make([]byte, size)
-
-	// 写入数据以防止优化（实际工作中可能会被编译器优化掉）
+	// 初始化数据
 	for i := range data {
 		data[i] = byte(i % 256)
 	}
-
-	// 将指针转换为整数保存，避免被GC回收
-	ptr := uintptr(unsafe.Pointer(&data[0]))
-	_ = ptr // 防止编译器警告
+	// 保持内存块引用，防止GC回收
+	loader.blocksMutex.Lock()
+	loader.blocks = append(loader.blocks, data)
+	loader.blocksMutex.Unlock()
 
 	atomic.AddUint64(&loader.allocatedBytes, size)
-	slog.Debug("分配内存", "大小(MB)", size/(1024*1024), "总计(MB)", atomic.LoadUint64(&loader.allocatedBytes)/(1024*1024))
-
-	// 触发GC但保留内存
-	runtime.KeepAlive(data)
 }
 
 // freeMemory 释放指定大小的内存
 func (loader *MemLoader) freeMemory(size uint64) {
-	if size == 0 || atomic.LoadUint64(&loader.allocatedBytes) == 0 {
+	loader.blocksMutex.Lock()
+	defer loader.blocksMutex.Unlock()
+	if len(loader.blocks) == 0 {
 		return
 	}
-
-	// 在实际应用中，这里应该使用一个池来管理分配的内存块
-	// 简化实现：通过缩小分配的内存大小来模拟释放
-	current := atomic.LoadUint64(&loader.allocatedBytes)
+	// 释放部分内存块（如释放前N个块直到满足size）
 	freed := uint64(0)
-
-	if size >= current {
-		freed = current
-	} else {
-		freed = size
+	for freed < size && len(loader.blocks) > 0 {
+		blockSize := uint64(len(loader.blocks[0]))
+		if freed+blockSize > size && len(loader.blocks) > 1 {
+			// 保留部分块，不全部释放
+			break
+		}
+		// 移除块引用，允许GC回收
+		loader.blocks = loader.blocks[1:]
+		freed += blockSize
 	}
-
 	atomic.AddUint64(&loader.allocatedBytes, -freed)
-	slog.Debug("释放内存", "大小(MB)", freed/(1024*1024))
+	// 显式触发GC
+	runtime.GC()
 }
 
 // freeAllMemory 释放所有内存
 func (loader *MemLoader) freeAllMemory() {
+	loader.blocksMutex.Lock()
+	loader.blocks = nil // 直接置空，放弃所有内存块的引用
+	loader.blocksMutex.Unlock()
+
 	atomic.StoreUint64(&loader.allocatedBytes, 0)
 	runtime.GC()
+	debug.FreeOSMemory() // 同样建议在这里强制归还
 }
 
 // emergencyFree 内存紧急释放
 func (loader *MemLoader) emergencyFree() {
 	slog.Warn("内存超过保护阈值，执行紧急释放")
-	current := atomic.LoadUint64(&loader.allocatedBytes)
-	if current > 0 {
-		// 释放50%已分配内存
-		freeSize := current / 2
-		loader.freeMemory(freeSize)
-	}
 
-	// 如果内存仍然过高，释放更多
-	time.Sleep(2 * time.Second)
-	if MenPercent() > loader.protectionFactor*100 {
-		slog.Warn("内存仍然过高，释放所有负载内存")
+	// 1. 释放大部分已分配内存（例如75%）
+	targetFreed := atomic.LoadUint64(&loader.allocatedBytes) * 3 / 4
+	loader.freeMemory(targetFreed)
+
+	// 2. 强制进行垃圾回收
+	runtime.GC()
+
+	// 3. 强制将内存归还给操作系统
+	debug.FreeOSMemory() // 需要导入 "runtime/debug"
+
+	slog.Info("紧急释放操作完成", "目标释放量(MB)", targetFreed/(1024*1024))
+
+	// 4. 延长等待时间，让操作系统有足够时间处理（例如5-10秒）
+	time.Sleep(8 * time.Second)
+
+	// 5. 重新检查，使用更长的间隔或基于进程RSS判断
+	currentPercent := MenPercent()
+	if currentPercent > loader.protectionFactor*100 {
+		slog.Warn("内存仍然过高，尝试完全释放")
 		loader.freeAllMemory()
+		runtime.GC()
+		debug.FreeOSMemory()
 	}
 }
 
