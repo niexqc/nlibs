@@ -149,6 +149,20 @@ func (ndbw *NMysqlWrapper) InsertWithLastId(sqlStr string, args ...any) (lastIns
 	return lastInsertId, err
 }
 
+// 需要手动关闭rows
+func (ndbw *NMysqlWrapper) SelectRows(sqlStr string, args ...any) (rows *sqlx.Rows, err error) {
+	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
+	if ndbw.bgnTx {
+		rows, err = ndbw.sqlxTx.Queryx(sqlStr, args...)
+	} else {
+		rows, err = ndbw.sqlxDb.Queryx(sqlStr, args...)
+	}
+	if nil != err {
+		return nil, err
+	}
+	return rows, nil
+}
+
 func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (findOk bool, err error) {
 	defer sqlext.PrintSql(ndbw.sqlPrintConf, time.Now(), sqlStr, args...)
 	var rows *sqlx.Rows
@@ -171,8 +185,8 @@ func (ndbw *NMysqlWrapper) SelectOne(dest any, sqlStr string, args ...any) (find
 		return false, nerror.NewRunTimeError("查询结果包含多个列")
 	}
 	if rows.Next() {
-		if err := rows.Scan(dest); nil != err {
-			return false, err
+		if err1 := rows.Scan(dest); nil != err1 {
+			return false, err1
 		}
 		if rows.Next() {
 			dest = nil
@@ -263,9 +277,9 @@ func (ndbw *NMysqlWrapper) SelectDyObjList(sqlStr string, args ...any) (objValLi
 		// 创建动态Struct的实例
 		instance := reflect.New(dyStructType).Interface()
 		// 对动态Struct的实例赋值
-		err := rows.StructScan(instance)
-		if nil != err {
-			return nil, err
+		err1 := rows.StructScan(instance)
+		if nil != err1 {
+			return nil, err1
 		}
 		objValList = append(objValList, &NMysqlDyObj{Data: instance, DbNameFiledsMap: fieldsInfo})
 	}
