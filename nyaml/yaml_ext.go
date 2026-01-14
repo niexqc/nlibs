@@ -23,6 +23,15 @@ const (
 
 var fileDirExt = ntools.GetFileDirExt()
 
+func OnlyLoadYamlConf[T any](confName string) (*T, error) {
+	t := new(T)
+	err := ReadYaml(t, confName)
+	if nil != err {
+		return nil, err
+	}
+	return t, nil
+}
+
 func LoadYamlConf[T any](confName string) (*T, error) {
 	t := new(T)
 	err := ReadYaml(t, confName)
