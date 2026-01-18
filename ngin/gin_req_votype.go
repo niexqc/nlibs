@@ -11,6 +11,22 @@ type ReqVoInt64 int64
 type ReqVoBool bool
 type ReqVoFloat64 float64
 
+func NewReqVoInt(val int) ReqVoInt {
+	return ReqVoInt(val)
+}
+
+func NewReqVoInt64(val int64) ReqVoInt64 {
+	return ReqVoInt64(val)
+}
+
+func NewReqVoBool(val bool) ReqVoBool {
+	return ReqVoBool(val)
+}
+
+func NewReqVoFloat64(val float64) ReqVoFloat64 {
+	return ReqVoFloat64(val)
+}
+
 func (i *ReqVoInt) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
