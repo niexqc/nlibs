@@ -85,7 +85,7 @@ func pgDbUdtNameToGoType(pgUdtName string, allowNull bool) (reflect.Type, error)
 	goType, err := func(pgUdtName string) (reflect.Type, error) {
 		switch pgUdtName {
 		case "bool":
-			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true)), nil
+			return reflect.TypeOf(sqlext.NullBool{}), nil
 		case "varchar", "text":
 			return ntools.If3(allowNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf("")), nil
 		case "int2", "int4":

@@ -64,7 +64,7 @@ func mysqlTypeToGoType(mysqlType string, isNull bool) (reflect.Type, error) {
 		case "VARCHAR", "TEXT", "LONGTEXT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullString{}), reflect.TypeOf("")), nil
 		case "BIT":
-			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullBool{}), reflect.TypeOf(true)), nil
+			return reflect.TypeOf(sqlext.NullBool{}), nil
 		case "INT", "SMALLINT", "TINYINT":
 			return ntools.If3(isNull, reflect.TypeOf(sqlext.NullInt{}), reflect.TypeOf(int(1))), nil
 		case "BIGINT":
