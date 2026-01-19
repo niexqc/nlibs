@@ -43,3 +43,18 @@ func TestValiderBase(t *testing.T) {
 	ntools.TestStrContains(t, "TestValiderBase", "业务唯一id[bizId]为必填字段", err.Error())
 	ntools.TestStrContains(t, "TestValiderBase", "行政区划编码[areaCode]为必填字段", err.Error())
 }
+
+func TestValiderOneofZhc(t *testing.T) {
+	valider := ngin.NewNValider("json", "zhdesc")
+	// 接收账套数据
+	type RecvTaskZhangtaoVo struct {
+		PzhWs string `db:"pzh_ws" json:"pzhWs" zhdesc:"凭证号显示位数" binding:"required,oneof=一 二 三"`
+	}
+
+	ztVo := &RecvTaskZhangtaoVo{PzhWs: "四"}
+	err := valider.ValidStrct(ztVo)
+	ntools.TestErrNotNil(t, "TestValiderBase", err)
+	err = valider.TransErr2ZhErr(err)
+
+	ntools.TestStrContains(t, "TestValiderBase", "凭证号显示位数[bm]", err.Error())
+}

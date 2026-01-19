@@ -33,6 +33,13 @@ type BaseReqPage struct {
 	PageSize ReqVoInt `json:"pageSize" zhdesc:"每页大小" binding:"required,gte=1"`
 }
 
+func NewReqPage(pageNo, pageSize int) BaseReqPage {
+	return BaseReqPage{
+		PageNo:   NewReqVoInt(pageNo),
+		PageSize: NewReqVoInt(pageSize),
+	}
+}
+
 // BaseResp 基础响应
 type BaseResp struct {
 	// 响应码
