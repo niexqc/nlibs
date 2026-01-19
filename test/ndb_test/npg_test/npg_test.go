@@ -397,3 +397,72 @@ func TestNdbTxErrRollback(t *testing.T) {
 	txr.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(col_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
 	panic(nerror.NewRunTimeError("主动回滚事务"))
 }
+
+func TestWithTransNormal(t *testing.T) {
+	dbWrapper, _ := npg.NewNPgWrapper(pgConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(pgdbCreateTableStr)
+
+	// 先插入一条数据
+	dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa1')", schameName, tableName))
+
+	// 测试WithTrans正常执行
+	err := dbWrapper.WithTrans(30, func(txWrper *npg.NPgWrapper) error {
+		// 在事务中插入多条数据
+		txWrper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa2') RETURNING id", schameName, tableName))
+		txWrper.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(col_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
+		return nil
+	})
+
+	// 验证事务提交成功
+	ntools.TestErrPainic(t, "TestWithTransNormal", err)
+	count, _, _ := npg.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+	ntools.TestEq(t, "TestWithTransNormal-数据应该被写入", int64(6), *count)
+}
+
+func TestWithTransReturnError(t *testing.T) {
+	dbWrapper, _ := npg.NewNPgWrapper(pgConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(pgdbCreateTableStr)
+
+	// 先插入一条数据
+	dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa1')", schameName, tableName))
+
+	// 测试WithTrans返回错误
+	err := dbWrapper.WithTrans(30, func(txWrper *npg.NPgWrapper) error {
+		// 在事务中插入多条数据
+		txWrper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa2') RETURNING id", schameName, tableName))
+		txWrper.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(col_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
+		// 返回错误，事务应该回滚
+		return nerror.NewRunTimeError("主动返回错误")
+	})
+
+	// 验证事务回滚成功
+	ntools.TestErrNotNil(t, "TestWithTransReturnError", err)
+	count, _, _ := npg.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+	ntools.TestEq(t, "TestWithTransReturnError-数据应该未被写入", int64(1), *count)
+}
+
+func TestWithTransPanic(t *testing.T) {
+	dbWrapper, _ := npg.NewNPgWrapper(pgConf, sqlPrintConf)
+	dbWrapper.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s.%s", schameName, tableName))
+	dbWrapper.Exec(pgdbCreateTableStr)
+
+	// 先插入一条数据
+	dbWrapper.InsertWithRowsAffected(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa1')", schameName, tableName))
+
+	// 测试WithTrans发生panic
+	err := dbWrapper.WithTrans(30, func(txWrper *npg.NPgWrapper) error {
+		// 在事务中插入多条数据
+		txWrper.InsertWithLastId(fmt.Sprintf("INSERT into %s.%s(col_varchar) VALUES('aaa2') RETURNING id", schameName, tableName))
+		txWrper.InsertWithRowsAffected(fmt.Sprintf("INSERT into  %s.%s(col_varchar) VALUES('aaa3'),('aaa4'),('aa5'),('aaa6')", schameName, tableName))
+		// 发生panic，事务应该回滚
+		panic(nerror.NewRunTimeError("主动panic"))
+	})
+
+	// 验证事务回滚成功，并且函数返回panic错误
+	ntools.TestErrNotNil(t, "TestWithTransPanic", err)
+	count, _, _ := npg.SelectOne[int64](dbWrapper, fmt.Sprintf("SELECT COUNT(id) FROM  %s.%s ", schameName, tableName))
+	ntools.TestEq(t, "TestWithTransPanic-数据应该未被写入", int64(1), *count)
+	ntools.TestStrContains(t, "TestWithTransPanic-应该返回panic错误", "主动panic", err.Error())
+}

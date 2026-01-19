@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/niexqc/nlibs/ndb"
 	"github.com/niexqc/nlibs/ndb/sqlext"
@@ -408,4 +409,42 @@ func (ndbw *NPgWrapper) SqlFmtSqlStr2Pg(sqlStr string) string {
 		}
 	}
 	return sqlStr
+}
+
+func (ndbw *NPgWrapper) WithTrans(timeOut int, transFun func(txWrper *NPgWrapper) error) (err error) {
+	// 开启事务
+	dbTx, err1 := ndbw.NdbTxBgn(timeOut)
+	if nil != err1 {
+		slog.Error("开启事务失败:", "err", err1)
+		return nerror.NewRunTimeError("系统内部错误")
+	}
+	defer func() {
+		recoverResult := recover()
+		if recoverResult != nil {
+			var panicErr error
+			if er, ok := recoverResult.(error); ok {
+				if pqerr, ok := er.(*pq.Error); ok {
+					pqerr.Message = pqerr.Message + "," + pqerr.Detail
+				}
+				panicErr = er
+			} else {
+				panicErr = fmt.Errorf("%v", recoverResult)
+			}
+			rbErr := dbTx.NdbTxRollBack(panicErr)
+			if rbErr != nil {
+				slog.Error("事务回滚失败:", "err", rbErr)
+			}
+			err = panicErr
+		}
+	}()
+	// 执行方法
+	runerr := transFun(dbTx)
+
+	if runerr == nil {
+		err = dbTx.NdbTxCommit(nil)
+	} else {
+		dbTx.NdbTxRollBack(runerr)
+		err = runerr
+	}
+	return err
 }
