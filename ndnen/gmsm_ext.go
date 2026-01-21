@@ -169,6 +169,11 @@ func Sm2EncryptToBase64(pubKey *sm2.PublicKey, plaintext string) string {
 	return base64.StdEncoding.EncodeToString(encryptData)
 }
 
+func Sm2EncryptToHex(pubKey *sm2.PublicKey, plaintext string) string {
+	encryptData := Sm2Encrypt(pubKey, []byte(plaintext))
+	return hex.EncodeToString(encryptData)
+}
+
 // SM2 私钥解密
 func Sm2Decrypt(privKey *sm2.PrivateKey, ciphertext []byte) (bool, []byte) {
 	plaintext, err := sm2.Decrypt(privKey, ciphertext, sm2.C1C3C2)
@@ -182,6 +187,15 @@ func Sm2DecryptBase64(privKey *sm2.PrivateKey, base64Str string) (bool, string, 
 	data, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
 		return false, "", nerror.NewRunTimeError("SM2解密,密文不是base64数据")
+	}
+	ok, plaintext := Sm2Decrypt(privKey, data)
+	return ok, ntools.If3(ok, string(plaintext), ""), nil
+}
+
+func Sm2DecryptHex(privKey *sm2.PrivateKey, hexEnStr string) (bool, string, error) {
+	data, err := hex.DecodeString(hexEnStr)
+	if err != nil {
+		return false, "", nerror.NewRunTimeError("SM2解密,密文不是Hex数据")
 	}
 	ok, plaintext := Sm2Decrypt(privKey, data)
 	return ok, ntools.If3(ok, string(plaintext), ""), nil
@@ -255,6 +269,14 @@ func Sm4CbcEnDataToBase64(key, iv, plaintext string) (string, error) {
 	return base64.StdEncoding.EncodeToString(encryptData), nil
 }
 
+func Sm4CbcEnDataToHexStr(key, iv, plaintext string) (string, error) {
+	encryptData, err := Sm4CbcEnData(key, iv, plaintext)
+	if nil != err {
+		return "", err
+	}
+	return hex.EncodeToString(encryptData), nil
+}
+
 func Sm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	resultData, err := innerSm4CbcDnData(key, iv, entryedData)
 	if nil != err {
@@ -262,6 +284,15 @@ func Sm4CbcDnData(key, iv, entryedData string) ([]byte, error) {
 	}
 	unpadded, err := Pkcs7Unpad(resultData)
 	return unpadded, err
+}
+
+func Sm4CbcDnHexData(key, iv, encryptHexData string) (string, error) {
+	encryedData, err := hex.DecodeString(encryptHexData)
+	if err != nil {
+		return "", nerror.NewRunTimeError("SM4解密,密文不是hex数据")
+	}
+	result, err := Sm4CbcDnData(key, iv, string(encryedData))
+	return string(result), err
 }
 
 func Sm4CbcDnBytesByHexKey(hexKey, hexIv string, entryedData []byte) ([]byte, error) {
@@ -313,7 +344,7 @@ func Sm4CbcDnDataWithPkcs5(key, iv, entryedData string) ([]byte, error) {
 func Sm4CbcDnBase64Data(key, iv, encryptBase64Data string) (string, error) {
 	encryedData, err := base64.StdEncoding.DecodeString(encryptBase64Data)
 	if err != nil {
-		return "", nerror.NewRunTimeError("SM2解密,密文不是base64数据")
+		return "", nerror.NewRunTimeError("SM4解密,密文不是base64数据")
 	}
 	result, err := Sm4CbcDnData(key, iv, string(encryedData))
 	return string(result), err
