@@ -185,7 +185,8 @@ func TestSm4EcbEnDn(t *testing.T) {
 }
 
 func TestSm4GenHexIv(t *testing.T) {
-	result := ndnen.Sm4GenHexIv()
-	slog.Info("TestSm4GenHexIv ", "iv", result)
-	ntools.TestEq(t, "TestSm4GenHexIv", 32, len(result))
+	key, iv := ndnen.Sm4GenHexKeyIv()
+	slog.Info("TestSm4GenHexIv ", "key", key, "iv", iv)
+	ntools.TestEq(t, "TestSm4GenHexIv", 32, len(key))
+	ntools.TestEq(t, "TestSm4GenHexIv", 32, len(iv))
 }
