@@ -370,12 +370,13 @@ func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) (string, error) {
 	return string(unPadData), nil
 }
 
-func Sm4GenHexKey() string {
-	data := make([]byte, 16) // SM4 IV必须为16字节
-	rand.Read(data)
-	return hex.EncodeToString(data)
+func Sm4GenHexKeyIv() (string, string) {
+	randomStr := ntools.MD5Str(ntools.UUIDStr(true), true)
+	return Sm4GenHexKeyIvFromMd5Str(randomStr)
 }
 
-func Sm4GenHexIv() string {
-	return Sm4GenHexKey()
+func Sm4GenHexKeyIvFromMd5Str(md5Str string) (string, string) {
+	key := []byte(md5Str[:16])
+	iv := []byte(md5Str[16:32])
+	return hex.EncodeToString(key), hex.EncodeToString(iv)
 }
