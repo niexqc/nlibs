@@ -149,7 +149,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		if strings.Contains(heaerVo.ContentType, "application/json") {
 			heaerVo.ReqBody = readAndResetBody(ctx)
 		} else {
-			heaerVo.ReqBody = []byte("只支持json格式请求")
+			heaerVo.ReqBody = []byte("在Header中赋值ReqBody只支持application/json的请求")
 		}
 
 		heaerVo.UserToken = ginHeaders.Get("User-Token")
