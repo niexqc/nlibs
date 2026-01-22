@@ -141,12 +141,17 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 	}
 
 	return func(ctx *gin.Context) {
-		readAndResetBody(ctx)
 		ginHeaders := ctx.Request.Header
 		heaerVo := NiexqGinHeaderVo{}
-		heaerVo.ReqBody = readAndResetBody(ctx)
 		heaerVo.UserAgent = ctx.Request.UserAgent()
 		heaerVo.ContentType = ginHeaders.Get("Content-Type")
+
+		if strings.Contains(heaerVo.ContentType, "json") {
+			heaerVo.ReqBody = readAndResetBody(ctx)
+		} else {
+			heaerVo.ReqBody = []byte("只支持json格式请求")
+		}
+
 		heaerVo.UserToken = ginHeaders.Get("User-Token")
 		heaerVo.AppType = ginHeaders.Get("App-Type")
 		heaerVo.AppVer = ginHeaders.Get("App-Ver")
