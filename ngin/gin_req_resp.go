@@ -62,8 +62,9 @@ type BaseResp struct {
 
 // BaseReq ...
 type NiexqGinHeaderVo struct {
-	UserAgent   string `json:"userAgent" zhdesc:"用户浏览器"`
-	ContentType string `json:"contentType" zhdesc:"请求的类型" `
+	UserAgent     string `json:"userAgent" zhdesc:"用户浏览器"`
+	ContentType   string `json:"contentType" zhdesc:"请求的类型" `
+	ContentLength int64  `json:"contentLength" zhdesc:"请求体的长度"`
 
 	UserToken string `json:"userToken" zhdesc:"用户访问凭证" header:"user-token"`
 

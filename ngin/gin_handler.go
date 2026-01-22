@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"strconv"
 
 	"os"
 	"reflect"
@@ -145,6 +146,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo := NiexqGinHeaderVo{}
 		heaerVo.UserAgent = ctx.Request.UserAgent()
 		heaerVo.ContentType = ginHeaders.Get("Content-Type")
+		heaerVo.ContentLength, _ = strconv.ParseInt(ginHeaders.Get("Content-Length"), 10, 64)
 
 		if strings.Contains(heaerVo.ContentType, "application/json") {
 			heaerVo.ReqBody = readAndResetBody(ctx)
