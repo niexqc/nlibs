@@ -146,7 +146,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo.UserAgent = ctx.Request.UserAgent()
 		heaerVo.ContentType = ginHeaders.Get("Content-Type")
 
-		if strings.Contains(heaerVo.ContentType, "json") {
+		if strings.Contains(heaerVo.ContentType, "application/json") {
 			heaerVo.ReqBody = readAndResetBody(ctx)
 		} else {
 			heaerVo.ReqBody = []byte("只支持json格式请求")
