@@ -58,3 +58,21 @@ func TestValiderOneofZhc(t *testing.T) {
 
 	ntools.TestStrContains(t, "TestValiderBase", "凭证号显示位数[bm]", err.Error())
 }
+
+func TestValiderBool(t *testing.T) {
+	valider := ngin.NewNValider("json", "zhdesc")
+	// 接收账套数据
+	type RecvTaskZhangtaoVo struct {
+		BoolValTrue  sqlext.NullBool `db:"bool_val_true" json:"boolValTrue" zhdesc:"Bool值" binding:"required" `
+		BoolValFlase sqlext.NullBool `db:"bool_val_false" json:"boolValFlase" zhdesc:"Bool值" binding:"required" `
+	}
+
+	ztVo := &RecvTaskZhangtaoVo{BoolValTrue: sqlext.NewNullBool(true, true), BoolValFlase: sqlext.NewNullBool(false, false)}
+
+	err := valider.ValidStrct(ztVo)
+	ntools.TestErrNotNil(t, "TestValiderBase", err)
+	err = valider.TransErr2ZhErr(err)
+
+	ntools.TestStrContains(t, "TestValiderBool", "必填字段", err.Error())
+
+}

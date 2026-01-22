@@ -87,8 +87,15 @@ func registerNullFunc(validate *validator.Validate) {
 		sqlext.NullInt{},
 		sqlext.NullString{},
 		sqlext.NullInt64{},
-		sqlext.NullFloat64{},
-		sqlext.NullBool{})
+		sqlext.NullFloat64{})
+
+	validate.RegisterCustomTypeFunc(func(field reflect.Value) interface{} {
+		if valuer, ok := field.Interface().(driver.Valuer); ok {
+			val := valuer.(sqlext.NullBool)
+			return val.Valid
+		}
+		return nil
+	}, sqlext.NullBool{})
 }
 
 func (nvld *NValider) TransErr2ZhErr(err error) error {
