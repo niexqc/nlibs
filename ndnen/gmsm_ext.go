@@ -30,7 +30,7 @@ func Sm2GenKeyPair() (pri *sm2.PrivateKey, pub *sm2.PublicKey) {
 	return privateKey, &privateKey.PublicKey
 }
 
-func Sm2Key2Hex(pri *sm2.PrivateKey, pub *sm2.PublicKey) (priDerb64, pubDerb64 string) {
+func Sm2Key2Hex(pri *sm2.PrivateKey, pub *sm2.PublicKey) (priHex, pubHex string) {
 	privateKeyBytes := pri.D.FillBytes(make([]byte, 32))
 	privateKeyHex := hex.EncodeToString(privateKeyBytes)
 	// 获取公钥的 X 和 Y 坐标（各 32 字节）

@@ -53,7 +53,7 @@ func nGinPrintReqLog(ctx *gin.Context, showReqBody bool) {
 	if showReqBody {
 		reqBodyStr := ""
 		if strings.ContainsAny(contentType, "json") || strings.ContainsAny(contentType, "text") || strings.ContainsAny(contentType, "xml") {
-			reqBodyStr = string(*headerVo.ReqBody)
+			reqBodyStr = string(headerVo.ReqBody)
 		} else {
 			reqBodyStr = "Nil_ParseBody"
 		}
@@ -124,12 +124,12 @@ func TraceIdGenByMemCacheHandlerFunc(traceIdPrefix string, memCacheService *menc
 func HeaderSetHandlerFunc() gin.HandlerFunc {
 	slog.Debug("Add Middleware HeaderSetHandlerFunc")
 
-	readAndResetBody := func(c *gin.Context) *[]byte {
+	readAndResetBody := func(c *gin.Context) []byte {
 		// 1. 读取原始 Body 内容
 		body, err := c.GetRawData()
 		if err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
-			return &body
+			return body
 		}
 		// 2. 重写 GetBody 方法（关键！）
 		c.Request.GetBody = func() (io.ReadCloser, error) {
@@ -137,7 +137,7 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		}
 		// 3. 重置 Body 供后续使用
 		c.Request.Body, _ = c.Request.GetBody()
-		return &body
+		return body
 	}
 
 	return func(ctx *gin.Context) {
@@ -146,13 +146,14 @@ func HeaderSetHandlerFunc() gin.HandlerFunc {
 		heaerVo := NiexqGinHeaderVo{}
 		heaerVo.ReqBody = readAndResetBody(ctx)
 		heaerVo.UserAgent = ctx.Request.UserAgent()
-		heaerVo.ContentType = ginHeaders.Get("content-type")
-		heaerVo.UserToken = ginHeaders.Get("user-token")
-		heaerVo.AppType = ginHeaders.Get("app-type")
-		heaerVo.AppVer = ginHeaders.Get("app-ver")
-		heaerVo.ClientTime = ginHeaders.Get("client-time")
-		heaerVo.OneceStr = ginHeaders.Get("onece-str")
-		heaerVo.VisitSrc = ginHeaders.Get("vist-src")
+		heaerVo.ContentType = ginHeaders.Get("Content-Type")
+		heaerVo.UserToken = ginHeaders.Get("User-Token")
+		heaerVo.AppType = ginHeaders.Get("App-Type")
+		heaerVo.AppVer = ginHeaders.Get("App-Ver")
+		heaerVo.ClientTime = ginHeaders.Get("Client-Time")
+		heaerVo.OneceStr = ginHeaders.Get("Onece-Str")
+		heaerVo.VisitSrc = ginHeaders.Get("Visit-Src")
+		heaerVo.VisitSign = ginHeaders.Get("Visit-Sign")
 		heaerVo.UserIp = ctx.ClientIP()
 		heaerVo.VisitTar = ctx.Request.RequestURI
 		// slog.Debug("Headers:", "json", njson.Obj2StrWithPanicError(heaerVo))

@@ -27,7 +27,7 @@ func TimeStr2Time(timeStr string) (time.Time, error) {
 }
 
 func TimeStr2TimeByLayout(timeStr, layout string) (time.Time, error) {
-	timeObj, err := time.Parse(layout, timeStr)
+	timeObj, err := time.ParseInLocation(layout, timeStr, time.Local)
 	if err != nil {
 		return time.Time{}, nerror.NewRunTimeErrorWithError("时间解析错误", err)
 	}
