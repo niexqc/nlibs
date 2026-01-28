@@ -72,6 +72,12 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfS
 	return &NMysqlWrapper{sqlxDb: db, conf: conf, sqlPrintConf: sqlPrintConf, bgnTx: false}, nil
 }
 
+// 关闭数据库连接池
+func (ndbw *NMysqlWrapper) CloseSqlxDb() error {
+	nerr := ndbw.sqlxDb.Close()
+	return nerr
+}
+
 //	 查询单个字段单个值
 //		 sqlStr:=select id from table where id=?
 //		 str:=ndb.SelectOne[string](ndbw,sql,id)
