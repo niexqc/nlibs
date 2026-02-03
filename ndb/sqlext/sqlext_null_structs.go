@@ -39,6 +39,9 @@ func (b *NullBool) Scan(value interface{}) error {
 	case int64:
 		// 处理整数
 		*b = NewNullBool(true, v != 0)
+	case string:
+		// 处理整数
+		*b = NewNullBool(true, strings.ToLower(v) == "true" || strings.ToLower(v) == "t")
 	default:
 		return fmt.Errorf("无法将 %T 转换为 Bool", value)
 	}
