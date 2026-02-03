@@ -3,6 +3,7 @@ package sqlext
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -21,6 +22,28 @@ type NullInt64 struct{ sql.NullInt64 }
 type NullFloat64 struct{ sql.NullFloat64 }
 type NullBool struct{ sql.NullBool }
 type NullDecimal struct{ decimal.NullDecimal }
+
+// 实现 Scanner 接口，处理数据库到 Go 类型的转换
+func (b *NullBool) Scan(value interface{}) error {
+	if value == nil {
+		*b = NewNullBool(false, false)
+		return nil
+	}
+	switch v := value.(type) {
+	case []byte:
+		// 处理二进制值
+		*b = NewNullBool(true, len(v) > 0 && v[0] != 0)
+	case bool:
+		// 直接处理 bool 值
+		*b = NewNullBool(true, v)
+	case int64:
+		// 处理整数
+		*b = NewNullBool(true, v != 0)
+	default:
+		return fmt.Errorf("无法将 %T 转换为 Bool", value)
+	}
+	return nil
+}
 
 func NewNullDecimal(valid bool, str string) NullDecimal {
 	if !valid {
