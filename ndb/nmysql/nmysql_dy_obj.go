@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/nerror"
@@ -64,6 +65,50 @@ func DyObjList2Json(dyObjList []*NMysqlDyObj) (jsonStr string, err error) {
 	}
 	jsonStr, err = njson.Obj2JsonStr(dataList)
 	return jsonStr, err
+}
+
+func DyObj2InsertSql(dyObj *NMysqlDyObj, tableName string) (sqlStr string, err error) {
+	dbColList := []string{}
+	for _, v := range dyObj.DbNameFiledsMap {
+		dbColList = append(dbColList, v.DbColName)
+	}
+	colStr := strings.Join(dbColList, ",")
+	zwfStr, val, err := sqlext.InserSqlVals(colStr, dyObj.Data)
+	if nil != err {
+		return "", err
+	}
+	sqlStr, err = sqlext.SqlFmt(fmt.Sprintf("INSERT INTO %s(%s) VALUES (%s)", tableName, colStr, zwfStr), val...)
+	if nil != err {
+		return "", err
+	}
+	return sqlStr, nil
+}
+
+// 使用该方法时候，需要注意生成的SQL可能过大
+func DyObjList2InsertSql(dyObjList []*NMysqlDyObj, tableName string) (sqlStr string, err error) {
+	if len(dyObjList) == 0 {
+		return "", nil
+	}
+	dbColList := []string{}
+	for _, v := range dyObjList[0].DbNameFiledsMap {
+		dbColList = append(dbColList, v.DbColName)
+	}
+	colStr := strings.Join(dbColList, ",")
+	allVals := []any{}
+	valZwfList := []string{}
+	for _, dyObj := range dyObjList {
+		zwfStr, vals, err1 := sqlext.InserSqlVals(colStr, dyObj.Data)
+		if nil != err1 {
+			return "", err1
+		}
+		allVals = append(allVals, vals...)
+		valZwfList = append(valZwfList, fmt.Sprintf("(%s)", zwfStr))
+	}
+	sqlStr, err = sqlext.SqlFmt(fmt.Sprintf("INSERT INTO %s(%s) VALUES %s", tableName, colStr, strings.Join(valZwfList, ",")), allVals...)
+	if nil != err {
+		return "", err
+	}
+	return sqlStr, nil
 }
 
 func createDyStruct(cols []*sql.ColumnType) (dyObjDefine reflect.Type, filedInfos map[string]*NMysqlDyObjFieldInfo, err error) {
