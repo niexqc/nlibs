@@ -394,3 +394,37 @@ func (ndbw *NMysqlWrapper) NdbTxRollBack(err error) error {
 	}
 	return nil
 }
+
+func (ndbw *NMysqlWrapper) WithTrans(timeOut int, transFun func(txWrper *NMysqlWrapper) error) (err error) {
+	// 开启事务
+	dbTx, err1 := ndbw.NdbTxBgn(timeOut)
+	if nil != err1 {
+		slog.Error("开启事务失败:", "err", err1)
+		return nerror.NewRunTimeError("系统内部错误")
+	}
+	defer func() {
+		recoverResult := recover()
+		if recoverResult != nil {
+			var panicErr error
+			if er, ok := recoverResult.(error); ok {
+				panicErr = er
+			} else {
+				panicErr = fmt.Errorf("%v", recoverResult)
+			}
+			rbErr := dbTx.NdbTxRollBack(panicErr)
+			if rbErr != nil {
+				slog.Error("事务回滚失败:", "err", rbErr)
+			}
+			err = panicErr
+		}
+	}()
+	// 执行方法
+	runerr := transFun(dbTx)
+	if runerr == nil {
+		err = dbTx.NdbTxCommit(nil)
+	} else {
+		dbTx.NdbTxRollBack(runerr)
+		err = runerr
+	}
+	return err
+}
