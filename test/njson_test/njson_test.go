@@ -1,8 +1,12 @@
 package ndnen_test
 
 import (
+	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/niexqc/nlibs/ndb/sqlext"
 	"github.com/niexqc/nlibs/njson"
@@ -24,6 +28,123 @@ type TestVoDo struct {
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
+}
+
+// formatInsertValue 按 JSON/Go 实际类型转成 SQL 字面量中的字符串，避免 float64 用 %v 出现科学计数法；时间统一为 yyyy-MM-dd HH:mm:ss。
+func formatInsertValue(v interface{}) string {
+	switch x := v.(type) {
+	case time.Time:
+		return formatSQLDateTime(x)
+	case *time.Time:
+		if x == nil {
+			return ""
+		}
+		return formatSQLDateTime(*x)
+	case float64:
+		return strconv.FormatFloat(x, 'f', -1, 64)
+	case float32:
+		return strconv.FormatFloat(float64(x), 'f', -1, 32)
+	case int:
+		return strconv.Itoa(x)
+	case int64:
+		return strconv.FormatInt(x, 10)
+	case int32:
+		return strconv.FormatInt(int64(x), 10)
+	case int16:
+		return strconv.FormatInt(int64(x), 10)
+	case int8:
+		return strconv.FormatInt(int64(x), 10)
+	case uint:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint64:
+		return strconv.FormatUint(x, 10)
+	case uint32:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint16:
+		return strconv.FormatUint(uint64(x), 10)
+	case uint8:
+		return strconv.FormatUint(uint64(x), 10)
+	case bool:
+		return strconv.FormatBool(x)
+	case string:
+		if out, ok := tryFormatTimeString(x); ok {
+			return out
+		}
+		return x
+	case json.Number:
+		ns := x.String()
+		if out, ok := tryFormatTimeString(ns); ok {
+			return out
+		}
+		return ns
+	default:
+		return fmt.Sprintf("%v", x)
+	}
+}
+
+const sqlDateTimeLayout = "2006-01-02 15:04:05" // yyyy-MM-dd HH:mm:ss
+
+func formatSQLDateTime(t time.Time) string {
+	return t.Format(sqlDateTimeLayout)
+}
+
+// tryFormatTimeString 将 RFC3339、常见本地时间串、纯数字 Unix 秒/毫秒解析为 yyyy-MM-dd HH:mm:ss。
+func tryFormatTimeString(s string) (string, bool) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return s, false
+	}
+	zoneLayouts := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+	}
+	for _, layout := range zoneLayouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return formatSQLDateTime(t), true
+		}
+	}
+	localLayouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05.000",
+		"2006-01-02 15:04:05.000000",
+		"2006-01-02T15:04:05.000",
+		"2006-01-02T15:04:05.000000",
+		"2006-01-02",
+	}
+	for _, layout := range localLayouts {
+		if t, err := time.ParseInLocation(layout, s, time.Local); err == nil {
+			return formatSQLDateTime(t), true
+		}
+	}
+	if len(s) == 10 || len(s) == 13 {
+		if onlyDigits(s) {
+			n, err := strconv.ParseInt(s, 10, 64)
+			if err != nil {
+				return "", false
+			}
+			var t time.Time
+			if len(s) == 13 {
+				t = time.UnixMilli(n)
+			} else {
+				t = time.Unix(n, 0)
+			}
+			y := t.Year()
+			if y >= 1990 && y <= 2100 {
+				return formatSQLDateTime(t), true
+			}
+		}
+	}
+	return "", false
+}
+
+func onlyDigits(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func TestGoJson(t *testing.T) {

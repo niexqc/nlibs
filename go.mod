@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
-	github.com/bytedance/sonic v1.13.2
+	github.com/bytedance/sonic v1.15.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
@@ -28,8 +28,8 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/aliyun/alibabacloud-oss-go-sdk-v2 v1.2.2
-	github.com/bytedance/sonic/loader v0.2.4 // indirect
-	github.com/cloudwego/base64x v0.1.5 // indirect
+	github.com/bytedance/sonic/loader v0.5.0 // indirect
+	github.com/cloudwego/base64x v0.1.6 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/gin-contrib/sse v1.1.0 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
@@ -79,6 +79,7 @@ require (
 require github.com/shopspring/decimal v1.4.0
 
 require (
+	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/tklauser/go-sysconf v0.3.15 // indirect
 	github.com/tklauser/numcpus v0.10.0 // indirect
