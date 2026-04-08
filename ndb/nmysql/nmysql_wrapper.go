@@ -370,7 +370,9 @@ func (ndbw *NMysqlWrapper) NdbTxCommit(recoveResult any) error {
 	if nil != err {
 		slog.Error("事务提交时,捕获到异常", "异常原因", err)
 	} else {
-		slog.Debug("事务提交成功")
+		if !sqlext.ThreadLocalNoPrintSql.Get() {
+			slog.Debug("事务提交成功")
+		}
 	}
 	return err
 }

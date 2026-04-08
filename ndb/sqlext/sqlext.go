@@ -16,7 +16,7 @@ import (
 	"github.com/timandy/routine"
 )
 
-var noPrintSqlLog = routine.NewInheritableThreadLocal[bool]()
+var ThreadLocalNoPrintSql = routine.NewInheritableThreadLocal[bool]()
 
 var NdbTags = struct {
 	TableSchema string
@@ -32,12 +32,9 @@ type NdbBasicType interface {
 
 var blankRegexp = regexp.MustCompile(`\s+`)
 
-func NoPrintSqlLog() {
-	noPrintSqlLog.Set(false)
-}
-
-func PrintSqlLog() {
-	noPrintSqlLog.Set(true)
+// 如果print为true，则该线程不打印sql日志
+func ThreadNoPrintSqlLog(print bool) {
+	ThreadLocalNoPrintSql.Set(print)
 }
 
 func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr string, args ...any) {
@@ -51,7 +48,7 @@ func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr stri
 	}
 
 	sqlStr, err := SqlFmt(sqlStr, args...)
-	if noPrintSqlLog.Get() {
+	if !ThreadLocalNoPrintSql.Get() {
 		//打印日志
 		if nil != err {
 			slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s:%v", costTime, "Sql格式化错误", err))
