@@ -102,7 +102,21 @@ func sqlFmtSqlAnyArg(arg any) string {
 	case int, uint, int8, int16, int32, int64, uint8, uint16, uint32, uint64, float32, float64:
 		return fmt.Sprintf("%v", v)
 	case time.Time:
-		return fmt.Sprintf("'%v'", ntools.Time2Str(v))
+		return fmt.Sprintf("'%v'", ntools.Time2StrMilli(v))
+	case NullString:
+		return ntools.If3(v.Valid, fmt.Sprintf("'%v'", v.String), "NULL")
+	case NullTime:
+		return ntools.If3(v.Valid, fmt.Sprintf("'%v'", ntools.Time2StrMilli(v.Time)), "NULL")
+	case NullInt:
+		return ntools.If3(v.Valid, fmt.Sprintf("%v", v.Int32), "NULL")
+	case NullInt64:
+		return ntools.If3(v.Valid, fmt.Sprintf("%v", v.Int64), "NULL")
+	case NullFloat64:
+		return ntools.If3(v.Valid, fmt.Sprintf("%v", v.Float64), "NULL")
+	case NullBool:
+		return ntools.If3(v.Valid, fmt.Sprintf("%v", v.Bool), "NULL")
+	case NullDecimal:
+		return ntools.If3(v.Valid, fmt.Sprintf("%v", v.Decimal), "NULL")
 	default:
 		// 反射检查底层类型（例如处理自定义类型）
 		rt := reflect.TypeOf(arg)

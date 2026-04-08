@@ -352,10 +352,15 @@ func (ndbw *NPgWrapper) NdbTxCommit(recoveResult any) error {
 	defer ndbw.sqlxTxContextCancelFunc()
 	// 执行提交的时候检查是否有异常， 如果有异常就直接回滚
 	if recoveResult != nil {
-		err := recoveResult.(error)
+		var err error
+		switch v := recoveResult.(type) {
+		case error:
+			err = v
+		default:
+			err = fmt.Errorf("panic: %v", v)
+		}
 		slog.Error(fmt.Sprintf("提交事务前,捕获到异常【%v】,执行回滚", err))
-		// 回滚事务
-		ndbw.sqlxTx.Rollback()
+		_ = ndbw.sqlxTx.Rollback()
 		return err
 	}
 	// 提交时原子检查状态
@@ -367,7 +372,7 @@ func (ndbw *NPgWrapper) NdbTxCommit(recoveResult any) error {
 		slog.Error("事务提交时,捕获到异常", "异常原因", err)
 	} else {
 		if !sqlext.ThreadLocalNoPrintSql.Get() {
-			slog.Debug("事务提交成功")
+			//slog.Debug("事务提交成功")
 		}
 
 	}
