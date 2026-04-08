@@ -13,7 +13,10 @@ import (
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/niexqc/nlibs/nyaml"
+	"github.com/timandy/routine"
 )
+
+var noPrintSqlLog = routine.NewInheritableThreadLocal[bool]()
 
 var NdbTags = struct {
 	TableSchema string
@@ -29,6 +32,14 @@ type NdbBasicType interface {
 
 var blankRegexp = regexp.MustCompile(`\s+`)
 
+func NoPrintSqlLog() {
+	noPrintSqlLog.Set(false)
+}
+
+func PrintSqlLog() {
+	noPrintSqlLog.Set(true)
+}
+
 func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr string, args ...any) {
 	if !sqlPrintConf.DbSqlLogPrint {
 		return
@@ -40,11 +51,13 @@ func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr stri
 	}
 
 	sqlStr, err := SqlFmt(sqlStr, args...)
-	//打印日志
-	if nil != err {
-		slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s:%v", costTime, "Sql格式化错误", err))
-	} else {
-		slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+	if noPrintSqlLog.Get() {
+		//打印日志
+		if nil != err {
+			slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s:%v", costTime, "Sql格式化错误", err))
+		} else {
+			slog.Log(context.Background(), ntools.SlogLevelStr2Level(sqlPrintConf.DbSqlLogLevel), fmt.Sprintf("[%dms] %s", costTime, sqlStr))
+		}
 	}
 }
 
