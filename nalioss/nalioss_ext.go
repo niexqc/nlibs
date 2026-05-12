@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"sort"
 	"sync"
+	"time"
 
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss"
 	"github.com/aliyun/alibabacloud-oss-go-sdk-v2/oss/credentials"
@@ -15,6 +17,13 @@ import (
 	"github.com/niexqc/nlibs/nyaml"
 	"github.com/panjf2000/ants/v2"
 )
+
+// 经 HTTP 代理上传大分片时，SDK 默认连接/读写超时过短易触发 TLS handshake timeout、write i/o timeout。
+const ossConnectTimeout = 60 * time.Second
+const ossReadWriteTimeout = 15 * time.Minute
+
+// 单 HTTP 代理同时承载过多 UploadPart（大 body）易排队超时，启用代理时对并发做上限。
+const multipartWorkersBehindProxy = 10
 
 type NAliOssClient struct {
 	Cnf                     *nyaml.YamlConfNAliOssConf
@@ -26,12 +35,22 @@ func NewNAliOssClient(cnf *nyaml.YamlConfNAliOssConf) (*NAliOssClient, error) {
 	var cfg = oss.LoadDefaultConfig().
 		WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cnf.OssKey, cnf.OssKeySecret)).
 		WithRegion("cn-chengdu").
-		WithUseInternalEndpoint(cnf.InternalEndpoint)
-	if cnf.ProxyEnabel {
+		WithUseInternalEndpoint(cnf.InternalEndpoint).
+		WithConnectTimeout(ossConnectTimeout).
+		WithReadWriteTimeout(ossReadWriteTimeout)
+	if cnf.ProxyEnable {
 		slog.Info(fmt.Sprintf("OSS当前为代理模式,通过代理【%v】访问", cnf.ProxyHttpUrl))
 		cfg.WithProxyHost(cnf.ProxyHttpUrl)
 	}
-	wpool, err := ants.NewPool(cnf.MultipartUploadWorkNum, ants.WithNonblocking(false))
+	workNum := cnf.MultipartUploadWorkNum
+	if workNum < 1 {
+		workNum = 4
+	}
+	if cnf.ProxyEnable && workNum > multipartWorkersBehindProxy {
+		slog.Info(fmt.Sprintf("OSS 经代理上传: 分片并发由 %d 调整为 %d，降低代理侧超时风险", cnf.MultipartUploadWorkNum, multipartWorkersBehindProxy))
+		workNum = multipartWorkersBehindProxy
+	}
+	wpool, err := ants.NewPool(workNum, ants.WithNonblocking(false))
 	if nil != err {
 		return nil, nerror.NewRunTimeError("创建分片上传工作协程池失败")
 	}
@@ -154,22 +173,29 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 				UploadId:   oss.Ptr(uploadId),           // 上传ID
 				Body:       bytes.NewReader(chunkData),  // 分片内容
 			}
-			// 发送分片上传请求
-			partResult, err := retryUploadPart(svc.OssClient, partRequest, 1, 3)
-			if err != nil {
-				slog.Error(fmt.Sprintf("分片上传失败 %d: %v", curPartNumber, err))
+			// 发送分片上传请求，最多尝试 5 次（含短暂退避，缓解代理瞬时拥塞）
+			partResult, err2 := retryUploadPart(svc.OssClient, partRequest, 1, 5)
+			if err2 != nil {
+				slog.Error(fmt.Sprintf("分片上传失败 %d: %v", curPartNumber, err2))
+			} else {
+				// 记录分片上传结果
+				mu.Lock()
+				parts = append(parts, oss.UploadPart{PartNumber: partRequest.PartNumber, ETag: partResult.ETag})
+				mu.Unlock()
+				slog.Debug(fmt.Sprintf("分片序号:%d,已上传完成", curPartNumber))
 			}
-			// 记录分片上传结果
-			mu.Lock()
-			parts = append(parts, oss.UploadPart{PartNumber: partRequest.PartNumber, ETag: partResult.ETag})
-			mu.Unlock()
 			wg.Done()
-			slog.Debug(fmt.Sprintf("分片序号:%d,已上传完成", curPartNumber))
 		})
 		// 增加
 		partNumber++
 	}
 	wg.Wait()
+	if int64(len(parts)) != count {
+		return fmt.Errorf("分片上传未全部成功: 期望 %d 片, 实际完成 %d 片", count, len(parts))
+	}
+	sort.Slice(parts, func(i, j int) bool {
+		return parts[i].PartNumber < parts[j].PartNumber
+	})
 	// 完成分片上传请求
 	request := &oss.CompleteMultipartUploadRequest{
 		Bucket:                  oss.Ptr(svc.Cnf.BucketName),
@@ -186,12 +212,16 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 	return err
 }
 
-func retryUploadPart(client *oss.Client, requst *oss.UploadPartRequest, curTimes, retryMaxTimes int) (partResult *oss.UploadPartResult, err error) {
-	slog.Debug(fmt.Sprintf("分片序号:%v,第%v/%v次上传", requst.PartNumber, curTimes, retryMaxTimes))
-	partResult, err = client.UploadPart(context.TODO(), requst)
-	curTimes = curTimes + 1
-	if err == nil || curTimes > retryMaxTimes {
+func retryUploadPart(client *oss.Client, request *oss.UploadPartRequest, attempt, maxAttempts int) (*oss.UploadPartResult, error) {
+	slog.Debug(fmt.Sprintf("分片序号:%v,第%v/%v次上传", request.PartNumber, attempt, maxAttempts))
+	partResult, err := client.UploadPart(context.TODO(), request)
+	if err == nil {
 		return partResult, nil
 	}
-	return retryUploadPart(client, requst, curTimes, retryMaxTimes)
+	slog.Error(fmt.Sprintf("分片序号:%v,第%v/%v次上传失败:%v", request.PartNumber, attempt, maxAttempts, err))
+	if attempt >= maxAttempts {
+		return nil, err
+	}
+	time.Sleep(time.Duration(attempt) * 300 * time.Millisecond)
+	return retryUploadPart(client, request, attempt+1, maxAttempts)
 }

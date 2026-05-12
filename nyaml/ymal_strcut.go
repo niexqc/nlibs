@@ -66,7 +66,7 @@ type YamlConfNAliOssConf struct {
 	OssKey                 string `yaml:"ossKey" hc:"OssKey"`
 	OssKeySecret           string `yaml:"ossKeySecret" hc:"OssKeySecret"`
 	OssPrefix              string `yaml:"ossPrefix" hc:"Oss存储的前缀"`
-	ProxyEnabel            bool   `yaml:"proxyEnabel" hc:"是否开启代理"`
+	ProxyEnable            bool   `yaml:"proxyEnable" hc:"是否开启代理"`
 	ProxyHttpUrl           string `yaml:"proxyHttpUrl" hc:"代理的地址"`
 	MultipartUploadWorkNum int    `yaml:"multipartUploadWorkNum" hc:"分片上传文件最大的并发数"`
 }

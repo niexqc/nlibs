@@ -26,7 +26,7 @@ func init() {
 		OssKey:                 "",
 		OssKeySecret:           "",
 		OssPrefix:              "xbak/dev253",
-		ProxyEnabel:            false,
+		ProxyEnable:            false,
 		ProxyHttpUrl:           "http://192.168.0.251:1080",
 		MultipartUploadWorkNum: 30,
 	}
