@@ -21,6 +21,9 @@ import (
 
 var threadLocal = routine.NewInheritableThreadLocal[string]()
 
+// 当前默认文件日志，供进程退出时刷盘关闭
+var defaultFileLogger *DailyRotatingLogger
+
 type NwLogHandler struct {
 	Level      slog.Leveler
 	PrintMehod int // 0-不打印 ，1-详情,2-仅方法名称
@@ -39,6 +42,8 @@ func SlogGetTraceId() string {
 // printMethod int 方法打印 0-不打印 ，1-详情,2-仅方法名称
 // outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
 func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, printMethod int) {
+	// 重新配置前先关闭旧文件日志，避免泄漏与丢日志
+	SlogClose()
 	slogLevel := SlogLevelStr2Level(confLevel)
 	var nwLogHandler *NwLogHandler
 	if outMode == 3 || outMode == 2 {
@@ -46,6 +51,7 @@ func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, print
 		if nil != err {
 			panic(err)
 		}
+		defaultFileLogger = fileWriter
 		nwLogHandler = NewNwLogHandlerForSlog(fileWriter, slogLevel, outMode, printMethod)
 	} else {
 		nwLogHandler = NewNwLogHandlerForSlog(nil, slogLevel, outMode, printMethod)
@@ -59,6 +65,14 @@ func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, print
 // outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
 func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
 	SlogConfWithDir("logs", logFilePrefix, confLevel, outMode, printMethod)
+}
+
+// SlogClose 排空异步缓冲并刷盘关闭文件日志，进程退出前应调用
+func SlogClose() {
+	if defaultFileLogger != nil {
+		defaultFileLogger.Close()
+		defaultFileLogger = nil
+	}
 }
 
 func SlogConf4Test() {
@@ -174,6 +188,8 @@ type DailyRotatingLogger struct {
 	flushInterval time.Duration // 刷盘间隔
 	mu            sync.Mutex    // 文件操作互斥锁
 	stopChan      chan struct{} // 关闭信号
+	doneChan      chan struct{} // 后台协程结束信号
+	closeOnce     sync.Once
 }
 
 func NewDailyRotatingLogger(dir, prefix string, bufferSize int, flushInterval time.Duration) (*DailyRotatingLogger, error) {
@@ -187,6 +203,7 @@ func NewDailyRotatingLogger(dir, prefix string, bufferSize int, flushInterval ti
 		buffer:        make(chan []byte, bufferSize),
 		flushInterval: flushInterval,
 		stopChan:      make(chan struct{}),
+		doneChan:      make(chan struct{}),
 	}
 
 	if err := logger.rotateIfNeeded(); err != nil {
@@ -202,12 +219,18 @@ func (l *DailyRotatingLogger) Write(p []byte) (n int, err error) {
 	// 复制数据避免外部修改
 	entry := make([]byte, len(p))
 	copy(entry, p)
-	l.buffer <- entry
+	select {
+	case <-l.stopChan:
+		// 已关闭时直接同步写入，避免丢日志
+		l.safeWrite(entry)
+	case l.buffer <- entry:
+	}
 	return len(p), nil
 }
 
 // 异步处理缓冲队列
 func (l *DailyRotatingLogger) processBuffer() {
+	defer close(l.doneChan)
 	ticker := time.NewTicker(l.flushInterval)
 	defer ticker.Stop()
 
@@ -222,13 +245,23 @@ func (l *DailyRotatingLogger) processBuffer() {
 			}
 			l.mu.Unlock()
 		case <-l.stopChan:
-			l.mu.Lock()
-			if l.fileWriter != nil {
-				l.fileWriter.Flush()
-				l.file.Close()
+			// 排空缓冲后再刷盘关闭，避免进程快速退出丢日志
+			for {
+				select {
+				case entry := <-l.buffer:
+					l.safeWrite(entry)
+				default:
+					l.mu.Lock()
+					if l.fileWriter != nil {
+						l.fileWriter.Flush()
+						l.file.Close()
+						l.fileWriter = nil
+						l.file = nil
+					}
+					l.mu.Unlock()
+					return
+				}
 			}
-			l.mu.Unlock()
-			return
 		}
 	}
 }
@@ -276,7 +309,10 @@ func (l *DailyRotatingLogger) rotateIfNeeded() error {
 	return nil
 }
 
-// 优雅关闭
+// 优雅关闭：排空缓冲、刷盘并等待后台协程结束
 func (l *DailyRotatingLogger) Close() {
-	close(l.stopChan)
+	l.closeOnce.Do(func() {
+		close(l.stopChan)
+		<-l.doneChan
+	})
 }

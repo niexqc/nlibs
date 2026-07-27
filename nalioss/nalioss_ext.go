@@ -38,18 +38,22 @@ func NewNAliOssClient(cnf *nyaml.YamlConfNAliOssConf) (*NAliOssClient, error) {
 		WithUseInternalEndpoint(cnf.InternalEndpoint).
 		WithConnectTimeout(ossConnectTimeout).
 		WithReadWriteTimeout(ossReadWriteTimeout)
+	// 是否开启代理
 	if cnf.ProxyEnable {
 		slog.Info(fmt.Sprintf("OSS当前为代理模式,通过代理【%v】访问", cnf.ProxyHttpUrl))
 		cfg.WithProxyHost(cnf.ProxyHttpUrl)
 	}
+	// 分片上传文件最大的并发数
 	workNum := cnf.MultipartUploadWorkNum
 	if workNum < 1 {
 		workNum = 4
 	}
+	// 如果开启代理，并且分片上传文件最大的并发数大于10，则调整为10
 	if cnf.ProxyEnable && workNum > multipartWorkersBehindProxy {
 		slog.Info(fmt.Sprintf("OSS 经代理上传: 分片并发由 %d 调整为 %d，降低代理侧超时风险", cnf.MultipartUploadWorkNum, multipartWorkersBehindProxy))
 		workNum = multipartWorkersBehindProxy
 	}
+
 	wpool, err := ants.NewPool(workNum, ants.WithNonblocking(false))
 	if nil != err {
 		return nil, nerror.NewRunTimeError("创建分片上传工作协程池失败")

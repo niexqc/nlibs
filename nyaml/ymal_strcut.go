@@ -68,5 +68,5 @@ type YamlConfNAliOssConf struct {
 	OssPrefix              string `yaml:"ossPrefix" hc:"Oss存储的前缀"`
 	ProxyEnable            bool   `yaml:"proxyEnable" hc:"是否开启代理"`
 	ProxyHttpUrl           string `yaml:"proxyHttpUrl" hc:"代理的地址"`
-	MultipartUploadWorkNum int    `yaml:"multipartUploadWorkNum" hc:"分片上传文件最大的并发数"`
+	MultipartUploadWorkNum int    `yaml:"multipartUploadWorkNum" hc:"分片上传文件最大的并发数,开启代理时候不能待遇10"`
 }
