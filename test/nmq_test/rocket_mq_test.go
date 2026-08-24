@@ -37,7 +37,8 @@ func TestNmqProducerAndConsumer(t *testing.T) {
 		}
 		return consumer.ConsumeSuccess, nil
 	}
-	c01 := nmq.NewNMqConsumer(NameServer, Topic, "cc02", false)
+	c01, err := nmq.NewNMqConsumer(NameServer, Topic, "cc02", false)
+	ntools.TestErrPainic(t, "NMqConsumer 创建失败", err)
 	err = c01.Subscribe("*", onReciveMsg)
 	ntools.TestErrPainic(t, "NMqConsumer 订阅失败", err)
 	recvMsgId := <-recv

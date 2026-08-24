@@ -28,9 +28,16 @@ func NewReqVoFloat64(val float64) ReqVoFloat64 {
 }
 
 func (i *ReqVoInt) UnmarshalJSON(data []byte) error {
+	// null 视为零值，不当作错误
+	if string(data) == "null" {
+		*i = 0
+		return nil
+	}
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
-		val, err := strconv.ParseInt(s, 10, 32)
+		// ReqVoInt 本质是 int，使用 strconv.IntSize（当前平台 int 的位宽）而不是固定的 32，
+		// 否则在 64 位平台上取值超过 int32 范围时会被错误拒绝。
+		val, err := strconv.ParseInt(s, 10, strconv.IntSize)
 		if err != nil {
 			return fmt.Errorf("错误的int字符串: %s", s)
 		}
@@ -51,6 +58,11 @@ func (i *ReqVoInt) Value() int {
 }
 
 func (i *ReqVoInt64) UnmarshalJSON(data []byte) error {
+	// null 视为零值，不当作错误
+	if string(data) == "null" {
+		*i = 0
+		return nil
+	}
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
 		val, err := strconv.ParseInt(s, 10, 64)
@@ -74,6 +86,11 @@ func (i *ReqVoInt64) Value() int64 {
 }
 
 func (i *ReqVoBool) UnmarshalJSON(data []byte) error {
+	// null 视为零值，不当作错误
+	if string(data) == "null" {
+		*i = false
+		return nil
+	}
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
 		val, err := strconv.ParseBool(s)
@@ -97,6 +114,11 @@ func (i *ReqVoBool) Value() bool {
 }
 
 func (i *ReqVoFloat64) UnmarshalJSON(data []byte) error {
+	// null 视为零值，不当作错误
+	if string(data) == "null" {
+		*i = 0
+		return nil
+	}
 	var s string
 	if err := json.Unmarshal(data, &s); err == nil {
 		val, err := strconv.ParseFloat(s, 64)

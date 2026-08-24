@@ -38,7 +38,7 @@ func ThreadNoPrintSqlLog(print bool) {
 }
 
 func PrintSql(sqlPrintConf *nyaml.YamlConfSqlPrint, start time.Time, sqlStr string, args ...any) {
-	if !sqlPrintConf.DbSqlLogPrint {
+	if sqlPrintConf == nil || !sqlPrintConf.DbSqlLogPrint {
 		return
 	}
 	costTime := time.Now().UnixMilli() - start.UnixMilli()

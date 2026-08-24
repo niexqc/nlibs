@@ -34,6 +34,8 @@ func YzmJpgGenCode(w, h, yzmLen int) (txt string, imgBytes []byte) {
 	writer := bufio.NewWriter(buffer)
 	// data.WriteGIF(writer, &gif.Options{})
 	data.WriteJPG(writer, &jpeg.Options{Quality: 75})
+	// 必须 Flush 将缓冲写入 buffer，否则生成的是空/不完整图片
+	writer.Flush()
 	bys := buffer.Bytes()
 	slog.Debug(fmt.Sprintf("yzm:%s,jpg_bytes_len:%d", data.Text, len(bys)))
 	return data.Text, bys

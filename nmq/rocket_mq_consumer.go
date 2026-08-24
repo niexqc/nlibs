@@ -17,10 +17,10 @@ type NMqConsumer struct {
 	Consumer  rocketmq.PushConsumer
 }
 
-func NewNMqConsumer(nameSvrAddr, topic, groupName string, broadCastingMode bool) *NMqConsumer {
+func NewNMqConsumer(nameSvrAddr, topic, groupName string, broadCastingMode bool) (*NMqConsumer, error) {
 	rlog.SetLogLevel("error")
 	consumerModel := ntools.If3(broadCastingMode, consumer.BroadCasting, consumer.Clustering)
-	myCunsumer, _ := rocketmq.NewPushConsumer(
+	myCunsumer, err := rocketmq.NewPushConsumer(
 		consumer.WithNameServer([]string{nameSvrAddr}),
 		consumer.WithGroupName(groupName),
 		consumer.WithConsumeFromWhere(consumer.ConsumeFromLastOffset),
@@ -28,12 +28,15 @@ func NewNMqConsumer(nameSvrAddr, topic, groupName string, broadCastingMode bool)
 		consumer.WithConsumeMessageBatchMaxSize(1), //单条消费
 		consumer.WithConsumerModel(consumerModel),
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	return &NMqConsumer{
 		GroupName: groupName,
 		Topic:     topic,
 		Consumer:  myCunsumer,
-	}
+	}, nil
 }
 
 // 订阅消息,tag可以为空
@@ -43,6 +46,10 @@ func (mq *NMqConsumer) Subscribe(tag string, onMsg func(ctx context.Context, msg
 		msgSelector = consumer.MessageSelector{Type: consumer.TAG, Expression: tag}
 	}
 	err := mq.Consumer.Subscribe(mq.Topic, msgSelector, func(ctx context.Context, imsgs ...*primitive.MessageExt) (consumer.ConsumeResult, error) {
+		if len(imsgs) == 0 {
+			slog.Warn("收到空消息批次，跳过")
+			return consumer.ConsumeSuccess, nil
+		}
 		return onMsg(ctx, imsgs[0])
 	})
 	if nil != err {

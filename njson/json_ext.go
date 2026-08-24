@@ -381,10 +381,9 @@ func isUnderflowRangeErr(err error) bool {
 	if !ok || ne.Err != strconv.ErrRange {
 		return false
 	}
-	f, ferr := strconv.ParseFloat(ne.Num, 64)
-	if ferr != nil {
-		return false
-	}
+	// 对同一个 Num 重新解析时，下溢仍会返回 ErrRange，因此不能因为 ferr != nil 就返回 false。
+	// 通过返回值的量级区分：溢出得到 ±Inf，下溢得到 0 或最小次正规数（有限值）。
+	f, _ := strconv.ParseFloat(ne.Num, 64)
 	return !math.IsInf(f, 0)
 }
 

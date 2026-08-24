@@ -83,14 +83,12 @@ func StructDoDbColStr(doType reflect.Type, tableAlias string, excludeCols ...str
 		doType = doType.Elem() //解引用
 	}
 	sb := &strings.Builder{}
-	cols, err := StructDoDbColList(doType, tableAlias)
+	// 将 excludeCols 传给 StructDoDbColList，它按原始列名过滤，避免与 alias.col 前缀比较导致排除失效
+	cols, err := StructDoDbColList(doType, tableAlias, excludeCols...)
 	if nil != err {
 		return "", err
 	}
 	for _, v := range cols {
-		if slices.Contains(excludeCols, v) {
-			continue
-		}
 		if sb.Len() > 0 {
 			sb.WriteString(",")
 		}

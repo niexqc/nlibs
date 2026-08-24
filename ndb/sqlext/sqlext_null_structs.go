@@ -114,13 +114,14 @@ func (ns *NullString) UnmarshalJSON(data []byte) error {
 		ns.Valid = false
 		return nil
 	}
-	valStr := valueStrTrim(data)
-	if strings.ToLower(string(valStr)) == "null" {
+	// 仅当 JSON 字面量是 null（未加引号）时才视为 SQL NULL，
+	// 字符串 "null" 应保留为普通字符串，避免合法内容被误判为 NULL。
+	if strings.TrimSpace(string(data)) == "null" {
 		ns.Valid = false
 		return nil
 	}
 	ns.Valid = true
-	ns.String = valStr
+	ns.String = valueStrTrim(data)
 	return nil
 }
 
@@ -189,8 +190,7 @@ func (ns *NullInt) UnmarshalJSON(data []byte) error {
 	}
 	cv, err := strconv.ParseInt(valStr, 10, 32)
 	if nil != err {
-		ns.Valid = false
-		return nil
+		return err
 	}
 	ns.Valid = true
 	ns.Int32 = int32(cv)
@@ -214,10 +214,10 @@ func (ns *NullInt64) UnmarshalJSON(data []byte) error {
 		ns.Valid = false
 		return nil
 	}
-	cv, err := strconv.ParseInt(valStr, 10, 32)
+	// NullInt64 是 int64，必须用 bitSize=64 解析，否则大数会被截断/报错为 NULL
+	cv, err := strconv.ParseInt(valStr, 10, 64)
 	if nil != err {
-		ns.Valid = false
-		return nil
+		return err
 	}
 	ns.Valid = true
 	ns.Int64 = cv
@@ -243,8 +243,7 @@ func (ns *NullFloat64) UnmarshalJSON(data []byte) error {
 	}
 	cv, err := strconv.ParseFloat(valStr, 64)
 	if nil != err {
-		ns.Valid = false
-		return nil
+		return err
 	}
 	ns.Valid = true
 	ns.Float64 = cv
@@ -270,8 +269,7 @@ func (ns *NullBool) UnmarshalJSON(data []byte) error {
 	}
 	cv, err := strconv.ParseBool(valStr)
 	if nil != err {
-		ns.Valid = false
-		return nil
+		return err
 	}
 	ns.Valid = true
 	ns.Bool = cv

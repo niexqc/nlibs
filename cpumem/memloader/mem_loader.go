@@ -66,9 +66,11 @@ func NewMemLoader(targetPercent float64, checkInterval int64) *MemLoader {
 }
 
 func MenPercent() float64 {
-	memInfo, _ := mem.VirtualMemory()
-	memPercent := memInfo.UsedPercent
-	return memPercent
+	memInfo, err := mem.VirtualMemory()
+	if err != nil || memInfo == nil {
+		return 0
+	}
+	return memInfo.UsedPercent
 }
 
 // Start 启动内存负载调节器
@@ -84,7 +86,11 @@ func (loader *MemLoader) Start() {
 		case <-ticker.C:
 			currentPercent := MenPercent()
 			loaderMb := atomic.LoadUint64(&loader.allocatedBytes) / (1024 * 1024)
-			slog.Info(fmt.Sprintf("内存状态,当前:%02f,目标:%02f,分配(Mb):%d,块数量:%d", currentPercent, loader.TargetPercent, loaderMb, len(loader.blocks)))
+			// 在锁下读 blocks 长度，避免与 allocateMemory/freeMemory 的写入发生数据竞争
+			loader.blocksMutex.Lock()
+			blockCount := len(loader.blocks)
+			loader.blocksMutex.Unlock()
+			slog.Info(fmt.Sprintf("内存状态,当前:%02f,目标:%02f,分配(Mb):%d,块数量:%d", currentPercent, loader.TargetPercent, loaderMb, blockCount))
 
 			// 内存保护机制
 			if currentPercent > loader.protectionFactor*100 {
@@ -185,12 +191,13 @@ func (loader *MemLoader) allocateMemory(size uint64) {
 	for i := range data {
 		data[i] = byte(i % 256)
 	}
-	// 保持内存块引用，防止GC回收
+	// 保持内存块引用，防止GC回收。
+	// allocatedBytes 的更新必须与 blocks 的修改在同一临界区内，
+	// 否则 freeMemory 可能在 append 之后、计数更新之前执行，导致计数下溢。
 	loader.blocksMutex.Lock()
 	loader.blocks = append(loader.blocks, data)
-	loader.blocksMutex.Unlock()
-
 	atomic.AddUint64(&loader.allocatedBytes, size)
+	loader.blocksMutex.Unlock()
 }
 
 // freeMemory 释放指定大小的内存
@@ -259,8 +266,8 @@ func (loader *MemLoader) emergencyFree() {
 
 // Stop 停止内存负载
 func (loader *MemLoader) Stop() {
-	if atomic.LoadInt32(&loader.active) == 1 {
-		atomic.StoreInt32(&loader.active, 0)
+	// 使用 CAS 保证只有一个 goroutine 执行 close，避免并发 Stop 导致 close of closed channel panic
+	if atomic.CompareAndSwapInt32(&loader.active, 1, 0) {
 		close(loader.stopChan)
 		loader.stopChan = make(chan struct{})
 		loader.freeAllMemory()

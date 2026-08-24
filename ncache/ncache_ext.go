@@ -44,7 +44,8 @@ func NewRedisPool(conf *nyaml.YamlConfRedis) *redis.Pool {
 			return conn, nil
 		},
 	}
-	slog.Debug(address + " " + conf.RedisPwd)
+	// 仅记录地址，绝不将密码写入日志
+	slog.Debug(address)
 	return redisPool
 }
 

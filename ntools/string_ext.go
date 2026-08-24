@@ -19,6 +19,22 @@ func StrFromGbkBytes(bytes []byte) *NString {
 }
 
 func (ns *NString) CutStr(start, end int) string {
+	length := len(ns.S)
+	if start < 0 {
+		start = 0
+	}
+	if end < 0 {
+		end = 0
+	}
+	if start > length {
+		start = length
+	}
+	if end > length {
+		end = length
+	}
+	if start > end {
+		return ""
+	}
 	return ns.S[start:end]
 }
 
@@ -50,18 +66,29 @@ func (ns *NString) Camel2Under() string {
 	return camelcaseToLower(ns.S, "_")
 }
 
+// titleCase 将字符串首字母大写，其余字母保持原样。
+// strings.Title 已被标记为 deprecated（对 Unicode 处理有缺陷且会改小写部分），这里手工实现。
+func titleCase(s string) string {
+	if s == "" {
+		return s
+	}
+	r := []rune(s)
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
+}
+
 func lowerToCamelcase(str string, sp string, title bool) string {
 	var method string
 	sli := strings.Split(str, sp)
 	for i, v := range sli {
 		if i == 0 {
 			if title {
-				method += strings.Title(v)
+				method += titleCase(v)
 			} else {
 				method += v
 			}
 		} else {
-			method += strings.Title(v)
+			method += titleCase(v)
 		}
 	}
 	return method

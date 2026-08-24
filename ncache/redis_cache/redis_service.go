@@ -191,7 +191,13 @@ func (service *RedisService) Consumer(queueKey string, msgch chan string) {
 	conn := service.RedisPool.Get()
 	for {
 		// BLPOP 返回格式: [队列名, 元素值]
-		reply, err := redis.Strings(conn.Do("BLPOP", queueKey, 0)) // 0 表示无限阻塞
+		// 使用有限的服务端阻塞时间（28 秒），避免无限阻塞超过连接池的读超时，
+		// 否则 README 中线 readTimeout 下 BLPOP 会周期性断连重连。
+		reply, err := redis.Strings(conn.Do("BLPOP", queueKey, 28))
+		if err == redis.ErrNil {
+			// 阻塞时间内没有消息，直接继续等待，无需重连
+			continue
+		}
 		if err != nil {
 			slog.Warn(fmt.Sprintf("消费失败: %v, 3秒后重试中", err))
 			//发生错误关闭

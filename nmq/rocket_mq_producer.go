@@ -29,6 +29,7 @@ func NewNMqProduer(nameSvrAddr, topic, groupName string) (*NMqProduer, error) {
 		producer.WithNameServer([]string{nameSvrAddr}), // NameServer地址
 		producer.WithRetry(0),                          // 重试次数
 		producer.WithGroupName(groupName),
+		producer.WithQueueSelector(producer.NewHashQueueSelector()), // 按 shardingKey 哈希选择队列，保证同一 shardingKey 落到同一队列
 	)
 	if err != nil {
 		return nil, err

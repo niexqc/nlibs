@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"sort"
@@ -41,7 +42,7 @@ func NewNAliOssClient(cnf *nyaml.YamlConfNAliOssConf) (*NAliOssClient, error) {
 	// 是否开启代理
 	if cnf.ProxyEnable {
 		slog.Info(fmt.Sprintf("OSS当前为代理模式,通过代理【%v】访问", cnf.ProxyHttpUrl))
-		cfg.WithProxyHost(cnf.ProxyHttpUrl)
+		cfg = cfg.WithProxyHost(cnf.ProxyHttpUrl)
 	}
 	// 分片上传文件最大的并发数
 	workNum := cnf.MultipartUploadWorkNum
@@ -147,7 +148,17 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 		return err
 	}
 	uploadId := *initResult.UploadId
-	file, _ := os.Open(localFile)
+	file, err := os.Open(localFile)
+	if err != nil {
+		// 打开失败时中止分片上传，避免在 OSS 中遗留孤儿分片
+		abortRequest := &oss.AbortMultipartUploadRequest{
+			Bucket:   oss.Ptr(svc.Cnf.BucketName),
+			Key:      oss.Ptr(objKey),
+			UploadId: oss.Ptr(uploadId),
+		}
+		svc.OssClient.AbortMultipartUpload(context.TODO(), abortRequest)
+		return err
+	}
 	defer file.Close()
 
 	// 初始化等待组和互斥锁
@@ -162,13 +173,22 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 			break
 		}
 		chunkData := make([]byte, currentChunkSize)
-		file.Read(chunkData)
+		// 必须保证读满 currentChunkSize 字节，避免短读导致分片内容不完整
+		if _, err := io.ReadFull(file, chunkData); err != nil {
+			abortRequest := &oss.AbortMultipartUploadRequest{
+				Bucket:   oss.Ptr(svc.Cnf.BucketName),
+				Key:      oss.Ptr(objKey),
+				UploadId: oss.Ptr(uploadId),
+			}
+			svc.OssClient.AbortMultipartUpload(context.TODO(), abortRequest)
+			return err
+		}
 
 		wg.Add(1)
 		curPartNumber := partNumber + 1
 		slog.Debug(fmt.Sprintf("分片序号:%d,当前分片大小:%s", curPartNumber, ntools.FileSize2Str(currentChunkSize)))
 
-		svc.MultipartUploadWorkPool.Submit(func() {
+		if err := svc.MultipartUploadWorkPool.Submit(func() {
 			// 创建分片上传请求
 			partRequest := &oss.UploadPartRequest{
 				Bucket:     oss.Ptr(svc.Cnf.BucketName), // 目标存储空间名称
@@ -189,7 +209,12 @@ func (svc *NAliOssClient) MultipartUpload(objKey, localFile string, chunkSize in
 				slog.Debug(fmt.Sprintf("分片序号:%d,已上传完成", curPartNumber))
 			}
 			wg.Done()
-		})
+		}); err != nil {
+			// 提交失败（如协程池已满），该分片不会被执行，需要提前释放 wg 计数，
+			// 否则 wg.Wait() 会永久阻塞。
+			wg.Done()
+			slog.Error(fmt.Sprintf("提交分片任务失败 %d: %v", curPartNumber, err))
+		}
 		// 增加
 		partNumber++
 	}

@@ -24,9 +24,10 @@ type columnSchemaDo struct {
 }
 
 func (dbw *NPgWrapper) GetStructDoByTableStr(tableSchema, tableName string) (string, error) {
-	tcSql := fmt.Sprintf("SELECT obj_description('%s.%s'::regclass) tableComment", tableSchema, tableName)
+	// 使用 format('%I.%I'::regclass) 参数化构造表注释查询，避免 schema/table 名直接插值导致的注入/引号问题
+	tcSql := "SELECT obj_description(format('%I.%I', $1::text, $2::text)::regclass) tableComment"
 	tableComment := ""
-	findOk, err := dbw.SelectOne(&tableComment, tcSql)
+	findOk, err := dbw.SelectOne(&tableComment, tcSql, tableSchema, tableName)
 	if nil != err {
 		return "", nerror.NewRunTimeErrorFmt("查询表[%s.%s]注释异常:%v", tableSchema, tableName, err)
 	}

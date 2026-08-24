@@ -22,12 +22,12 @@ func (service *MemCacheService) Int64Incr(key string, expireMillisecond int64) (
 	defer service.nmu.Unlock()
 	val, fund := service.Cache.Get(key)
 	if !fund {
-		err = service.Cache.Add(key, int64(1), time.Duration(expireMillisecond)*time.Second)
+		err = service.Cache.Add(key, int64(1), time.Duration(expireMillisecond)*time.Millisecond)
 		return int64(1), err
 	} else {
 		if v, cok := val.(int64); cok {
 			newv := v + 1
-			err = service.Cache.Replace(key, newv, time.Duration(expireMillisecond)*time.Second)
+			err = service.Cache.Replace(key, newv, time.Duration(expireMillisecond)*time.Millisecond)
 			return newv, err
 		}
 		return 0, nerror.NewRunTimeError("自增的值不是int64")

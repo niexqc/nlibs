@@ -84,7 +84,10 @@ func (e *httpClientExt) Post(url string, data interface{}, contentType string, t
 		return "", fmt.Errorf("返回非%d错误", resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	result, _ := io.ReadAll(resp.Body)
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
 	return string(result), nil
 }
 
@@ -103,7 +106,10 @@ func (e *httpClientExt) PostForm(reqUrl string, data url.Values, timeOut time.Du
 		return "", fmt.Errorf("返回非%d错误", resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	result, _ := io.ReadAll(resp.Body)
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
 	return string(result), nil
 }
 
@@ -131,6 +137,9 @@ func (e *httpClientExt) PostFile(reqUrl string, fileBytes *[]byte, fileNameParam
 		return "", fmt.Errorf("返回非%d错误", resp.StatusCode)
 	}
 	defer resp.Body.Close()
-	result, _ := io.ReadAll(resp.Body)
+	result, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
 	return string(result), nil
 }

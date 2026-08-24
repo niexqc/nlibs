@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"time"
 
@@ -195,6 +196,7 @@ type DailyRotatingLogger struct {
 	stopChan      chan struct{} // 关闭信号
 	doneChan      chan struct{} // 后台协程结束信号
 	closeOnce     sync.Once
+	closed        atomic.Bool  // 是否已关闭，避免关闭后仍写文件/重复刷盘
 }
 
 func NewDailyRotatingLogger(dir, prefix string, bufferSize int, flushInterval time.Duration) (*DailyRotatingLogger, error) {
@@ -224,6 +226,10 @@ func (l *DailyRotatingLogger) Write(p []byte) (n int, err error) {
 	// 复制数据避免外部修改
 	entry := make([]byte, len(p))
 	copy(entry, p)
+	// 已关闭后不再写入，避免向已关闭通道发送或重开已关闭的文件句柄
+	if l.closed.Load() {
+		return len(p), nil
+	}
 	select {
 	case <-l.stopChan:
 		// 已关闭时直接同步写入，避免丢日志
@@ -317,6 +323,7 @@ func (l *DailyRotatingLogger) rotateIfNeeded() error {
 // 优雅关闭：排空缓冲、刷盘并等待后台协程结束
 func (l *DailyRotatingLogger) Close() {
 	l.closeOnce.Do(func() {
+		l.closed.Store(true)
 		close(l.stopChan)
 		<-l.doneChan
 	})

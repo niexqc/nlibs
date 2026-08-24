@@ -34,7 +34,7 @@ func (m *RedisMutex) RedisLock() bool {
 			slog.Error(fmt.Sprintf("[%v-%v]获取Redis锁失败,%s", m.lockkey, m.lockvalue, netError.Error()))
 			return false
 		}
-		if m.curTries > m.tries {
+		if m.curTries >= m.tries {
 			slog.Error(fmt.Sprintf("[%v-%v]获取Redis锁失败,当前第%d次获取,总次数%d", m.lockkey, m.lockvalue, m.curTries, m.tries))
 			return false
 		}

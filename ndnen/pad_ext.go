@@ -34,6 +34,10 @@ func PKCS5UnPadding(origData []byte) []byte {
 		return origData // 空数据直接返回
 	}
 	unpadding := int(origData[length-1])
+	if unpadding <= 0 || unpadding > length {
+		// 非法填充：无法安全去除，返回原文避免越界 panic
+		return origData
+	}
 	return origData[:(length - unpadding)]
 }
 

@@ -19,8 +19,12 @@ var SqlParamArgsRegexp = regexp.MustCompile(`\?`)
 // Sql参数格式化.只支持?格式
 func SqlFmt(sqlStr string, args ...any) (string, error) {
 	if len(args) > 0 {
-		splTexts := []string{}
 		argsRange := SqlParamArgsRegexp.FindAllStringIndex(sqlStr, -1)
+		// 占位符数量必须与参数数量一致，否则会越界或静默丢弃 SQL 片段
+		if len(argsRange) != len(args) {
+			return "", nerror.NewRunTimeErrorFmt("SQL占位符数量(%d)与参数数量(%d)不一致: %s", len(argsRange), len(args), sqlStr)
+		}
+		splTexts := []string{}
 		splTexts = append(splTexts, sqlStr[0:argsRange[0][0]])
 		for idx := 1; idx < len(argsRange); idx++ {
 			splTexts = append(splTexts, sqlStr[argsRange[idx-1][1]:argsRange[idx][0]])
@@ -78,11 +82,16 @@ WHERE t2.%s IS NULL ORDER BY t1.%s ASC`
 	t2SqlStr := fmt.Sprintf(" SELECT %s FROM  %s WHERE %s IN (?)", dbFieldName, tableName, dbFieldName)
 	t2SqlStr, t2Args, err := sqlx.In(t2SqlStr, args) // []T 和 []interface{}（即 []any）类型不兼容，无法直接赋值。
 	if nil != err {
-		return sqlStr, allArgs, nil
+		return sqlStr, allArgs, err
 	}
 	//将t2的参数追加到参数中
 	for _, v := range t2Args {
-		args = append(args, v.(T))
+		// 断言可能失败，失败时返回错误而不是 panic
+		typed, ok := v.(T)
+		if !ok {
+			return sqlStr, allArgs, nerror.NewRunTimeErrorFmt("SqlIn参数类型断言失败: %T", v)
+		}
+		args = append(args, typed)
 	}
 
 	sqlStr = fmt.Sprintf(sqlStr, dbFieldName, t1SqlStr, t2SqlStr, dbFieldName, dbFieldName, dbFieldName, dbFieldName)

@@ -60,7 +60,7 @@ func (nGin *NGin) RouterRedirect(redirectPath string, ctx *gin.Context) {
 func ShouldBindByHeader[T any](headerVo *NiexqGinHeaderVo, ctx *gin.Context, nValider *NValider) (*T, error) {
 	if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "application/json") {
 		return ShouldBindJSON[T](ctx, nValider)
-	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "	application/x-www-form-urlencoded") {
+	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "application/x-www-form-urlencoded") {
 		return ShouldBind[T](ctx, nValider)
 	} else if strings.HasPrefix(strings.ToLower(headerVo.ContentType), "multipart/form-data") {
 		return nil, nerror.NewRunTimeError("ContentType:multipart/form-data 还未处理")

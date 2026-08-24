@@ -42,9 +42,11 @@ func NewCpuLoader(targetPercent float64, checkTimeInerval, cpuAvgTime int64) *Cp
 }
 
 func CpuPercent(second int64) float64 {
-	percent, _ := cpu.Percent(time.Duration(second)*time.Second, false)
-	currentCPU := percent[0]
-	return currentCPU
+	percent, err := cpu.Percent(time.Duration(second)*time.Second, false)
+	if err != nil || len(percent) == 0 {
+		return 0
+	}
+	return percent[0]
 }
 
 func (loader *CpuLoader) Start() {
@@ -79,8 +81,9 @@ func (loader *CpuLoader) startGenCpuLoad() {
 }
 
 func (loader *CpuLoader) stopCpuLoad() {
-	if atomic.LoadInt32(&loader.activeWorkers) == 1 {
-		atomic.StoreInt32(&loader.activeWorkers, 0)
+	// 使用 CAS 原子地将 activeWorkers 从 1 置为 0，保证只有一个 goroutine 执行 close，
+	// 避免并发 stopCpuLoad 调用导致 close of closed channel panic
+	if atomic.CompareAndSwapInt32(&loader.activeWorkers, 1, 0) {
 		close(loader.stopChan)
 		loader.stopChan = make(chan struct{}) // 重置通道
 		slog.Info("🛑 停止CPU负载生成器")
@@ -115,7 +118,10 @@ func (loader *CpuLoader) cpuWorker() {
 
 	for atomic.LoadInt32(&loader.activeWorkers) == 1 {
 		// 动态调整工作/休眠比例
+		// 在锁下读取 loadFactor，避免与 linearAdjuster 写入发生数据竞争
+		loader.adjustLock.Lock()
 		factor := loader.loadFactor
+		loader.adjustLock.Unlock()
 		scaledWorkTime := time.Duration(float64(workTime) * factor)
 		scaledSleepTime := time.Duration(float64(sleepTime) * (2 - factor))
 

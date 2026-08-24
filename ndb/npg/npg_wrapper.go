@@ -361,6 +361,8 @@ func (ndbw *NPgWrapper) NdbTxCommit(recoveResult any) error {
 		}
 		slog.Error(fmt.Sprintf("提交事务前,捕获到异常【%v】,执行回滚", err))
 		_ = ndbw.sqlxTx.Rollback()
+		// 回滚后同步事务状态，避免后续对同一事务再次 Commit/Rollback 操作已结束的事务
+		atomic.CompareAndSwapInt32(&ndbw.txState, txActive, txRolledBack)
 		return err
 	}
 	// 提交时原子检查状态

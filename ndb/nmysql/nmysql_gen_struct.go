@@ -22,7 +22,14 @@ type columnSchemaDo struct {
 
 func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) (string, error) {
 	tcSql := "SELECT TABLE_COMMENT FROM INFORMATION_SCHEMA.`TABLES` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
-	tableComment, _, _ := SelectOne[string](dbw, tcSql, tableSchema, tableName)
+	tableCommentHolder, _, err := SelectOne[string](dbw, tcSql, tableSchema, tableName)
+	if err != nil {
+		return "", err
+	}
+	tableComment := ""
+	if tableCommentHolder != nil {
+		tableComment = *tableCommentHolder
+	}
 
 	sqlStr := `
 	SELECT TABLE_SCHEMA ,TABLE_NAME , COLUMN_NAME , DATA_TYPE , COLUMN_COMMENT ,IS_NULLABLE 
@@ -30,11 +37,16 @@ func (dbw *NMysqlWrapper) GetStructDoByTableStr(tableSchema, tableName string) (
 		WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?
 	`
 	dos := []columnSchemaDo{}
-	dbw.SelectList(&dos, sqlStr, tableSchema, tableName)
+	if err := dbw.SelectList(&dos, sqlStr, tableSchema, tableName); err != nil {
+		return "", nerror.NewRunTimeErrorWithError("查询表结构失败", err)
+	}
+	if len(dos) == 0 {
+		return "", nerror.NewRunTimeErrorFmt("表【%s.%s】不存在或无字段", tableSchema, tableName)
+	}
 
 	NsStr := &ntools.NString{S: tableName}
 
-	resultStr := fmt.Sprintf("// %s %s.%s\n", *tableComment, tableSchema, tableName)
+	resultStr := fmt.Sprintf("// %s %s.%s\n", tableComment, tableSchema, tableName)
 	resultStr += fmt.Sprintf("type %sDo struct {", NsStr.Under2Camel(true))
 
 	for _, v := range dos {

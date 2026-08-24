@@ -203,25 +203,50 @@ func Sm2DecryptHex(privKey *sm2.PrivateKey, hexEnStr string) (bool, string, erro
 
 // SM2 私钥签名 (签名方式 :sm3hash userId=1234567812345678 asn.1 der)
 func Sm2SignByPriKey(privKey *sm2.PrivateKey, srcStr string) string {
-	r, s, _ := sm2.Sm2Sign(privKey, []byte(srcStr), signUserId, rand.Reader)
-	d, _ := asn1.Marshal(sm2Signature{r, s})
+	r, s, err := sm2.Sm2Sign(privKey, []byte(srcStr), signUserId, rand.Reader)
+	if err != nil {
+		return ""
+	}
+	d, err := asn1.Marshal(sm2Signature{r, s})
+	if err != nil {
+		return ""
+	}
 	return base64.StdEncoding.EncodeToString(d)
 }
 
 // SM2 公钥验签 (签名方式 :sm3hash userId=1234567812345678 asn.1 der)
 func Sm2VerifyByPubKey(pubKey *sm2.PublicKey, srcStr, b64DerSign string) bool {
 	var sm2Sign sm2Signature
-	derBytes, _ := base64.StdEncoding.DecodeString(b64DerSign)
-	asn1.Unmarshal(derBytes, &sm2Sign)
+	derBytes, err := base64.StdEncoding.DecodeString(b64DerSign)
+	if err != nil {
+		return false
+	}
+	if _, err := asn1.Unmarshal(derBytes, &sm2Sign); err != nil {
+		return false
+	}
+	if sm2Sign.R == nil || sm2Sign.S == nil {
+		return false
+	}
 	return sm2.Sm2Verify(pubKey, []byte(srcStr), signUserId, sm2Sign.R, sm2Sign.S)
 }
 
 // SM2 公钥验签,原文为b64Str (签名方式 :sm3hash userId=1234567812345678 asn.1 der)
 func Sm2VerifyB64SrcByPubKey(pubKey *sm2.PublicKey, b64SrcStr, b64DerSign string) bool {
 	var sm2Sign sm2Signature
-	derBytes, _ := base64.StdEncoding.DecodeString(b64DerSign)
-	asn1.Unmarshal(derBytes, &sm2Sign)
-	strBytes, _ := base64.StdEncoding.DecodeString(b64SrcStr)
+	derBytes, err := base64.StdEncoding.DecodeString(b64DerSign)
+	if err != nil {
+		return false
+	}
+	if _, err := asn1.Unmarshal(derBytes, &sm2Sign); err != nil {
+		return false
+	}
+	if sm2Sign.R == nil || sm2Sign.S == nil {
+		return false
+	}
+	strBytes, err := base64.StdEncoding.DecodeString(b64SrcStr)
+	if err != nil {
+		return false
+	}
 	return sm2.Sm2Verify(pubKey, strBytes, signUserId, sm2Sign.R, sm2Sign.S)
 }
 
@@ -392,7 +417,14 @@ func Sm4EcbPkcs5DnHexStr(hexKey, enedStr string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	data, _ := hex.DecodeString(enedStr)
+	data, err := hex.DecodeString(enedStr)
+	if err != nil {
+		return "", err
+	}
+	// SM4 分组大小为 16，密文长度必须是 16 的整数倍，否则解密越界
+	if len(data) == 0 || len(data)%16 != 0 {
+		return "", nerror.NewRunTimeError("SM4解密,密文长度必须为16的倍数")
+	}
 	plaintext := make([]byte, len(data))
 	for start := 0; start < len(plaintext); start += 16 {
 		block.Decrypt(plaintext[start:], data[start:start+16])
