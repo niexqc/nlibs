@@ -1,7 +1,7 @@
 package ndnen_test
 
 import (
-	"encoding/json"
+	"encoding/json/jsontext"
 	"fmt"
 	"strconv"
 	"strings"
@@ -71,8 +71,8 @@ func formatInsertValue(v interface{}) string {
 			return out
 		}
 		return x
-	case json.Number:
-		ns := x.String()
+	case jsontext.Value:
+		ns := string(x)
 		if out, ok := tryFormatTimeString(ns); ok {
 			return out
 		}

@@ -2,7 +2,6 @@ package sqlext
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 
 	"strings"
 
+	jsonv2 "encoding/json/v2"
 	"github.com/niexqc/nlibs/nerror"
 	"github.com/niexqc/nlibs/ntools"
 	"github.com/shopspring/decimal"
@@ -106,7 +106,7 @@ func (ns NullString) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
 	}
-	return json.Marshal(ns.String)
+	return jsonv2.Marshal(ns.String)
 }
 
 func (ns *NullString) UnmarshalJSON(data []byte) error {
@@ -135,7 +135,7 @@ func (nt NullTime) MarshalJSON() ([]byte, error) {
 	if !nt.Valid {
 		return []byte("null"), nil // 返回null或直接忽略字段
 	}
-	return json.Marshal(ntools.Time2Str(nt.Time))
+	return jsonv2.Marshal(ntools.Time2Str(nt.Time))
 }
 
 func (ns *NullTime) UnmarshalJSON(data []byte) error {
@@ -174,7 +174,7 @@ func (ns NullInt) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
 	}
-	return json.Marshal(ns.Int32)
+	return jsonv2.Marshal(ns.Int32)
 }
 
 func (ns *NullInt) UnmarshalJSON(data []byte) error {
@@ -201,7 +201,7 @@ func (ns NullInt64) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
 	}
-	return json.Marshal(ns.Int64)
+	return jsonv2.Marshal(ns.Int64)
 }
 
 func (ns *NullInt64) UnmarshalJSON(data []byte) error {
@@ -228,7 +228,7 @@ func (ns NullFloat64) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
 	}
-	return json.Marshal(ns.Float64)
+	return jsonv2.Marshal(ns.Float64)
 }
 
 func (ns *NullFloat64) UnmarshalJSON(data []byte) error {
@@ -255,7 +255,7 @@ func (ns NullBool) MarshalJSON() ([]byte, error) {
 	if !ns.Valid {
 		return []byte("null"), nil // 输出为 JSON 的 null
 	}
-	return json.Marshal(ns.Bool)
+	return jsonv2.Marshal(ns.Bool)
 }
 
 func (ns *NullBool) UnmarshalJSON(data []byte) error {

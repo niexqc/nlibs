@@ -132,7 +132,12 @@ func (h *NwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 
 	sb.WriteString(r.Message + " ")
 
+	firstAttr := true
 	r.Attrs(func(a slog.Attr) bool {
+		if !firstAttr {
+			sb.WriteByte(' ')
+		}
+		firstAttr = false
 		sb.WriteString(a.String())
 		return true
 	})
