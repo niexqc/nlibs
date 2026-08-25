@@ -443,3 +443,193 @@ func (s *NwNode) ToString() (string, error) {
 	}
 	return string(s.value), nil
 }
+
+// ---------- 子节点导航与遍历（替代 sonic ast.Node） ----------
+
+// GetNodeByPath 按路径取子节点，返回独立副本。
+func (s *NwNode) GetNodeByPath(paths ...any) (*NwNode, error) {
+	v, err := s.getByPath(paths...)
+	if err != nil {
+		return nil, err
+	}
+	return &NwNode{value: v.Clone()}, nil
+}
+
+// GetByPath 与 GetNodeByPath 相同，便于从 sonic 迁移。
+func (s *NwNode) GetByPath(paths ...any) (*NwNode, error) {
+	return s.GetNodeByPath(paths...)
+}
+
+// Get 取对象的单个字段子节点。
+func (s *NwNode) Get(key string) (*NwNode, error) {
+	return s.GetNodeByPath(key)
+}
+
+// HasKey 判断当前对象是否包含指定字段。
+func (s *NwNode) HasKey(key string) bool {
+	_, err := s.getByPath(key)
+	return err == nil
+}
+
+// String 读取当前节点的字符串值（非路径）。
+func (s *NwNode) String() (string, error) {
+	if s == nil {
+		return "", errNotFound
+	}
+	v := s.value
+	if v.Kind() == jsontext.KindString {
+		unquoted, err := jsontext.AppendUnquote(nil, v)
+		if err != nil {
+			return "", err
+		}
+		return string(unquoted), nil
+	}
+	if v.Kind() == jsontext.KindNumber {
+		return string(v), nil
+	}
+	return "", errNotFound
+}
+
+// Int64 读取当前节点的 int64 值。
+func (s *NwNode) Int64() (int64, error) {
+	if s == nil {
+		return 0, errNotFound
+	}
+	return Int64FromValue(s.value)
+}
+
+// Float64 读取当前节点的 float64 值。
+func (s *NwNode) Float64() (float64, error) {
+	if s == nil {
+		return 0, errNotFound
+	}
+	return Float64FromValue(s.value)
+}
+
+// Bool 读取当前节点的 bool 值。
+func (s *NwNode) Bool() (bool, error) {
+	if s == nil {
+		return false, errNotFound
+	}
+	switch s.value.Kind() {
+	case jsontext.KindTrue:
+		return true, nil
+	case jsontext.KindFalse:
+		return false, nil
+	default:
+		return false, errNotFound
+	}
+}
+
+// ArrayNodes 将当前数组节点展开为子节点列表。
+func (s *NwNode) ArrayNodes() ([]*NwNode, error) {
+	if s == nil {
+		return nil, errNotFound
+	}
+	dec := jsontext.NewDecoder(bytes.NewReader(s.value))
+	if dec.PeekKind() != jsontext.KindBeginArray {
+		return nil, errNotFound
+	}
+	if _, err := dec.ReadToken(); err != nil {
+		return nil, err
+	}
+	var nodes []*NwNode
+	for dec.PeekKind() != jsontext.KindEndArray {
+		elem, err := dec.ReadValue()
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, &NwNode{value: elem.Clone()})
+	}
+	return nodes, nil
+}
+
+// ArrayUseNode 与 ArrayNodes 相同，便于从 sonic 迁移。
+func (s *NwNode) ArrayUseNode() ([]*NwNode, error) {
+	return s.ArrayNodes()
+}
+
+// ArrayUseNodeByPath 按路径定位数组后展开为子节点列表。
+func (s *NwNode) ArrayUseNodeByPath(paths ...any) ([]*NwNode, error) {
+	n, err := s.GetNodeByPath(paths...)
+	if err != nil {
+		return nil, err
+	}
+	return n.ArrayUseNode()
+}
+
+// MapNodes 将当前对象节点展开为 map[key]*NwNode。
+func (s *NwNode) MapNodes() (map[string]*NwNode, error) {
+	if s == nil {
+		return nil, errNotFound
+	}
+	dec := jsontext.NewDecoder(bytes.NewReader(s.value))
+	if dec.PeekKind() != jsontext.KindBeginObject {
+		return nil, errNotFound
+	}
+	if _, err := dec.ReadToken(); err != nil {
+		return nil, err
+	}
+	result := make(map[string]*NwNode)
+	for dec.PeekKind() != jsontext.KindEndObject {
+		nameTok, err := dec.ReadToken()
+		if err != nil {
+			return nil, err
+		}
+		key := nameTok.String()
+		mval, err := dec.ReadValue()
+		if err != nil {
+			return nil, err
+		}
+		result[key] = &NwNode{value: mval.Clone()}
+	}
+	return result, nil
+}
+
+// MapUseNode 与 MapNodes 相同，便于从 sonic 迁移。
+func (s *NwNode) MapUseNode() (map[string]*NwNode, error) {
+	return s.MapNodes()
+}
+
+// TryGetString 按路径取 string，失败返回 error（不 panic）。
+func (s *NwNode) TryGetString(paths ...any) (string, error) {
+	v, err := s.getByPath(paths...)
+	if err != nil {
+		return "", err
+	}
+	return (&NwNode{value: v}).String()
+}
+
+// TryGetInt64 按路径取 int64，失败返回 error（不 panic）。
+func (s *NwNode) TryGetInt64(paths ...any) (int64, error) {
+	v, err := s.getByPath(paths...)
+	if err != nil {
+		return 0, err
+	}
+	return Int64FromValue(v)
+}
+
+// TryGetFloat64 按路径取 float64，失败返回 error（不 panic）。
+func (s *NwNode) TryGetFloat64(paths ...any) (float64, error) {
+	v, err := s.getByPath(paths...)
+	if err != nil {
+		return 0, err
+	}
+	return Float64FromValue(v)
+}
+
+// TryGetBool 按路径取 bool，失败返回 error（不 panic）。
+func (s *NwNode) TryGetBool(paths ...any) (bool, error) {
+	v, err := s.getByPath(paths...)
+	if err != nil {
+		return false, err
+	}
+	switch v.Kind() {
+	case jsontext.KindTrue:
+		return true, nil
+	case jsontext.KindFalse:
+		return false, nil
+	default:
+		return false, errNotFound
+	}
+}

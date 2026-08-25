@@ -81,18 +81,16 @@ func SlogConf4Test() {
 }
 
 func SlogLevelStr2Level(confLevel string) slog.Level {
-	confLevel = strings.ToLower(confLevel)
-	var slogLevel slog.Level
-	if confLevel == "debug" {
-		slogLevel = slog.LevelDebug
-	} else if confLevel == "info" {
-		slogLevel = slog.LevelInfo
-	} else if confLevel == "warn" {
-		slogLevel = slog.LevelWarn
-	} else {
-		slogLevel = slog.LevelError
+	switch strings.ToLower(confLevel) {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "warn":
+		return slog.LevelWarn
+	default:
+		return slog.LevelError
 	}
-	return slogLevel
 }
 
 func NewNwLogHandlerForSlog(fileWriter io.Writer, level slog.Leveler, outMode int, printMethod int) *NwLogHandler {
@@ -131,7 +129,8 @@ func (h *NwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 		sb.WriteString(fmt.Sprintf("%s ", funcStr))
 	}
 
-	sb.WriteString(r.Message + " ")
+	sb.WriteString(r.Message)
+	sb.WriteByte(' ')
 
 	firstAttr := true
 	r.Attrs(func(a slog.Attr) bool {
@@ -146,11 +145,12 @@ func (h *NwLogHandler) Handle(ctx context.Context, r slog.Record) (err error) {
 	sb.WriteString("\n")
 	printData := []byte(sb.String())
 
-	if h.OutMode == 1 {
+	switch h.OutMode {
+	case 1:
 		os.Stdout.Write(printData)
-	} else if h.OutMode == 2 {
+	case 2:
 		_, err = h.fileWriter.Write(printData)
-	} else {
+	default:
 		os.Stdout.Write(printData)
 		_, err = h.fileWriter.Write(printData)
 	}
@@ -196,7 +196,7 @@ type DailyRotatingLogger struct {
 	stopChan      chan struct{} // 关闭信号
 	doneChan      chan struct{} // 后台协程结束信号
 	closeOnce     sync.Once
-	closed        atomic.Bool  // 是否已关闭，避免关闭后仍写文件/重复刷盘
+	closed        atomic.Bool // 是否已关闭，避免关闭后仍写文件/重复刷盘
 }
 
 func NewDailyRotatingLogger(dir, prefix string, bufferSize int, flushInterval time.Duration) (*DailyRotatingLogger, error) {
