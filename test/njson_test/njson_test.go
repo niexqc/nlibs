@@ -161,34 +161,34 @@ func TestGoJson(t *testing.T) {
 	}
 	jsonFullValStr := `{"id":1,"t02Int":1,"t03Varchar":"1","t04Text":"1","t05Longtext":"1","t06Decimal":"1.1","t07Float":1.1,"t08Double":1.1,"t09Datetime":"2025-02-02 00:00:00","t10Bool":false}`
 
-	str, err := njson.ObjToJsonStrByGoJson(voNullVal)
+	str, err := njson.Obj2JsonStr(voNullVal)
 	ntools.TestErrPainic(t, "TestGoJson voNullVal", err)
 	ntools.TestEq(t, "TestGoJson voNullVal", jsonNullValStr, str)
 
-	str, err = njson.ObjToJsonStrByGoJson(voFullVal)
+	str, err = njson.Obj2JsonStr(voFullVal)
 	ntools.TestErrPainic(t, "TestGoJson voNullVal", err)
 	ntools.TestEq(t, "TestGoJson voNullVal", jsonFullValStr, str)
 
-	vo, err := njson.Str2ObjByGoJson[TestVoDo](jsonFullValStr)
-	ntools.TestErrPainic(t, "Str2ObjByGoJson", err)
-	ntools.TestEq(t, "Str2ObjByGoJson", "1", vo.T03Varchar.String)
+	vo, err := njson.Str2Obj[TestVoDo](jsonFullValStr)
+	ntools.TestErrPainic(t, "Str2Obj", err)
+	ntools.TestEq(t, "Str2Obj", "1", vo.T03Varchar.String)
 
 	arrJsonStr := `[{"id":1},{"id":2}]`
 
-	vos, err := njson.Str2ObjArrByGoJson[TestVoDo](&arrJsonStr)
-	ntools.TestErrPainic(t, "Str2ArrByGoJson", err)
-	ntools.TestEq(t, "Str2ArrByGoJson", 2, len(*vos))
+	vos, err := njson.Str2ObjArr[TestVoDo](&arrJsonStr)
+	ntools.TestErrPainic(t, "Str2ObjArr", err)
+	ntools.TestEq(t, "Str2ObjArr", 2, len(*vos))
 
 	//基本类型测试
 	text := `"1"`
-	jsonStr, err := njson.Str2ObjByGoJson[string](&text)
+	jsonStr, err := njson.Str2Obj[string](&text)
 	ntools.TestErrPainic(t, "TestGoJson ", err)
-	ntools.TestEq(t, "Str2ObjByGoJson", text, fmt.Sprintf("\"%s\"", *jsonStr))
+	ntools.TestEq(t, "Str2Obj", text, fmt.Sprintf("\"%s\"", *jsonStr))
 
 	text = `["1","2"]`
-	resultArr, err := njson.Str2ObjArrByGoJson[string](text)
-	ntools.TestErrPainic(t, "Str2ArrByGoJson ", err)
-	ntools.TestEq(t, "Str2ArrByGoJson", 2, len(*resultArr))
+	resultArr, err := njson.Str2ObjArr[string](text)
+	ntools.TestErrPainic(t, "Str2ObjArr ", err)
+	ntools.TestEq(t, "Str2ObjArr", 2, len(*resultArr))
 
 }
 

@@ -1,7 +1,6 @@
 package ntools
 
 import (
-	"regexp"
 	"strings"
 	"unicode"
 
@@ -13,35 +12,9 @@ type NString struct {
 	S string
 }
 
-func StrFromGbkBytes(bytes []byte) *NString {
+func strFromGbkBytes(bytes []byte) *NString {
 	utf8Data, _, _ := transform.Bytes(simplifiedchinese.GBK.NewDecoder(), bytes)
 	return &NString{S: string(utf8Data)}
-}
-
-func (ns *NString) CutStr(start, end int) string {
-	length := len(ns.S)
-	if start < 0 {
-		start = 0
-	}
-	if end < 0 {
-		end = 0
-	}
-	if start > length {
-		start = length
-	}
-	if end > length {
-		end = length
-	}
-	if start > end {
-		return ""
-	}
-	return ns.S[start:end]
-}
-
-var blankRegexp = regexp.MustCompile(`\s+`)
-
-func (ns *NString) ReplaceAllBlank(toStr string) string {
-	return blankRegexp.ReplaceAllString(ns.S, toStr)
 }
 
 // CutString ...

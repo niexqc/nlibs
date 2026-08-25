@@ -49,7 +49,7 @@ func CmdRunWithStdOut(windows bool, command, workDir string, cmdOut chan string,
 		// 因此必须先处理数据再判断是否结束，避免丢失末尾无换行的最后一行。
 		if len(lineBytes) > 0 {
 			if OsIsWindows() {
-				linestr, _ := strings.CutSuffix(StrFromGbkBytes(lineBytes).S, "\r\n")
+				linestr, _ := strings.CutSuffix(strFromGbkBytes(lineBytes).S, "\r\n")
 				cmdOut <- linestr
 			} else {
 				linestr, _ := strings.CutSuffix(string(lineBytes), "\n")

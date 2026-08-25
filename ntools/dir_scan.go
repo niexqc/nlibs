@@ -9,26 +9,9 @@ import (
 	"sync"
 )
 
-// DirScan 递归扫描目录（基于 filepath.WalkDir）。
-// 需要并发扫描时使用 DirScanConcurrent（回调语义与本函数一致）。
+// DirScan 递归扫描目录，语义与 DirScanConcurrent(workerNum=1) 一致。
 func DirScan(scanRootPath string, resp func(scanRootPath, relativePath, absPath string, entry fs.DirEntry)) {
-	fileInfo, err := os.Stat(scanRootPath)
-	if nil != err {
-		panic(fmt.Sprintf("获取文件信息:【%s】,异常:%s", scanRootPath, err.Error()))
-	}
-	if !fileInfo.IsDir() {
-		panic(fmt.Sprintf("非目录【%s】", scanRootPath))
-	}
-	scanRootPathStr, _ := filepath.Abs(scanRootPath)
-
-	filepath.WalkDir(scanRootPathStr, func(absPath string, d fs.DirEntry, err error) error {
-		relativePath := strings.ReplaceAll(absPath, scanRootPathStr, "")
-		if len(relativePath) > 0 {
-			relativePath = relativePath[1:]
-		}
-		resp(scanRootPathStr, relativePath, absPath, d)
-		return err
-	})
+	DirScanConcurrent(scanRootPath, 1, resp)
 }
 
 // DirScanConcurrent 并发递归扫描文件夹。

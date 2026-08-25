@@ -8,21 +8,11 @@ import (
 	"time"
 
 	"github.com/niexqc/nlibs"
-	"github.com/niexqc/nlibs/njson"
 	"github.com/niexqc/nlibs/ntools"
 )
 
 func init() {
 	ntools.SlogConf("test", "debug", 1, 2)
-}
-
-func TestReadXlsx(t *testing.T) {
-	contents, err := ntools.XlsxRead("_file4test/ndb_test_xls_read.xlsx", "user", 1)
-	ntools.TestErrPainic(t, "读取Xlsx失败", err)
-
-	contentJson := njson.Obj2StrWithPanicError(contents)
-	slog.Info(contentJson)
-	ntools.TestEq(t, "读取Xlsx失败", `[["1","niexq","niexq","聂小强","测试","2025-04-28 12:01:59"]]`, contentJson)
 }
 
 func TestRunCmd(t *testing.T) {

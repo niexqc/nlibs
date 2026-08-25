@@ -42,20 +42,20 @@ func SlogGetTraceId() string {
 
 // printMethod int 方法打印 0-不打印 ，1-详情,2-仅方法名称
 // outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
-func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, printMethod int) {
+func slogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, printMethod int) {
 	// 重新配置前先关闭旧文件日志，避免泄漏与丢日志
 	SlogClose()
 	slogLevel := SlogLevelStr2Level(confLevel)
 	var nwLogHandler *NwLogHandler
 	if outMode == 3 || outMode == 2 {
-		fileWriter, err := NewDailyRotatingLogger(logDir, logFilePrefix, 10240, 200*time.Millisecond)
+		fileWriter, err := newDailyRotatingLogger(logDir, logFilePrefix, 10240, 200*time.Millisecond)
 		if nil != err {
 			panic(err)
 		}
 		defaultFileLogger = fileWriter
-		nwLogHandler = NewNwLogHandlerForSlog(fileWriter, slogLevel, outMode, printMethod)
+		nwLogHandler = newNwLogHandlerForSlog(fileWriter, slogLevel, outMode, printMethod)
 	} else {
-		nwLogHandler = NewNwLogHandlerForSlog(nil, slogLevel, outMode, printMethod)
+		nwLogHandler = newNwLogHandlerForSlog(nil, slogLevel, outMode, printMethod)
 	}
 	slogger := slog.New(nwLogHandler)
 	slog.SetDefault(slogger)
@@ -65,7 +65,7 @@ func SlogConfWithDir(logDir, logFilePrefix, confLevel string, outMode int, print
 // printMethod int 方法打印 0-不打印 ，1-详情,2-仅方法名称
 // outMode int 日志输出方式 0-不打印,1-控制台,2-文件,3-都打印
 func SlogConf(logFilePrefix, confLevel string, outMode int, printMethod int) {
-	SlogConfWithDir("logs", logFilePrefix, confLevel, outMode, printMethod)
+	slogConfWithDir("logs", logFilePrefix, confLevel, outMode, printMethod)
 }
 
 // SlogClose 排空异步缓冲并刷盘关闭文件日志，进程退出前应调用
@@ -93,7 +93,7 @@ func SlogLevelStr2Level(confLevel string) slog.Level {
 	}
 }
 
-func NewNwLogHandlerForSlog(fileWriter io.Writer, level slog.Leveler, outMode int, printMethod int) *NwLogHandler {
+func newNwLogHandlerForSlog(fileWriter io.Writer, level slog.Leveler, outMode int, printMethod int) *NwLogHandler {
 	h := &NwLogHandler{Level: level, fileWriter: fileWriter, OutMode: outMode, PrintMehod: printMethod}
 	return h
 }
@@ -199,7 +199,7 @@ type DailyRotatingLogger struct {
 	closed        atomic.Bool // 是否已关闭，避免关闭后仍写文件/重复刷盘
 }
 
-func NewDailyRotatingLogger(dir, prefix string, bufferSize int, flushInterval time.Duration) (*DailyRotatingLogger, error) {
+func newDailyRotatingLogger(dir, prefix string, bufferSize int, flushInterval time.Duration) (*DailyRotatingLogger, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("创建日志目录失败: %w", err)
 	}

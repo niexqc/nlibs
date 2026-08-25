@@ -9,8 +9,6 @@ import (
 
 var FileDirExt = ntools.GetFileDirExt()
 
-var HttpClientExt = ntools.GetHttpClientExt()
-
 // 判断对象是否是数组或切片
 func IsArrayOrSlice(v any) bool {
 	rv := reflect.ValueOf(v)

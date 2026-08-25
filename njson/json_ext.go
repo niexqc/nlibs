@@ -34,15 +34,9 @@ func Obj2JsonBytes(obj any) ([]byte, error) {
 	return bytes, err
 }
 
-func Str2Obj[T any, STR string | *string](str STR) (*T, error) {
+func Str2Obj[T any, STR ~string | *string](str STR) (*T, error) {
 	t := new(T)
-	acStr := ""
-	if reflect.TypeOf(str) == reflect.TypeOf("") {
-		acStr = reflect.ValueOf(str).String()
-	} else {
-		acStr = reflect.ValueOf(str).Elem().String()
-	}
-	err := jsonv2.Unmarshal([]byte(acStr), t)
+	err := jsonv2.Unmarshal([]byte(jsonStrParam(str)), t)
 	return t, err
 }
 
@@ -52,19 +46,24 @@ func Bytes2Obj[T any](bytes []byte) (*T, error) {
 	return t, err
 }
 
-func Str2ObjArr[T any, STR string | *string](str STR) (*[]T, error) {
+func Str2ObjArr[T any, STR ~string | *string](str STR) (*[]T, error) {
 	tarr := new([]T)
-	acStr := ""
-	if reflect.TypeOf(str) == reflect.TypeOf("") {
-		acStr = reflect.ValueOf(str).String()
-	} else {
-		acStr = reflect.ValueOf(str).Elem().String()
-	}
-	err := jsonv2.Unmarshal([]byte(acStr), tarr)
+	err := jsonv2.Unmarshal([]byte(jsonStrParam(str)), tarr)
 	return tarr, err
 }
 
-func Str2ObjWithPanicError[T any, STR string | *string](str STR) *T {
+func jsonStrParam[STR ~string | *string](str STR) string {
+	switch v := any(str).(type) {
+	case string:
+		return v
+	case *string:
+		return *v
+	default:
+		return ""
+	}
+}
+
+func Str2ObjWithPanicError[T any, STR ~string | *string](str STR) *T {
 	t, err := Str2Obj[T](str)
 	if nil != err {
 		slog.Warn("JSON转对象失败", "jsonStr", str, "err", err)
@@ -73,69 +72,13 @@ func Str2ObjWithPanicError[T any, STR string | *string](str STR) *T {
 	return t
 }
 
-func Str2ObjArrWithPanicError[T any, STR string | *string](str STR) *[]T {
+func Str2ObjArrWithPanicError[T any, STR ~string | *string](str STR) *[]T {
 	t, err := Str2ObjArr[T](str)
 	if nil != err {
 		slog.Warn("JSON转对象数组失败", "jsonStr", str, "err", err)
 		panic(nerror.NewRunTimeErrorWithError("JSON转对象数组失败", err))
 	}
 	return t
-}
-
-// 以下为GO默认JSON转换 (由 encoding/json/v2 实现)
-func ObjToJsonStrByGoJson(t any) (string, error) {
-	jsonBytes, err := ObjToJSONBytesByGoJson(t)
-	if err != nil {
-		return "", err
-	}
-	return string(*jsonBytes), nil
-}
-
-func ObjToJsonStrByGoJsonWithPanicError(t any) string {
-	result, err := ObjToJsonStrByGoJson(t)
-	if nil != err {
-		slog.Warn("对象JSON失败", "type", reflect.TypeOf(t).Name(), "err", err)
-		panic(nerror.NewRunTimeErrorFmt("%s类型转JSON失败", reflect.TypeOf(t).Name()))
-	}
-	return result
-}
-
-func ObjToJSONBytesByGoJson(t any) (*[]byte, error) {
-	jsonBytes, err := jsonv2.Marshal(&t)
-	if err != nil {
-		return nil, err
-	}
-	return &jsonBytes, nil
-}
-
-func Str2ObjByGoJson[T any, STR string | *string](str STR) (*T, error) {
-	t := new(T)
-	acStr := ""
-	if reflect.TypeOf(str) == reflect.TypeOf("") {
-		acStr = reflect.ValueOf(str).String()
-	} else {
-		acStr = reflect.ValueOf(str).Elem().String()
-	}
-	err := jsonv2.Unmarshal([]byte(acStr), t)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
-}
-
-func Str2ObjArrByGoJson[T any, STR string | *string](str STR) (*[]*T, error) {
-	t := new([]*T)
-	acStr := ""
-	if reflect.TypeOf(str) == reflect.TypeOf("") {
-		acStr = reflect.ValueOf(str).String()
-	} else {
-		acStr = reflect.ValueOf(str).Elem().String()
-	}
-	err := jsonv2.Unmarshal([]byte(acStr), t)
-	if err != nil {
-		return nil, err
-	}
-	return t, nil
 }
 
 // ---------- 按路径取值 (NwNode) ----------
@@ -162,15 +105,6 @@ func NewNwNodeByJsonStr(str string) (*NwNode, error) {
 		return nil, err
 	}
 	return &NwNode{value: root}, nil
-}
-
-// NewNwNodeByMap marshals data to JSON text then parses into a NwNode.
-func NewNwNodeByMap(data map[string]any) (*NwNode, error) {
-	jsonStr, err := Obj2JsonStr(data)
-	if nil != err {
-		return nil, err
-	}
-	return NewNwNodeByJsonStr(jsonStr)
 }
 
 func newValueFromBytes(in []byte) (jsontext.Value, error) {
@@ -299,9 +233,9 @@ func (s *NwNode) GetStringByPath(paths ...any) string {
 	return string(unquoted)
 }
 
-// Int64FromValue returns the integer value parsed from a raw JSON number
+// int64FromValue returns the integer value parsed from a raw JSON number
 // literal, preserving precision beyond float64's exact integer range.
-func Int64FromValue(v jsontext.Value) (int64, error) {
+func int64FromValue(v jsontext.Value) (int64, error) {
 	if len(v) == 0 {
 		return 0, errNotFound
 	}
@@ -344,15 +278,15 @@ func (s *NwNode) GetInt64ByPath(paths ...any) int64 {
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("请检查Json", err))
 	}
-	val, err := Int64FromValue(v)
+	val, err := int64FromValue(v)
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("请检查Json", err))
 	}
 	return val
 }
 
-// Float64FromValue returns the float64 value parsed from a raw JSON number.
-func Float64FromValue(v jsontext.Value) (float64, error) {
+// float64FromValue returns the float64 value parsed from a raw JSON number.
+func float64FromValue(v jsontext.Value) (float64, error) {
 	if len(v) == 0 {
 		return 0, errNotFound
 	}
@@ -393,16 +327,16 @@ func (s *NwNode) GetFloat64ByPath(paths ...any) float64 {
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("请检查Json", err))
 	}
-	f, err := Float64FromValue(v)
+	f, err := float64FromValue(v)
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("请检查Json", err))
 	}
 	return f
 }
 
-// GetNumberByPath returns the JSON number as jsontext.Value (the raw JSON text
+// getNumberByPath returns the JSON number as jsontext.Value (the raw JSON text
 // literal), avoiding any early conversion for callers who need exact text.
-func (s *NwNode) GetNumberByPath(paths ...any) jsontext.Value {
+func (s *NwNode) getNumberByPath(paths ...any) jsontext.Value {
 	v, err := s.getByPath(paths...)
 	if err != nil {
 		panic(nerror.NewRunTimeErrorWithError("请检查Json", err))
@@ -436,8 +370,8 @@ func (s *NwNode) GetBoolByPath(paths ...any) bool {
 	}
 }
 
-// ToString re-encodes the underlying value as a JSON string.
-func (s *NwNode) ToString() (string, error) {
+// toString re-encodes the underlying value as a JSON string.
+func (s *NwNode) toString() (string, error) {
 	if s == nil || len(s.value) == 0 {
 		return "null", nil
 	}
@@ -446,8 +380,8 @@ func (s *NwNode) ToString() (string, error) {
 
 // ---------- 子节点导航与遍历（替代 sonic ast.Node） ----------
 
-// GetNodeByPath 按路径取子节点，返回独立副本。
-func (s *NwNode) GetNodeByPath(paths ...any) (*NwNode, error) {
+// getNodeByPath 按路径取子节点，返回独立副本。
+func (s *NwNode) getNodeByPath(paths ...any) (*NwNode, error) {
 	v, err := s.getByPath(paths...)
 	if err != nil {
 		return nil, err
@@ -455,14 +389,9 @@ func (s *NwNode) GetNodeByPath(paths ...any) (*NwNode, error) {
 	return &NwNode{value: v.Clone()}, nil
 }
 
-// GetByPath 与 GetNodeByPath 相同，便于从 sonic 迁移。
-func (s *NwNode) GetByPath(paths ...any) (*NwNode, error) {
-	return s.GetNodeByPath(paths...)
-}
-
 // Get 取对象的单个字段子节点。
 func (s *NwNode) Get(key string) (*NwNode, error) {
-	return s.GetNodeByPath(key)
+	return s.getNodeByPath(key)
 }
 
 // HasKey 判断当前对象是否包含指定字段。
@@ -495,7 +424,7 @@ func (s *NwNode) Int64() (int64, error) {
 	if s == nil {
 		return 0, errNotFound
 	}
-	return Int64FromValue(s.value)
+	return int64FromValue(s.value)
 }
 
 // Float64 读取当前节点的 float64 值。
@@ -503,7 +432,7 @@ func (s *NwNode) Float64() (float64, error) {
 	if s == nil {
 		return 0, errNotFound
 	}
-	return Float64FromValue(s.value)
+	return float64FromValue(s.value)
 }
 
 // Bool 读取当前节点的 bool 值。
@@ -521,8 +450,8 @@ func (s *NwNode) Bool() (bool, error) {
 	}
 }
 
-// ArrayNodes 将当前数组节点展开为子节点列表。
-func (s *NwNode) ArrayNodes() ([]*NwNode, error) {
+// arrayNodes 将当前数组节点展开为子节点列表。
+func (s *NwNode) arrayNodes() ([]*NwNode, error) {
 	if s == nil {
 		return nil, errNotFound
 	}
@@ -544,22 +473,22 @@ func (s *NwNode) ArrayNodes() ([]*NwNode, error) {
 	return nodes, nil
 }
 
-// ArrayUseNode 与 ArrayNodes 相同，便于从 sonic 迁移。
+// ArrayUseNode 将当前数组节点展开为子节点列表。
 func (s *NwNode) ArrayUseNode() ([]*NwNode, error) {
-	return s.ArrayNodes()
+	return s.arrayNodes()
 }
 
 // ArrayUseNodeByPath 按路径定位数组后展开为子节点列表。
 func (s *NwNode) ArrayUseNodeByPath(paths ...any) ([]*NwNode, error) {
-	n, err := s.GetNodeByPath(paths...)
+	n, err := s.getNodeByPath(paths...)
 	if err != nil {
 		return nil, err
 	}
 	return n.ArrayUseNode()
 }
 
-// MapNodes 将当前对象节点展开为 map[key]*NwNode。
-func (s *NwNode) MapNodes() (map[string]*NwNode, error) {
+// mapNodes 将当前对象节点展开为 map[key]*NwNode。
+func (s *NwNode) mapNodes() (map[string]*NwNode, error) {
 	if s == nil {
 		return nil, errNotFound
 	}
@@ -586,9 +515,9 @@ func (s *NwNode) MapNodes() (map[string]*NwNode, error) {
 	return result, nil
 }
 
-// MapUseNode 与 MapNodes 相同，便于从 sonic 迁移。
+// MapUseNode 将当前对象节点展开为 map[key]*NwNode。
 func (s *NwNode) MapUseNode() (map[string]*NwNode, error) {
-	return s.MapNodes()
+	return s.mapNodes()
 }
 
 // TryGetString 按路径取 string，失败返回 error（不 panic）。
@@ -606,7 +535,7 @@ func (s *NwNode) TryGetInt64(paths ...any) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return Int64FromValue(v)
+	return int64FromValue(v)
 }
 
 // TryGetFloat64 按路径取 float64，失败返回 error（不 panic）。
@@ -615,21 +544,5 @@ func (s *NwNode) TryGetFloat64(paths ...any) (float64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return Float64FromValue(v)
-}
-
-// TryGetBool 按路径取 bool，失败返回 error（不 panic）。
-func (s *NwNode) TryGetBool(paths ...any) (bool, error) {
-	v, err := s.getByPath(paths...)
-	if err != nil {
-		return false, err
-	}
-	switch v.Kind() {
-	case jsontext.KindTrue:
-		return true, nil
-	case jsontext.KindFalse:
-		return false, nil
-	default:
-		return false, errNotFound
-	}
+	return float64FromValue(v)
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/steambap/captcha"
 )
 
-func YzmJpgGenCode(w, h, yzmLen int) (txt string, imgBytes []byte) {
+func yzmJpgGenCode(w, h, yzmLen int) (txt string, imgBytes []byte) {
 	//字体
 	// fontBytes, _ := fileext.ReadFileByte("resources/FiraCode-Retina.ttf")
 	// captcha.LoadFont(fontBytes)
@@ -42,7 +42,7 @@ func YzmJpgGenCode(w, h, yzmLen int) (txt string, imgBytes []byte) {
 }
 
 func YzmJpgGenCodeBase64(w, h, yzmLen int) (txt string, imgb64 string) {
-	txt, imgBytes := YzmJpgGenCode(w, h, yzmLen)
+	txt, imgBytes := yzmJpgGenCode(w, h, yzmLen)
 	// 编码为 Base64 字符串
 	base64Str := base64.StdEncoding.EncodeToString(imgBytes)
 	// 拼接 Data URI 前缀（适用于网页嵌入）

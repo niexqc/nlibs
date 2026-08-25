@@ -77,7 +77,7 @@ func TestNwNodeGetNumberByPath_preservesLiteral(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := root.GetNumberByPath("n")
+	got := root.getNumberByPath("n")
 	// The literal is preserved verbatim, not rounded through float64.
 	if !strings.HasPrefix(string(got), "123456789012345678901234567890") {
 		t.Fatalf("literal changed: %s", got)
@@ -112,7 +112,7 @@ func TestNwNodeToString(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err := root.ToString()
+	s, err := root.toString()
 	if err != nil {
 		t.Fatal(err)
 	}
