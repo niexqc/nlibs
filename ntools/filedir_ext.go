@@ -208,3 +208,12 @@ func (fde *fileDirExt) DirSize(path string) (int64, error) {
 	})
 	return size, err
 }
+
+// PathCutPreFix 去除路径前缀
+func (fde *fileDirExt) PathCutPreFix(fullPathStr, prefixPath string) string {
+	fullPathStr = strings.TrimSuffix(strings.ReplaceAll(fullPathStr, "\\", "/"), "/")
+	prefixPath = strings.TrimPrefix(strings.ReplaceAll(prefixPath, "\\", "/"), "/")
+	resultStr := strings.TrimPrefix(fullPathStr, prefixPath)
+	resultStr = strings.TrimPrefix(resultStr, "/")
+	return resultStr
+}
