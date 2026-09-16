@@ -2,7 +2,9 @@ package ntools
 
 import (
 	"bufio"
+	"bytes"
 
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -73,30 +75,123 @@ func (fde *fileDirExt) WriteFile(filename string, content *[]byte, append bool) 
 }
 
 func (fde *fileDirExt) writeFileByWriterFun(filename string, writeFun func(*bufio.Writer), append bool) (bool, error) {
-	dir := filepath.Dir(filename)
-	if !fde.CheckFileIsExist(dir) {
-		os.MkdirAll(dir, os.ModePerm)
+	if err := fde.MkAllDirIfNotExist(filepath.Dir(filename)); err != nil {
+		return false, err
 	}
-	//如果不是追加模式，则删除旧文件再写入
-	if !append {
-		os.Remove(filename)
-	}
-	var flag int
 	if append {
-		flag = os.O_RDWR | os.O_CREATE | os.O_APPEND
-	} else {
-		flag = os.O_RDWR | os.O_CREATE
+		return fde.appendFileByWriterFun(filename, writeFun)
 	}
-	outputFile, err := os.OpenFile(filename, flag, 0666)
+	//覆盖写入先把内容渲染到内存，便于整体替换或重写
+	contentBuffer := new(bytes.Buffer)
+	if err := writeAndFlushBufio(contentBuffer, writeFun); err != nil {
+		return false, err
+	}
+	return fde.overwriteFileByWriterFun(filename, contentBuffer.Bytes())
+}
+
+// appendFileByWriterFun 追加写入
+func (fde *fileDirExt) appendFileByWriterFun(filename string, writeFun func(*bufio.Writer)) (bool, error) {
+	outputFile, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return false, err
 	}
-	defer outputFile.Close()
-	outputWriter := bufio.NewWriter(outputFile)
-	defer outputWriter.Flush()
-	//写入内容
-	writeFun(outputWriter)
+	writeErr := writeAndFlushBufio(outputFile, writeFun)
+	if closeErr := outputFile.Close(); writeErr == nil {
+		writeErr = closeErr
+	}
+	if writeErr != nil {
+		return false, writeErr
+	}
 	return true, nil
+}
+
+// overwriteFileByWriterFun 覆盖写入
+//
+// 先写同目录下的临时文件，刷盘成功后再原子替换目标文件；
+// 目标文件被占用等原因导致替换失败时，退化成“截断后原地重写”。
+//
+// 旧实现是【os.Remove(删除失败的错误被忽略) + O_RDWR(不带 O_TRUNC)】：
+// 一旦旧文件删除失败(如docker单文件挂载、杀毒软件占用)，
+// 就只会从偏移0处覆盖写入，旧内容的尾部会残留在文件中形成乱码。
+func (fde *fileDirExt) overwriteFileByWriterFun(filename string, content []byte) (bool, error) {
+	if err := fde.replaceFileByRename(filename, content); err == nil {
+		return true, nil
+	}
+	//替换失败时退化为原地重写，O_TRUNC保证不会残留旧内容
+	return fde.truncateAndWriteFile(filename, content)
+}
+
+// replaceFileByRename 通过【临时文件+rename】原子替换目标文件
+func (fde *fileDirExt) replaceFileByRename(filename string, content []byte) error {
+	if err := fde.MkAllDirIfNotExist(filepath.Dir(filename)); err != nil {
+		return err
+	}
+	tmpFile, err := os.CreateTemp(filepath.Dir(filename), filepath.Base(filename)+".tmp*")
+	if err != nil {
+		return err
+	}
+	tmpFileName := tmpFile.Name()
+	finished := false
+	//失败时清理临时文件，避免残留
+	defer func() {
+		if !finished {
+			tmpFile.Close()
+			os.Remove(tmpFileName)
+		}
+	}()
+
+	if err := tmpFile.Chmod(fde.fileModeOrDefault(filename)); err != nil {
+		return err
+	}
+	if _, err := tmpFile.Write(content); err != nil {
+		return err
+	}
+	//先落盘，避免替换成功后内容还未真正写入磁盘
+	if err := tmpFile.Sync(); err != nil {
+		return err
+	}
+	if err := tmpFile.Close(); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpFileName, filename); err != nil {
+		return err
+	}
+	finished = true
+	return nil
+}
+
+// truncateAndWriteFile 截断目标文件后原地重写
+func (fde *fileDirExt) truncateAndWriteFile(filename string, content []byte) (bool, error) {
+	//O_TRUNC保证旧内容不会残留在文件中
+	outputFile, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return false, err
+	}
+	writeErr := writeAndFlushBufio(outputFile, func(outputWriter *bufio.Writer) {
+		outputWriter.Write(content)
+	})
+	if closeErr := outputFile.Close(); writeErr == nil {
+		writeErr = closeErr
+	}
+	if writeErr != nil {
+		return false, writeErr
+	}
+	return true, nil
+}
+
+// fileModeOrDefault 目标文件已存在时沿用其权限，否则使用0666
+func (fde *fileDirExt) fileModeOrDefault(filename string) os.FileMode {
+	if fileInfo, err := os.Stat(filename); err == nil {
+		return fileInfo.Mode().Perm()
+	}
+	return 0666
+}
+
+// writeAndFlushBufio 执行写入并刷出缓冲区，不再忽略Flush的错误
+func writeAndFlushBufio(outputFile io.Writer, writeFun func(*bufio.Writer)) error {
+	outputWriter := bufio.NewWriter(outputFile)
+	writeFun(outputWriter)
+	return outputWriter.Flush()
 }
 
 // ReadFileByte 读取文本文件内容

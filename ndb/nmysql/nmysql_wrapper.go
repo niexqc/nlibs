@@ -27,6 +27,36 @@ const (
 	txRolledBack = int32(4)
 )
 
+// mysqlTLSConfigName TLS配置在mysql驱动全局注册表中的名称
+const mysqlTLSConfigName = "nmysql_ssl"
+
+var (
+	mysqlTLSConfigOnce sync.Once
+	mysqlTLSConfigErr  error
+)
+
+// registerMysqlTLSConfig 只在首次使用时把TLS配置注册到驱动的全局注册表中。
+// 驱动内部使用全局map+锁保存该配置，重复注册属于不必要的开销。
+func registerMysqlTLSConfig() error {
+	mysqlTLSConfigOnce.Do(func() {
+		mysqlTLSConfigErr = mysql.RegisterTLSConfig(mysqlTLSConfigName, &tls.Config{
+			MinVersion:         tls.VersionTLS12, //最低1.2
+			InsecureSkipVerify: true,             // 跳过验证（与skip-verify行为一致）
+			CipherSuites: []uint16{
+				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // 现代浏览器支持
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			},
+		})
+	})
+	return mysqlTLSConfigErr
+}
+
 type NMysqlWrapper struct {
 	sqlxDb                  *sqlx.DB
 	conf                    *nyaml.YamlConfMysqlDb
@@ -44,22 +74,10 @@ func NewNMysqlWrapper(conf *nyaml.YamlConfMysqlDb, sqlPrintConf *nyaml.YamlConfS
 	mysqlUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DbUser, conf.DbPwd, conf.DbHost, conf.DbPort, conf.DbName)
 	mysqlUrl = mysqlUrl + "?loc=Local&parseTime=true&charset=utf8mb4"
 	if conf.UseSsl {
-		tlsConfig := &tls.Config{
-			MinVersion:         tls.VersionTLS12, //最低1.2
-			InsecureSkipVerify: true,             // 跳过验证（与skip-verify行为一致）
-			CipherSuites: []uint16{
-				tls.TLS_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // 现代浏览器支持
-				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			},
+		if err := registerMysqlTLSConfig(); err != nil {
+			return nil, err
 		}
-		mysql.RegisterTLSConfig("nmysql_ssl", tlsConfig)
-		mysqlUrl += "&tls=nmysql_ssl"
+		mysqlUrl += "&tls=" + mysqlTLSConfigName
 	}
 	slog.Debug(mysqlUrl)
 	db, err := sqlx.Open("mysql", mysqlUrl)
