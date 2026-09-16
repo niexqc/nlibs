@@ -3,6 +3,7 @@ package ngin
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 
 	"strings"
 
@@ -100,4 +101,14 @@ func (nGin *NGin) LogPrintAllRouterInfo() {
 		routersInfo += "\n" + fmt.Sprintf("%s %s %s", v.Method, v.Path, v.Handler)
 	}
 	slog.Debug(routersInfo)
+}
+
+// abortWithErr 返回统一格式的错误响应并中断后续处理。
+//
+// 注意：ctx.Abort() 只设置中断标记，不会结束当前函数，调用方仍需自行 return。
+func NGinAbortWithErr(ctx *gin.Context, code int, msg string) {
+	resp := NewErrBaseResp(msg)
+	resp.Code = code
+	ctx.JSON(http.StatusOK, resp)
+	ctx.Abort()
 }
